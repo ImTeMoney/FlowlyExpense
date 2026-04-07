@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(uipro init:*)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"fintech expense tracker futuristic cyber glassmorphic dashboard\" --design-system -p \"AetherSpend\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npx convex:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(vercel --version)",
+      "Bash(npx vercel:*)",
+      "WebFetch(domain:sensational-froyo-cf7ef8.netlify.app)",
+      "Bash(curl -s \"https://sensational-froyo-cf7ef8.netlify.app/\")",
+      "Bash(curl -s \"https://sensational-froyo-cf7ef8.netlify.app/assets/index-BZLL9NMq.css\")"
+    ]
+  }
+}
