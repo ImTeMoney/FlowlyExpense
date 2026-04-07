@@ -1,7 +1,7 @@
 /* =====================================================
    AETHERSPEND — Cyber-Minimalist Glassmorphic UI
    Design System: Gold #F59E0B · Purple #8B5CF6
-   Fonts: Fira Code (numbers/mono) · Fira Sans (UI)
+   Fonts: System font stack · tabular-nums for numbers
    ===================================================== */
 
 /* ── CSS Custom Properties ── */
@@ -322,8 +322,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
    ===================================================== */
 .fab {
   position: fixed;
-  bottom: calc(64px + env(safe-area-inset-bottom) + 16px);
-  inset-inline-end: 20px;
+  bottom: calc(env(safe-area-inset-bottom) + 8px);
+  left: 50%;
+  margin-left: -27px;
   width: 54px;
   height: 54px;
   border-radius: var(--r-full);
@@ -332,7 +333,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 90;
+  z-index: 101;
   box-shadow: 0 0 0 1px rgba(139,92,246,0.5), 0 0 20px var(--purple-glow), 0 4px 20px rgba(0,0,0,0.5);
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -528,7 +529,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 /* =====================================================
    TRANSACTION FEED
    ===================================================== */
-.txn-section { padding: 4px 13px 0; }
+.txn-section { padding: 4px 13px calc(80px + env(safe-area-inset-bottom)); }
 
 .date-group { margin-bottom: 14px; }
 
@@ -774,7 +775,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .rec-info { flex: 1; min-width: 0; }
 .rec-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.rec-amt { font-family: 'Fira Code', monospace; font-size: 14px; font-weight: 600; color: var(--purple); flex-shrink: 0; }
+.rec-amt { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; color: var(--purple); flex-shrink: 0; }
 .rec-amt.income { color: var(--success); }
 .rec-del { color: var(--text-dim); transition: color 0.15s, background 0.15s; padding: 4px; border-radius: 6px; }
 .rec-del:hover { color: var(--danger); background: var(--danger-dim); }
@@ -914,7 +915,7 @@ select.sm-in option { background: var(--modal-bg); }
 }
 .profile-avatar svg { width: 20px; height: 20px; color: var(--purple); }
 .profile-name { font-size: 15px; font-weight: 700; color: var(--text); }
-.profile-sub { font-family: 'Fira Code', monospace; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.profile-sub { font-variant-numeric: tabular-nums; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 /* =====================================================
    CATEGORY PICKER GRID
@@ -1142,4 +1143,57 @@ select.sm-in option { background: var(--modal-bg); }
   display: flex;
   gap: 6px;
   align-items: flex-end;
-  hei
+  height: 130px;
+  padding-top: 8px;
+}
+.weekly-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.weekly-amt {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  min-height: 14px;
+}
+.weekly-bar-bg {
+  flex: 1;
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+[data-theme="light"] .weekly-bar-bg { background: rgba(0,0,0,0.05); }
+.weekly-bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, var(--purple), rgba(139,92,246,0.4));
+  border-radius: 4px 4px 0 0;
+  transition: height 0.6s ease;
+  min-height: 2px;
+}
+.weekly-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
