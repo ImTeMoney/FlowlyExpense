@@ -1,13 +1,12 @@
 import { useState, useMemo } from 'react';
 import {
-  Package, Plus, X, Download,
-  User, TrendingDown, TrendingUp, Sun, Moon,
+  Package, Plus, X,
+  TrendingDown, TrendingUp,
   Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple,
   ArrowUpRight, ArrowDownRight, Minus,
 } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
-import { useTheme } from '../hooks/useTheme';
 import { CAT_ICON } from '../components/CategoryPicker';
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -23,9 +22,8 @@ const PM_COLOR: Record<string, string> = {
 
 export default function AnalyticsPage() {
   const { state, dispatch } = useExpense();
-  const { t, toggleLang, lang, formatCurrency, monthLabel } = useLang();
+  const { t, formatCurrency, monthLabel } = useLang();
   const { transactions, categories, recurringExpenses, monthlyBudget } = state;
-  const [theme, toggleTheme] = useTheme();
 
   // Month navigation
   const now = new Date();
@@ -125,9 +123,6 @@ export default function AnalyticsPage() {
   const [recIsIncome, setRecIsIncome] = useState(false);
   const [recPm, setRecPm]            = useState<PaymentMethod>('credit');
 
-  // Budget edit
-  const [budgetEdit, setBudgetEdit] = useState(String(monthlyBudget));
-
   function addRecurring() {
     const amt = parseFloat(recAmt);
     const day = parseInt(recDay);
@@ -143,25 +138,6 @@ export default function AnalyticsPage() {
     dispatch({ type: 'ADD_RECURRING', payload: rec });
     setRecDesc(''); setRecAmt(''); setRecDay('10');
     setShowRecForm(false);
-  }
-
-  function saveBudget() {
-    const val = parseFloat(budgetEdit);
-    if (val > 0) dispatch({ type: 'SET_BUDGET', payload: val });
-  }
-
-  function exportCSV() {
-    const rows = [['Date','Description','Category','Type','Amount','Payment Method']];
-    monthTxns.forEach(tx => {
-      const cat = categories.find(c => c.id === tx.categoryId)?.name ?? '';
-      const pmName = tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
-      rows.push([tx.date, tx.description, cat, tx.isIncome ? 'Income' : 'Expense', String(tx.amount), pmName]);
-    });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
-    a.download = `aetherspend_${ms}.csv`;
-    a.click();
   }
 
   const pmLabel = (pm: string) => (t as any)[`pm_${pm}`] ?? pm;
@@ -425,64 +401,6 @@ export default function AnalyticsPage() {
             })}
           </div>
         )}
-      </div>
-
-      {/* Settings */}
-      <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text">{t.settings}</span>
-        </div>
-
-        <div className="set-row">
-          <span className="set-lbl">{t.monthlyBudget}</span>
-          <input
-            type="number"
-            className="set-input"
-            value={budgetEdit}
-            onChange={e => setBudgetEdit(e.target.value)}
-            onBlur={saveBudget}
-            onKeyDown={e => e.key === 'Enter' && saveBudget()}
-            inputMode="numeric"
-          />
-        </div>
-
-        <div className="set-row">
-          <span className="set-lbl">{t.theme}</span>
-          <div className="theme-toggle-row">
-            <button
-              className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
-              onClick={() => theme !== 'dark' && toggleTheme()}
-            >
-              <Moon size={14} /> {t.dark}
-            </button>
-            <button
-              className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
-              onClick={() => theme !== 'light' && toggleTheme()}
-            >
-              <Sun size={14} /> {t.light}
-            </button>
-          </div>
-        </div>
-
-        <button
-          className="export-btn"
-          onClick={exportCSV}
-          disabled={monthTxns.length === 0}
-        >
-          <Download size={14} />
-          {t.exportCSV} — {monthLabel(year, month)}
-        </button>
-      </div>
-
-      {/* Profile */}
-      <div className="profile-card">
-        <div className="profile-avatar">
-          <User size={20} />
-        </div>
-        <div>
-          <div className="profile-name">Finio</div>
-          <div className="profile-sub">העוזרת האישית שלך · {lang === 'he' ? 'עברית' : 'English'}</div>
-        </div>
       </div>
 
     </div>
