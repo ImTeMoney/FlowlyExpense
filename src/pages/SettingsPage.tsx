@@ -81,10 +81,7 @@ const SettingsPage: React.FC = () => {
       {/* ── General Settings ── */}
       <div className="a-sec">
         <div className="a-sec-title">
-          <span className="title-text" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Settings2 size={14} />
-            {t.settings}
-          </span>
+          <span className="title-text">{t.settings}</span>
         </div>
 
         {/* Budget */}
