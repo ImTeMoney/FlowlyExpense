@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import SubscriptionManager from '../components/Recurring/SubscriptionManager';
 import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Pencil, Check, X } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
@@ -236,9 +235,6 @@ const SettingsPage: React.FC = () => {
           </button>
         </form>
       </div>
-
-      {/* ── Recurring ── */}
-      <SubscriptionManager />
 
     </div>
   );
