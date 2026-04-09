@@ -92,7 +92,7 @@ const STORAGE_KEYS = {
   RECURRING:      'expense_recurring',
   BUDGET:         'expense_budget',
   SAVINGS_GOAL:   'expense_savings_goal',
-  CATEGORIES:     'expense_custom_categories',
+  CATEGORIES:     'expense_categories_v2',   // full list (new key)
   DEVICE_ID:      'expense_device_id',
 };
 
@@ -124,9 +124,16 @@ export function getDeviceId(): string {
   return id;
 }
 
-// Load full category list; fall back to INITIAL_CATEGORIES on first run
+// Load full category list.
+// Uses new key 'expense_categories_v2'; if missing, migrates from the old
+// 'expense_custom_categories' key (which only stored custom additions).
 function loadCategories(): Category[] {
-  return loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES);
+  const stored = loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, []);
+  if (stored.length > 0) return stored;
+
+  // Migration: merge INITIAL_CATEGORIES with any previously saved custom ones
+  const legacy = loadFromStorage<Category[]>('expense_custom_categories', []);
+  return [...INITIAL_CATEGORIES, ...legacy];
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
