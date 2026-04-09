@@ -4,6 +4,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AppLayout>

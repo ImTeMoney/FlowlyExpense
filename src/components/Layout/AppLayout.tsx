@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Settings } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import '../../styles/index.css';
 
@@ -28,6 +28,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         >
           <BarChart2 />
           {t.analyticsLabel}
+        </button>
+        <button
+          className={`nav-tab ${location.pathname === '/settings' ? 'active' : ''}`}
+          onClick={() => navigate('/settings')}
+          aria-label="הגדרות"
+        >
+          <Settings />
+          הגדרות
         </button>
       </nav>
     </div>
