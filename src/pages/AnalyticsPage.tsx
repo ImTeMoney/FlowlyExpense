@@ -480,8 +480,8 @@ export default function AnalyticsPage() {
           <User size={20} />
         </div>
         <div>
-          <div className="profile-name">AetherSpend</div>
-          <div className="profile-sub">v2.0.0 · {lang === 'he' ? 'עברית' : 'English'}</div>
+          <div className="profile-name">אסתר</div>
+          <div className="profile-sub">העוזרת האישית שלך · {lang === 'he' ? 'עברית' : 'English'}</div>
         </div>
       </div>
 
