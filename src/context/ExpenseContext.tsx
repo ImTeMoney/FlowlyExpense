@@ -12,6 +12,7 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  isCustom?: boolean;
 }
 
 export interface Transaction {
@@ -46,6 +47,7 @@ export interface AppState {
   categories: Category[];
   recurringExpenses: RecurringExpense[];
   monthlyBudget: number;
+  savingsGoal: number;
   dashboardFilter: DashboardFilter;
 }
 
@@ -55,11 +57,13 @@ type Action =
   | { type: 'ADD_RECURRING';        payload: RecurringExpense }
   | { type: 'DELETE_RECURRING';     payload: string }
   | { type: 'SET_BUDGET';           payload: number }
+  | { type: 'SET_SAVINGS_GOAL';     payload: number }
   | { type: 'ADD_CATEGORY';         payload: Category }
+  | { type: 'DELETE_CATEGORY';      payload: string }
   | { type: 'UPDATE_LAST_POSTED';   payload: { id: string; month: string } }
   | { type: 'SET_DASHBOARD_FILTER'; payload: Partial<DashboardFilter> };
 
-// ── Static categories ─────────────────────────────────────────────────────────
+// ── Static built-in categories ────────────────────────────────────────────────
 
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'cat_groceries',     name: 'קניות (סופר)',              color: '#10b981' },
@@ -73,13 +77,22 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 'cat_other',         name: 'אחר',                       color: '#94a3b8' },
 ];
 
+// Color palette for custom categories
+export const CATEGORY_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#84cc16',
+  '#10b981', '#14b8a6', '#0ea5e9', '#3b82f6',
+  '#8b5cf6', '#ec4899', '#f43f5e', '#94a3b8',
+];
+
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
 const STORAGE_KEYS = {
-  TRANSACTIONS: 'expense_transactions',
-  RECURRING:    'expense_recurring',
-  BUDGET:       'expense_budget',
-  DEVICE_ID:    'expense_device_id',
+  TRANSACTIONS:   'expense_transactions',
+  RECURRING:      'expense_recurring',
+  BUDGET:         'expense_budget',
+  SAVINGS_GOAL:   'expense_savings_goal',
+  CATEGORIES:     'expense_custom_categories',
+  DEVICE_ID:      'expense_device_id',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -94,16 +107,13 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
 function saveToStorage<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage quota exceeded – silently ignore
-  }
+  } catch { /* quota exceeded */ }
 }
 
 function generateId(): string {
   return '_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-// Generate (or retrieve) a stable device ID so each browser/device is identified
 export function getDeviceId(): string {
   let id = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
   if (!id) {
@@ -111,6 +121,12 @@ export function getDeviceId(): string {
     localStorage.setItem(STORAGE_KEYS.DEVICE_ID, id);
   }
   return id;
+}
+
+// Merge saved custom categories with built-in ones (custom categories are saved separately)
+function loadCategories(): Category[] {
+  const custom = loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, []);
+  return [...INITIAL_CATEGORIES, ...custom];
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
@@ -130,7 +146,6 @@ const ExpenseContext = createContext<ExpenseContextProps | undefined>(undefined)
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
-  // Initialise state directly from localStorage (synchronous)
   const [transactions, setTransactions] = useState<Transaction[]>(() =>
     loadFromStorage<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, [])
   );
@@ -140,30 +155,37 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [monthlyBudget, setMonthlyBudget] = useState<number>(() =>
     loadFromStorage<number>(STORAGE_KEYS.BUDGET, 3000)
   );
+  const [savingsGoal, setSavingsGoal] = useState<number>(() =>
+    loadFromStorage<number>(STORAGE_KEYS.SAVINGS_GOAL, 0)
+  );
+  // categories = built-in + any saved custom ones
+  const [categories, setCategories] = useState<Category[]>(() => loadCategories());
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>({
     period: 'month',
     categoryId: 'all',
   });
 
-  // Stable device ID
   const deviceId = useMemo(() => getDeviceId(), []);
 
-  // Persist to localStorage whenever state changes
+  // Persist to localStorage
   useEffect(() => { saveToStorage(STORAGE_KEYS.TRANSACTIONS, transactions); }, [transactions]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.RECURRING, recurringExpenses); }, [recurringExpenses]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.BUDGET, monthlyBudget); }, [monthlyBudget]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.SAVINGS_GOAL, savingsGoal); }, [savingsGoal]);
+  // Only persist custom categories
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.CATEGORIES, categories.filter(c => c.isCustom));
+  }, [categories]);
 
-  // Auto-post recurring expenses that are due this month (runs once on mount)
+  // Auto-post recurring expenses on mount
   useEffect(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     const currentDay = today.getDate();
-
     const toPost = recurringExpenses.filter(
       r => r.lastPostedMonth !== currentMonthStr && currentDay >= r.dayOfMonth
     );
     if (toPost.length === 0) return;
-
     const newTxns: Transaction[] = toPost.map(r => ({
       id:            generateId(),
       amount:        r.amount,
@@ -173,26 +195,17 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       isIncome:      r.isIncome,
       paymentMethod: r.paymentMethod,
     }));
-
     setTransactions(prev => [...newTxns, ...prev]);
     setRecurringExpenses(prev =>
-      prev.map(r =>
-        toPost.some(p => p.id === r.id)
-          ? { ...r, lastPostedMonth: currentMonthStr }
-          : r
-      )
+      prev.map(r => toPost.some(p => p.id === r.id) ? { ...r, lastPostedMonth: currentMonthStr } : r)
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Dispatch → localStorage mutations
   const dispatch = useCallback((action: Action) => {
     switch (action.type) {
 
       case 'ADD_TRANSACTION':
-        setTransactions(prev => [
-          { ...action.payload, id: generateId() },
-          ...prev,
-        ]);
+        setTransactions(prev => [{ ...action.payload, id: generateId() }, ...prev]);
         break;
 
       case 'DELETE_TRANSACTION':
@@ -200,10 +213,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
 
       case 'ADD_RECURRING':
-        setRecurringExpenses(prev => [
-          ...prev,
-          { ...action.payload, id: generateId() },
-        ]);
+        setRecurringExpenses(prev => [...prev, { ...action.payload, id: generateId() }]);
         break;
 
       case 'DELETE_RECURRING':
@@ -214,46 +224,48 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setMonthlyBudget(action.payload);
         break;
 
+      case 'SET_SAVINGS_GOAL':
+        setSavingsGoal(action.payload);
+        break;
+
+      case 'ADD_CATEGORY':
+        setCategories(prev => [...prev, { ...action.payload, isCustom: true }]);
+        break;
+
+      case 'DELETE_CATEGORY':
+        // Only allow deleting custom categories
+        setCategories(prev => prev.filter(c => !(c.id === action.payload && c.isCustom)));
+        break;
+
       case 'UPDATE_LAST_POSTED':
         setRecurringExpenses(prev =>
-          prev.map(r =>
-            r.id === action.payload.id
-              ? { ...r, lastPostedMonth: action.payload.month }
-              : r
-          )
+          prev.map(r => r.id === action.payload.id ? { ...r, lastPostedMonth: action.payload.month } : r)
         );
         break;
 
       case 'SET_DASHBOARD_FILTER':
         setDashboardFilter(prev => ({ ...prev, ...action.payload }));
         break;
-
-      case 'ADD_CATEGORY':
-        break; // categories are static
     }
   }, []);
 
-  // Composed state object
   const state: AppState = useMemo(() => ({
     transactions,
-    categories:        INITIAL_CATEGORIES,
+    categories,
     recurringExpenses,
     monthlyBudget,
+    savingsGoal,
     dashboardFilter,
-  }), [transactions, recurringExpenses, monthlyBudget, dashboardFilter]);
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter]);
 
-  // Filtered transactions for dashboard widget
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;
     let filtered = transactions;
-
     if (categoryId && categoryId !== 'all') {
       filtered = filtered.filter(t => t.categoryId === categoryId);
     }
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     if (period === 'today') {
       const y = today.getFullYear();
       const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -269,7 +281,6 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     } else if (period === 'custom_month' && customMonthStr) {
       filtered = filtered.filter(t => t.date.startsWith(customMonthStr));
     }
-
     return filtered;
   }, [transactions, dashboardFilter]);
 

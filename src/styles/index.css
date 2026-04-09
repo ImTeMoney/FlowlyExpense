@@ -1048,6 +1048,39 @@ select.sm-in option { background: var(--modal-bg); }
 .income-net .green { color: var(--success); }
 .income-net .red { color: var(--danger); }
 
+/* =====================================================
+   SAVINGS GOAL CARD
+   ===================================================== */
+.savings-goal-card {
+  margin: 4px 13px 6px;
+  padding: 11px 13px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: var(--r-md);
+}
+.savings-goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.savings-goal-amounts { font-size: 12px; font-weight: 700; }
+.savings-goal-bar-bg {
+  width: 100%;
+  height: 7px;
+  background: var(--glass-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.savings-goal-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+}
+
 /* (Single FAB defined above) */
 
 /* =====================================================

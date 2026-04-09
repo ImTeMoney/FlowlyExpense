@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet,
+  Wallet, PiggyBank,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -79,7 +79,7 @@ function SpendRing({ spent, budget }: { spent: number; budget: number }) {
 export default function DashboardPage() {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, formatCurrency, formatDateGroup, currentMonthLabel } = useLang();
-  const { categories, monthlyBudget, transactions } = state;
+  const { categories, monthlyBudget, savingsGoal, transactions } = state;
   const [theme, toggleTheme] = useTheme();
 
   const [showModal, setShowModal] = useState(false);
@@ -201,6 +201,38 @@ export default function DashboardPage() {
           <span className="income-net">
             {t.netBalance}: <strong className={spent > income ? 'red' : 'green'}>{formatCurrency(income - spent)}</strong>
           </span>
+        </div>
+      )}
+
+      {/* Savings goal */}
+      {savingsGoal > 0 && (
+        <div className="savings-goal-card">
+          <div className="savings-goal-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <PiggyBank size={15} color="#22C55E" />
+              <span>יעד חסכון חודשי</span>
+            </div>
+            <span className="savings-goal-amounts">
+              <strong style={{ color: income - spent >= 0 ? '#22C55E' : '#EF4444' }}>
+                {formatCurrency(Math.max(0, income - spent))}
+              </strong>
+              <span style={{ opacity: 0.5 }}> / {formatCurrency(savingsGoal)}</span>
+            </span>
+          </div>
+          <div className="savings-goal-bar-bg">
+            <div
+              className="savings-goal-bar-fill"
+              style={{
+                width: `${Math.min(Math.max(0, (income - spent) / savingsGoal) * 100, 100)}%`,
+                background: (income - spent) >= savingsGoal ? '#22C55E' : '#8B5CF6',
+              }}
+            />
+          </div>
+          {income - spent >= savingsGoal && (
+            <div style={{ fontSize: '0.72rem', color: '#22C55E', marginTop: 4, textAlign: 'right' }}>
+              יעד החסכון הושג החודש ✓
+            </div>
+          )}
         </div>
       )}
 
