@@ -79,7 +79,7 @@ function SpendRing({ spent, budget }: { spent: number; budget: number }) {
 export default function DashboardPage() {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, formatCurrency, formatDateGroup, currentMonthLabel } = useLang();
-  const { categories, monthlyBudget, savingsGoal, transactions } = state;
+  const { categories, monthlyBudget, savingsGoal, recurringExpenses, transactions } = state;
   const [theme, toggleTheme] = useTheme();
 
   const [showModal, setShowModal] = useState(false);
@@ -95,6 +95,10 @@ export default function DashboardPage() {
   const monthTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
   const spent      = useMemo(() => monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [monthTxns]);
   const income     = useMemo(() => monthTxns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [monthTxns]);
+
+  // Planned recurring totals for the current month
+  const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
+  const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const remaining  = monthlyBudget - spent;
   const todaySpent = useMemo(() => transactions.filter(tx => tx.date === todayStr() && !tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [transactions]);
   const grouped    = useMemo(() => groupByDate(monthTxns), [monthTxns]);
@@ -192,6 +196,32 @@ export default function DashboardPage() {
           <span className="stat-chip-val gold">{monthTxns.length}</span>
         </div>
       </div>
+
+      {/* Planned recurring this month */}
+      {(plannedExpense > 0 || plannedIncome > 0) && (
+        <div className="planned-banner">
+          <span className="planned-title">צפוי החודש</span>
+          <div className="planned-items">
+            {plannedIncome > 0 && (
+              <span className="planned-income">
+                <TrendingUp size={12} />
+                {formatCurrency(plannedIncome)}
+              </span>
+            )}
+            {plannedExpense > 0 && (
+              <span className="planned-expense">
+                <TrendingDown size={12} />
+                {formatCurrency(plannedExpense)}
+              </span>
+            )}
+            {plannedIncome > 0 && plannedExpense > 0 && (
+              <span className="planned-net" style={{ color: plannedIncome >= plannedExpense ? 'var(--success)' : 'var(--danger)' }}>
+                נטו: {formatCurrency(plannedIncome - plannedExpense)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Income summary (if exists) */}
       {income > 0 && (

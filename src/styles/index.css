@@ -1023,6 +1023,53 @@ select.sm-in option { background: var(--modal-bg); }
 .txn-pm svg { width: 11px; height: 11px; flex-shrink: 0; }
 
 /* =====================================================
+   PLANNED BANNER
+   ===================================================== */
+.planned-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 13px 6px;
+  padding: 9px 13px;
+  background: rgba(139,92,246,0.07);
+  border: 1px solid rgba(139,92,246,0.18);
+  border-radius: var(--r-md);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.planned-title {
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.planned-items {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+.planned-income,
+.planned-expense {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 600;
+}
+.planned-income { color: var(--success); }
+.planned-expense { color: var(--danger); }
+.planned-net {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--glass-border);
+}
+
+/* =====================================================
    INCOME BANNER
    ===================================================== */
 .income-banner {
