@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'אסתר',
-        short_name: 'אסתר',
-        description: 'העוזרת האישית שלך למעקב הוצאות',
+        name: 'Finio',
+        short_name: 'Finio',
+        description: 'Your personal finance assistant',
         theme_color: '#8B5CF6',
         background_color: '#09090F',
         display: 'standalone',

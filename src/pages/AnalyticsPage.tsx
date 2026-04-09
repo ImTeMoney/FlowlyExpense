@@ -480,7 +480,7 @@ export default function AnalyticsPage() {
           <User size={20} />
         </div>
         <div>
-          <div className="profile-name">אסתר</div>
+          <div className="profile-name">Finio</div>
           <div className="profile-sub">העוזרת האישית שלך · {lang === 'he' ? 'עברית' : 'English'}</div>
         </div>
       </div>

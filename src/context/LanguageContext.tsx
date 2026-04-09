@@ -93,7 +93,7 @@ export interface Translations {
 }
 
 const he: Translations = {
-  appName: 'אסתר',
+  appName: 'Finio',
   commandCenter: 'מרכז פיקוד',
   budget: 'תקציב',
   spent: 'הוצאות',
@@ -177,7 +177,7 @@ const he: Translations = {
 };
 
 const en: Translations = {
-  appName: 'Esther',
+  appName: 'Finio',
   commandCenter: 'Command Center',
   budget: 'Budget',
   spent: 'Spent',
@@ -275,7 +275,7 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLang] = useState<Language>(() => {
-    return (localStorage.getItem('esther_lang') as Language) ?? 'he';
+    return (localStorage.getItem('finio_lang') as Language) ?? 'he';
   });
 
   const t = lang === 'he' ? he : en;
@@ -284,7 +284,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     document.documentElement.setAttribute('lang', lang);
     document.documentElement.setAttribute('dir', dir);
-    localStorage.setItem('esther_lang', lang);
+    localStorage.setItem('finio_lang', lang);
   }, [lang, dir]);
 
   function toggleLang() {
