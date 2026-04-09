@@ -1,7 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +73,46 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 'cat_other',         name: 'אחר',                       color: '#94a3b8' },
 ];
 
+// ── localStorage helpers ──────────────────────────────────────────────────────
+
+const STORAGE_KEYS = {
+  TRANSACTIONS: 'expense_transactions',
+  RECURRING:    'expense_recurring',
+  BUDGET:       'expense_budget',
+  DEVICE_ID:    'expense_device_id',
+};
+
+function loadFromStorage<T>(key: string, defaultValue: T): T {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? (JSON.parse(item) as T) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function saveToStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage quota exceeded – silently ignore
+  }
+}
+
+function generateId(): string {
+  return '_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+// Generate (or retrieve) a stable device ID so each browser/device is identified
+export function getDeviceId(): string {
+  let id = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+    localStorage.setItem(STORAGE_KEYS.DEVICE_ID, id);
+  }
+  return id;
+}
+
 // ── Context shape ─────────────────────────────────────────────────────────────
 
 interface ExpenseContextProps {
@@ -84,6 +121,7 @@ interface ExpenseContextProps {
   formatCurrency: (amount: number) => string;
   filteredDashboardTransactions: Transaction[];
   isLoading: boolean;
+  deviceId: string;
 }
 
 const ExpenseContext = createContext<ExpenseContextProps | undefined>(undefined);
@@ -92,120 +130,98 @@ const ExpenseContext = createContext<ExpenseContextProps | undefined>(undefined)
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
-  // Convex live queries
-  const rawTransactions = useQuery(api.expenses.getTransactions);
-  const rawRecurring    = useQuery(api.expenses.getRecurring);
-  const monthlyBudget   = useQuery(api.expenses.getBudget);
-
-  // Convex mutations
-  const addTxnMutation       = useMutation(api.expenses.addTransaction);
-  const deleteTxnMutation    = useMutation(api.expenses.deleteTransaction);
-  const addRecMutation       = useMutation(api.expenses.addRecurring);
-  const deleteRecMutation    = useMutation(api.expenses.deleteRecurring);
-  const updatePostedMutation = useMutation(api.expenses.updateLastPosted);
-  const setBudgetMutation    = useMutation(api.expenses.setBudget);
-
-  // Local UI-only state
+  // Initialise state directly from localStorage (synchronous)
+  const [transactions, setTransactions] = useState<Transaction[]>(() =>
+    loadFromStorage<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, [])
+  );
+  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>(() =>
+    loadFromStorage<RecurringExpense[]>(STORAGE_KEYS.RECURRING, [])
+  );
+  const [monthlyBudget, setMonthlyBudget] = useState<number>(() =>
+    loadFromStorage<number>(STORAGE_KEYS.BUDGET, 3000)
+  );
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>({
     period: 'month',
     categoryId: 'all',
   });
 
-  const isLoading =
-    rawTransactions === undefined ||
-    rawRecurring    === undefined ||
-    monthlyBudget   === undefined;
+  // Stable device ID
+  const deviceId = useMemo(() => getDeviceId(), []);
 
-  // Map Convex docs → app Transaction[]
-  const transactions: Transaction[] = useMemo(() =>
-    (rawTransactions ?? []).map(t => ({
-      id:            t._id as string,
-      amount:        t.amount,
-      categoryId:    t.categoryId,
-      date:          t.date,
-      description:   t.description,
-      isIncome:      t.isIncome,
-      paymentMethod: t.paymentMethod as PaymentMethod | undefined,
-    })), [rawTransactions]);
+  // Persist to localStorage whenever state changes
+  useEffect(() => { saveToStorage(STORAGE_KEYS.TRANSACTIONS, transactions); }, [transactions]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.RECURRING, recurringExpenses); }, [recurringExpenses]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.BUDGET, monthlyBudget); }, [monthlyBudget]);
 
-  // Map Convex docs → app RecurringExpense[]
-  const recurringExpenses: RecurringExpense[] = useMemo(() =>
-    (rawRecurring ?? []).map(r => ({
-      id:              r._id as string,
-      amount:          r.amount,
-      categoryId:      r.categoryId,
-      dayOfMonth:      r.dayOfMonth,
-      description:     r.description,
-      lastPostedMonth: r.lastPostedMonth,
-      isIncome:        r.isIncome,
-      paymentMethod:   r.paymentMethod as PaymentMethod | undefined,
-    })), [rawRecurring]);
-
-  // Auto-post recurring expenses on load
+  // Auto-post recurring expenses that are due this month (runs once on mount)
   useEffect(() => {
-    if (!rawRecurring) return;
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     const currentDay = today.getDate();
 
-    rawRecurring.forEach(r => {
-      if (r.lastPostedMonth !== currentMonthStr && currentDay >= r.dayOfMonth) {
-        void addTxnMutation({
-          amount:        r.amount,
-          categoryId:    r.categoryId,
-          date:          `${currentMonthStr}-${String(r.dayOfMonth).padStart(2, '0')}`,
-          description:   `(קבועה) ${r.description}`,
-          isIncome:      r.isIncome,
-          paymentMethod: r.paymentMethod,
-        });
-        void updatePostedMutation({ id: r._id, month: currentMonthStr });
-      }
-    });
-  }, [rawRecurring]); // eslint-disable-line react-hooks/exhaustive-deps
+    const toPost = recurringExpenses.filter(
+      r => r.lastPostedMonth !== currentMonthStr && currentDay >= r.dayOfMonth
+    );
+    if (toPost.length === 0) return;
 
-  // Dispatch → Convex mutations
+    const newTxns: Transaction[] = toPost.map(r => ({
+      id:            generateId(),
+      amount:        r.amount,
+      categoryId:    r.categoryId,
+      date:          `${currentMonthStr}-${String(r.dayOfMonth).padStart(2, '0')}`,
+      description:   `(קבועה) ${r.description}`,
+      isIncome:      r.isIncome,
+      paymentMethod: r.paymentMethod,
+    }));
+
+    setTransactions(prev => [...newTxns, ...prev]);
+    setRecurringExpenses(prev =>
+      prev.map(r =>
+        toPost.some(p => p.id === r.id)
+          ? { ...r, lastPostedMonth: currentMonthStr }
+          : r
+      )
+    );
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dispatch → localStorage mutations
   const dispatch = useCallback((action: Action) => {
     switch (action.type) {
 
       case 'ADD_TRANSACTION':
-        void addTxnMutation({
-          amount:        action.payload.amount,
-          categoryId:    action.payload.categoryId,
-          date:          action.payload.date,
-          description:   action.payload.description,
-          isIncome:      action.payload.isIncome,
-          paymentMethod: action.payload.paymentMethod,
-        });
+        setTransactions(prev => [
+          { ...action.payload, id: generateId() },
+          ...prev,
+        ]);
         break;
 
       case 'DELETE_TRANSACTION':
-        void deleteTxnMutation({ id: action.payload as Id<'transactions'> });
+        setTransactions(prev => prev.filter(t => t.id !== action.payload));
         break;
 
       case 'ADD_RECURRING':
-        void addRecMutation({
-          amount:        action.payload.amount,
-          categoryId:    action.payload.categoryId,
-          dayOfMonth:    action.payload.dayOfMonth,
-          description:   action.payload.description,
-          isIncome:      action.payload.isIncome,
-          paymentMethod: action.payload.paymentMethod,
-        });
+        setRecurringExpenses(prev => [
+          ...prev,
+          { ...action.payload, id: generateId() },
+        ]);
         break;
 
       case 'DELETE_RECURRING':
-        void deleteRecMutation({ id: action.payload as Id<'recurringExpenses'> });
+        setRecurringExpenses(prev => prev.filter(r => r.id !== action.payload));
         break;
 
       case 'SET_BUDGET':
-        void setBudgetMutation({ value: action.payload });
+        setMonthlyBudget(action.payload);
         break;
 
       case 'UPDATE_LAST_POSTED':
-        void updatePostedMutation({
-          id:    action.payload.id as Id<'recurringExpenses'>,
-          month: action.payload.month,
-        });
+        setRecurringExpenses(prev =>
+          prev.map(r =>
+            r.id === action.payload.id
+              ? { ...r, lastPostedMonth: action.payload.month }
+              : r
+          )
+        );
         break;
 
       case 'SET_DASHBOARD_FILTER':
@@ -215,14 +231,14 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'ADD_CATEGORY':
         break; // categories are static
     }
-  }, [addTxnMutation, deleteTxnMutation, addRecMutation, deleteRecMutation, setBudgetMutation, updatePostedMutation]);
+  }, []);
 
   // Composed state object
   const state: AppState = useMemo(() => ({
     transactions,
     categories:        INITIAL_CATEGORIES,
     recurringExpenses,
-    monthlyBudget:     monthlyBudget ?? 3000,
+    monthlyBudget,
     dashboardFilter,
   }), [transactions, recurringExpenses, monthlyBudget, dashboardFilter]);
 
@@ -263,7 +279,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     }).format(amount), []);
 
   return (
-    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, filteredDashboardTransactions, isLoading }}>
+    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, filteredDashboardTransactions, isLoading: false, deviceId }}>
       {children}
     </ExpenseContext.Provider>
   );
