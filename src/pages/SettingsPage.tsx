@@ -3,7 +3,7 @@ import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import SubscriptionManager from '../components/Recurring/SubscriptionManager';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Wallet } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Settings2 } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -67,7 +67,7 @@ const SettingsPage: React.FC = () => {
       <div className="a-sec">
         <div className="a-sec-title">
           <span className="title-text" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Wallet size={14} />
+            <Settings2 size={14} />
             {t.settings}
           </span>
         </div>
@@ -102,25 +102,17 @@ const SettingsPage: React.FC = () => {
           />
         </div>
 
-        {/* Theme */}
+        {/* Theme + Language */}
         <div className="set-row">
-          <span className="set-lbl">{t.theme}</span>
-          <div className="theme-toggle-row">
-            <button className={`theme-btn ${theme === 'dark'  ? 'active' : ''}`} onClick={() => theme !== 'dark'  && toggleTheme()}>
-              <Moon size={13} /> {t.dark}
+          <span className="set-lbl">תצוגה / שפה</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
-            <button className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => theme !== 'light' && toggleTheme()}>
-              <Sun  size={13} /> {t.light}
+            <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
+              {lang === 'he' ? 'EN' : 'עב'}
             </button>
           </div>
-        </div>
-
-        {/* Language */}
-        <div className="set-row">
-          <span className="set-lbl">שפה / Language</span>
-          <button className="theme-btn active" onClick={toggleLang}>
-            {lang === 'he' ? 'EN →' : '→ עב'}
-          </button>
         </div>
 
         {/* CSV Export */}
