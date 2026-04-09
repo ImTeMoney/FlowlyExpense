@@ -3,7 +3,7 @@ import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import SubscriptionManager from '../components/Recurring/SubscriptionManager';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Settings2 } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -63,6 +63,21 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="page" style={{ paddingBottom: 90 }}>
 
+      {/* Header — same as Dashboard */}
+      <div className="aether-header">
+        <div className="header-row">
+          <div className="header-brand">הגדרות</div>
+          <div className="header-actions">
+            <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
+              {lang === 'he' ? 'EN' : 'עב'}
+            </button>
+            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── General Settings ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -100,19 +115,6 @@ const SettingsPage: React.FC = () => {
             onKeyDown={e => e.key === 'Enter' && saveGoal()}
             inputMode="numeric"
           />
-        </div>
-
-        {/* Theme + Language */}
-        <div className="set-row">
-          <span className="set-lbl">תצוגה / שפה</span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
-              {lang === 'he' ? 'EN' : 'עב'}
-            </button>
-          </div>
         </div>
 
         {/* CSV Export */}
