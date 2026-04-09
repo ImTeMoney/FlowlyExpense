@@ -60,6 +60,7 @@ type Action =
   | { type: 'SET_SAVINGS_GOAL';     payload: number }
   | { type: 'ADD_CATEGORY';         payload: Category }
   | { type: 'DELETE_CATEGORY';      payload: string }
+  | { type: 'RENAME_CATEGORY';      payload: { id: string; name: string; color: string } }
   | { type: 'UPDATE_LAST_POSTED';   payload: { id: string; month: string } }
   | { type: 'SET_DASHBOARD_FILTER'; payload: Partial<DashboardFilter> };
 
@@ -123,10 +124,9 @@ export function getDeviceId(): string {
   return id;
 }
 
-// Merge saved custom categories with built-in ones (custom categories are saved separately)
+// Load full category list; fall back to INITIAL_CATEGORIES on first run
 function loadCategories(): Category[] {
-  const custom = loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, []);
-  return [...INITIAL_CATEGORIES, ...custom];
+  return loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES);
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
@@ -172,9 +172,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { saveToStorage(STORAGE_KEYS.RECURRING, recurringExpenses); }, [recurringExpenses]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.BUDGET, monthlyBudget); }, [monthlyBudget]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.SAVINGS_GOAL, savingsGoal); }, [savingsGoal]);
-  // Only persist custom categories
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CATEGORIES, categories.filter(c => c.isCustom));
+    saveToStorage(STORAGE_KEYS.CATEGORIES, categories);
   }, [categories]);
 
   // Auto-post recurring expenses on mount
@@ -233,8 +232,16 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
 
       case 'DELETE_CATEGORY':
-        // Only allow deleting custom categories
-        setCategories(prev => prev.filter(c => !(c.id === action.payload && c.isCustom)));
+        setCategories(prev => prev.filter(c => c.id !== action.payload));
+        break;
+
+      case 'RENAME_CATEGORY':
+        setCategories(prev =>
+          prev.map(c => c.id === action.payload.id
+            ? { ...c, name: action.payload.name, color: action.payload.color }
+            : c
+          )
+        );
         break;
 
       case 'UPDATE_LAST_POSTED':

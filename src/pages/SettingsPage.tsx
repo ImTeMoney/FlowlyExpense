@@ -3,7 +3,7 @@ import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import SubscriptionManager from '../components/Recurring/SubscriptionManager';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Pencil, Check, X } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -43,6 +43,21 @@ const SettingsPage: React.FC = () => {
     a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
     a.download = `finio_${ms}.csv`;
     a.click();
+  }
+
+  // Inline category editing
+  const [editingId,    setEditingId]    = useState<string | null>(null);
+  const [editingName,  setEditingName]  = useState('');
+  const [editingColor, setEditingColor] = useState('');
+
+  function startEdit(id: string, name: string, color: string) {
+    setEditingId(id); setEditingName(name); setEditingColor(color);
+  }
+  function commitEdit() {
+    if (editingId && editingName.trim()) {
+      dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name: editingName.trim(), color: editingColor } });
+    }
+    setEditingId(null);
   }
 
   // New category
@@ -136,20 +151,59 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {state.categories.map(cat => (
-          <div key={cat.id} className="set-row">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-              <span className="set-lbl">{cat.name}</span>
-            </div>
-            {cat.isCustom ? (
-              <button
-                onClick={() => dispatch({ type: 'DELETE_CATEGORY', payload: cat.id })}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', opacity: 0.8 }}
-              >
-                <Trash2 size={13} />
-              </button>
+          <div key={cat.id} className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
+            {editingId === cat.id ? (
+              /* ── Edit mode ── */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+                <input
+                  autoFocus
+                  className="set-input"
+                  value={editingName}
+                  onChange={e => setEditingName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditingId(null); }}
+                  style={{ width: '100%', textAlign: 'right' }}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {CATEGORY_COLORS.map(c => (
+                    <button key={c} type="button" onClick={() => setEditingColor(c)}
+                      style={{
+                        width: 22, height: 22, borderRadius: '50%', background: c,
+                        border: 'none', cursor: 'pointer', flexShrink: 0,
+                        boxShadow: editingColor === c ? `0 0 0 2px var(--bg-primary), 0 0 0 4px ${c}` : 'none',
+                        transition: 'box-shadow 0.15s',
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setEditingId(null)}
+                    style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                    <X size={12} /> ביטול
+                  </button>
+                  <button onClick={commitEdit}
+                    style={{ background: 'var(--purple)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                    <Check size={12} /> שמור
+                  </button>
+                </div>
+              </div>
             ) : (
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', opacity: 0.45 }}>ברירת מחדל</span>
+              /* ── View mode ── */
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                  <span className="set-lbl">{cat.name}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button onClick={() => startEdit(cat.id, cat.name, cat.color)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', opacity: 0.7 }}>
+                    <Pencil size={13} />
+                  </button>
+                  <button onClick={() => dispatch({ type: 'DELETE_CATEGORY', payload: cat.id })}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', opacity: 0.75 }}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         ))}
