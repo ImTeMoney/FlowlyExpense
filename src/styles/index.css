@@ -1155,6 +1155,13 @@ select.sm-in option { background: var(--modal-bg); }
 }
 .txn-del-group:hover { opacity: 1 !important; }
 
+/* Split button on existing transactions */
+.txn-split-btn {
+  color: #8B5CF6 !important;
+  opacity: 0.5;
+}
+.txn-split-btn:hover { opacity: 1 !important; }
+
 /* Split section in modal */
 .split-section {
   display: flex;

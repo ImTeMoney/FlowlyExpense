@@ -91,6 +91,8 @@ export default function DashboardPage() {
   const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
+  const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
+  const [splitN, setSplitN]                   = useState(3);
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
 
@@ -172,6 +174,34 @@ export default function DashboardPage() {
   function handleDeleteGroup(groupId: string) {
     dispatch({ type: 'DELETE_INSTALLMENT_GROUP', payload: groupId });
     showToast(t.deleted);
+  }
+
+  function handleSplitExisting() {
+    if (!splitTx || splitN < 2) return;
+    const groupId = `grp_${Date.now()}`;
+    const per = Math.round((splitTx.amount / splitN) * 100) / 100;
+    const [y, m, d] = splitTx.date.split('-').map(Number);
+    dispatch({ type: 'DELETE_TRANSACTION', payload: splitTx.id });
+    for (let i = 0; i < splitN; i++) {
+      const dd = new Date(y, m - 1 + i, d);
+      const txDate = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
+      const amt = i === splitN - 1 ? Math.round((splitTx.amount - per * (splitN - 1)) * 100) / 100 : per;
+      dispatch({
+        type: 'ADD_TRANSACTION',
+        payload: {
+          id: `tx_${Date.now()}_${i}`,
+          amount: amt,
+          categoryId: splitTx.categoryId,
+          date: txDate,
+          description: splitTx.description,
+          isIncome: false,
+          paymentMethod: splitTx.paymentMethod,
+          installments: { current: i + 1, total: splitN, groupId },
+        },
+      });
+    }
+    setSplitTx(null);
+    showToast('פוצל לתשלומים ✓');
   }
 
   // Payment method label
@@ -355,6 +385,16 @@ export default function DashboardPage() {
                       <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
                         {tx.isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                       </div>
+                      {!tx.isIncome && !tx.installments && (
+                        <button
+                          className="txn-del txn-split-btn"
+                          onClick={() => { setSplitTx(tx); setSplitN(3); }}
+                          aria-label="Split to installments"
+                          title="פצל לתשלומים"
+                        >
+                          <GitFork size={13} />
+                        </button>
+                      )}
                       {tx.installments && (
                         <button
                           className="txn-del txn-del-group"
@@ -539,6 +579,46 @@ export default function DashboardPage() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+
+      {/* Split existing transaction sheet */}
+      {splitTx && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSplitTx(null)}>
+          <div className="modal-sheet" style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)` }}>
+            <div className="modal-handle" />
+            <div className="modal-title">
+              <span>פצל לתשלומים</span>
+              <button className="modal-close" onClick={() => setSplitTx(null)}><X size={14} /></button>
+            </div>
+            <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{splitTx.description}</span>
+              {' — '}{formatCurrency(splitTx.amount)}
+            </div>
+            <div className="inst-stepper" style={{ marginBottom: 12 }}>
+              <button type="button" className="inst-step-btn"
+                onClick={() => setSplitN(n => Math.max(2, n - 1))}>−</button>
+              <input
+                type="number"
+                className="inst-step-input"
+                value={splitN}
+                onChange={e => {
+                  const v = parseInt(e.target.value);
+                  if (!isNaN(v) && v >= 2 && v <= 100) setSplitN(v);
+                }}
+                inputMode="numeric" min="2" max="100"
+              />
+              <button type="button" className="inst-step-btn"
+                onClick={() => setSplitN(n => Math.min(100, n + 1))}>+</button>
+              <span className="inst-step-lbl">תשלומים</span>
+            </div>
+            <div className="split-preview" style={{ marginBottom: 16 }}>
+              {splitN} × {formatCurrency(Math.round(splitTx.amount / splitN * 100) / 100)} לחודש
+            </div>
+            <button className="submit-btn" onClick={handleSplitExisting}>
+              פצל לתשלומים
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
