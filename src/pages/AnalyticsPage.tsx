@@ -124,9 +124,6 @@ export default function AnalyticsPage() {
   const [recPm, setRecPm]                     = useState<PaymentMethod>('credit');
   const [recSplitEnabled, setRecSplitEnabled] = useState(false);
   const [recNumInst, setRecNumInst]           = useState(12);
-  const [recCustomInst, setRecCustomInst]     = useState('');
-
-  const recEffectiveInst = recCustomInst ? parseInt(recCustomInst) : recNumInst;
 
   function addRecurring() {
     const amt = parseFloat(recAmt);
@@ -139,13 +136,13 @@ export default function AnalyticsPage() {
       categoryId: recIsIncome ? 'cat_other' : recCat,
       isIncome: recIsIncome,
       paymentMethod: recPm,
-      ...(recSplitEnabled && recEffectiveInst > 1
-        ? { totalInstallments: recEffectiveInst, postedCount: 0 }
+      ...(recSplitEnabled && recNumInst > 1
+        ? { totalInstallments: recNumInst, postedCount: 0 }
         : {}),
     };
     dispatch({ type: 'ADD_RECURRING', payload: rec });
     setRecDesc(''); setRecAmt(''); setRecDay('10');
-    setRecSplitEnabled(false); setRecCustomInst('');
+    setRecSplitEnabled(false);
     setShowRecForm(false);
   }
 
@@ -380,31 +377,17 @@ export default function AnalyticsPage() {
                 </button>
                 {recSplitEnabled && (
                   <>
-                    <div className="inst-chips">
-                      {[3, 6, 10, 12, 18, 24, 36].map(n => (
-                        <button
-                          key={n}
-                          type="button"
-                          className={`inst-chip${!recCustomInst && recNumInst === n ? ' selected' : ''}`}
-                          onClick={() => { setRecNumInst(n); setRecCustomInst(''); }}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                      <input
-                        type="number"
-                        className="inst-custom-input"
-                        placeholder="אחר"
-                        value={recCustomInst}
-                        onChange={e => setRecCustomInst(e.target.value)}
-                        inputMode="numeric"
-                        min="2"
-                        max="120"
-                      />
+                    <div className="inst-stepper">
+                      <button type="button" className="inst-step-btn"
+                        onClick={() => setRecNumInst(n => Math.max(1, n - 1))}>−</button>
+                      <span className="inst-step-val">{recNumInst}</span>
+                      <button type="button" className="inst-step-btn"
+                        onClick={() => setRecNumInst(n => Math.min(36, n + 1))}>+</button>
+                      <span className="inst-step-lbl">תשלומים</span>
                     </div>
                     {recAmt && parseFloat(recAmt) > 0 && (
                       <div className="split-preview">
-                        {recEffectiveInst} × {formatCurrency(parseFloat(recAmt))} = {formatCurrency(recEffectiveInst * parseFloat(recAmt))} סה"כ
+                        {recNumInst} × {formatCurrency(parseFloat(recAmt))} = {formatCurrency(recNumInst * parseFloat(recAmt))} סה"כ
                       </div>
                     )}
                   </>
