@@ -72,6 +72,7 @@ type Action =
   | { type: 'DELETE_CATEGORY';           payload: string }
   | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string } }
   | { type: 'UPDATE_LAST_POSTED';        payload: { id: string; month: string } }
+  | { type: 'SET_RECURRING_INSTALLMENTS'; payload: { id: string; totalInstallments: number } }
   | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> };
 
 // ── Static built-in categories ────────────────────────────────────────────────
@@ -248,6 +249,14 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'DELETE_RECURRING':
         setRecurringExpenses(prev => prev.filter(r => r.id !== action.payload));
+        break;
+
+      case 'SET_RECURRING_INSTALLMENTS':
+        setRecurringExpenses(prev => prev.map(r =>
+          r.id === action.payload.id
+            ? { ...r, totalInstallments: action.payload.totalInstallments, postedCount: r.postedCount ?? 0 }
+            : r
+        ));
         break;
 
       case 'SET_BUDGET':

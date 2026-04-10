@@ -124,6 +124,8 @@ export default function AnalyticsPage() {
   const [recPm, setRecPm]                     = useState<PaymentMethod>('credit');
   const [recSplitEnabled, setRecSplitEnabled] = useState(false);
   const [recNumInst, setRecNumInst]           = useState(12);
+  const [splitRec, setSplitRec]               = useState<RecurringExpense | null>(null);
+  const [splitRecN, setSplitRecN]             = useState(12);
 
   function addRecurring() {
     const amt = parseFloat(recAmt);
@@ -441,6 +443,16 @@ export default function AnalyticsPage() {
                   <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>
                     {r.isIncome ? '+' : ''}{formatCurrency(r.amount)}
                   </span>
+                  {!r.isIncome && !r.totalInstallments && (
+                    <button
+                      className="rec-del rec-split-btn"
+                      onClick={() => { setSplitRec(r); setSplitRecN(12); }}
+                      aria-label="Split to installments"
+                      title="הגדר תשלומים"
+                    >
+                      <GitFork size={13} />
+                    </button>
+                  )}
                   <button
                     className="rec-del"
                     onClick={() => dispatch({ type: 'DELETE_RECURRING', payload: r.id })}
@@ -455,6 +467,48 @@ export default function AnalyticsPage() {
         )}
       </div>
 
+      {/* Set installments on existing recurring */}
+      {splitRec && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSplitRec(null)}>
+          <div className="modal-sheet">
+            <div className="modal-handle" />
+            <div className="modal-title">
+              <span>הגדר תשלומים קבועים</span>
+              <button className="modal-close" onClick={() => setSplitRec(null)}><X size={14} /></button>
+            </div>
+            <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{splitRec.description}</span>
+              {' — '}{formatCurrency(splitRec.amount)} {t.monthly ?? 'לחודש'}
+            </div>
+            <div className="inst-stepper" style={{ marginBottom: 12 }}>
+              <button type="button" className="inst-step-btn"
+                onClick={() => setSplitRecN(n => Math.max(1, n - 1))}>−</button>
+              <input
+                type="number"
+                className="inst-step-input"
+                value={splitRecN}
+                onChange={e => {
+                  const v = parseInt(e.target.value);
+                  if (!isNaN(v) && v >= 1 && v <= 100) setSplitRecN(v);
+                }}
+                inputMode="numeric" min="1" max="100"
+              />
+              <button type="button" className="inst-step-btn"
+                onClick={() => setSplitRecN(n => Math.min(100, n + 1))}>+</button>
+              <span className="inst-step-lbl">תשלומים</span>
+            </div>
+            <div className="split-preview" style={{ marginBottom: 16 }}>
+              {splitRecN} × {formatCurrency(splitRec.amount)} = {formatCurrency(splitRecN * splitRec.amount)} סה"כ
+            </div>
+            <button className="submit-btn" onClick={() => {
+              dispatch({ type: 'SET_RECURRING_INSTALLMENTS', payload: { id: splitRec.id, totalInstallments: splitRecN } });
+              setSplitRec(null);
+            }}>
+              שמור
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -780,6 +780,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .rec-del { color: var(--text-dim); transition: color 0.15s, background 0.15s; padding: 4px; border-radius: 6px; }
 .rec-del:hover { color: var(--danger); background: var(--danger-dim); }
 .rec-del svg { width: 14px; height: 14px; display: block; }
+.rec-split-btn { color: #8B5CF6 !important; opacity: 0.7; }
+.rec-split-btn:hover { opacity: 1; background: rgba(139,92,246,0.12) !important; }
 
 /* Add recurring form */
 .add-rec-form {
