@@ -8,6 +8,7 @@ import {
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
+import { CURRENCY_SYMBOL } from '../services/exchangeRate';
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -338,7 +339,7 @@ export default function AnalyticsPage() {
               <input
                 className="sm-in"
                 type="number"
-                placeholder="₪ 0"
+                placeholder={`${CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency} 0`}
                 value={recAmt}
                 onChange={e => setRecAmt(e.target.value)}
                 inputMode="decimal"

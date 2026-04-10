@@ -509,7 +509,7 @@ export default function DashboardPage() {
 
             {/* Amount */}
             <div className="amount-row">
-              <span className="shekel-sym">₪</span>
+              <span className="shekel-sym">{CURRENCY_SYMBOL[txCurrency] ?? txCurrency}</span>
               <input
                 type="number"
                 className="amount-input"

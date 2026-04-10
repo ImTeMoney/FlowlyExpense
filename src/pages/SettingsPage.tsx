@@ -116,7 +116,7 @@ const SettingsPage: React.FC = () => {
         <div className="set-row">
           <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <PiggyBank size={13} color="#22C55E" />
-            יעד חסכון (₪)
+            יעד חסכון ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
           </span>
           <input
             type="number" className="set-input"
