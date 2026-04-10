@@ -449,9 +449,20 @@ export default function DashboardPage() {
                     <div className="inst-stepper">
                       <button type="button" className="inst-step-btn"
                         onClick={() => setNumInstallments(n => Math.max(1, n - 1))}>−</button>
-                      <span className="inst-step-val">{numInstallments}</span>
+                      <input
+                        type="number"
+                        className="inst-step-input"
+                        value={numInstallments}
+                        onChange={e => {
+                          const v = parseInt(e.target.value);
+                          if (!isNaN(v) && v >= 1 && v <= 100) setNumInstallments(v);
+                          else if (e.target.value === '') setNumInstallments(1);
+                        }}
+                        inputMode="numeric"
+                        min="1" max="100"
+                      />
                       <button type="button" className="inst-step-btn"
-                        onClick={() => setNumInstallments(n => Math.min(36, n + 1))}>+</button>
+                        onClick={() => setNumInstallments(n => Math.min(100, n + 1))}>+</button>
                       <span className="inst-step-lbl">תשלומים</span>
                     </div>
                     {amount && parseFloat(amount) > 0 && (

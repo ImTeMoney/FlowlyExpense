@@ -1218,13 +1218,21 @@ select.sm-in option { background: var(--modal-bg); }
   flex-shrink: 0;
 }
 .inst-step-btn:hover { background: rgba(139,92,246,0.22); }
-.inst-step-val {
+.inst-step-input {
   font-size: 22px;
   font-weight: 800;
   color: #8B5CF6;
-  min-width: 32px;
+  width: 52px;
   text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(139,92,246,0.4);
+  outline: none;
+  padding: 0 2px;
 }
+.inst-step-input::-webkit-outer-spin-button,
+.inst-step-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.inst-step-input[type=number] { -moz-appearance: textfield; }
 .inst-step-lbl {
   font-size: 13px;
   color: var(--text-muted);

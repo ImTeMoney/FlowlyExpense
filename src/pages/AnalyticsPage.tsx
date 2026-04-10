@@ -380,9 +380,20 @@ export default function AnalyticsPage() {
                     <div className="inst-stepper">
                       <button type="button" className="inst-step-btn"
                         onClick={() => setRecNumInst(n => Math.max(1, n - 1))}>−</button>
-                      <span className="inst-step-val">{recNumInst}</span>
+                      <input
+                        type="number"
+                        className="inst-step-input"
+                        value={recNumInst}
+                        onChange={e => {
+                          const v = parseInt(e.target.value);
+                          if (!isNaN(v) && v >= 1 && v <= 100) setRecNumInst(v);
+                          else if (e.target.value === '') setRecNumInst(1);
+                        }}
+                        inputMode="numeric"
+                        min="1" max="100"
+                      />
                       <button type="button" className="inst-step-btn"
-                        onClick={() => setRecNumInst(n => Math.min(36, n + 1))}>+</button>
+                        onClick={() => setRecNumInst(n => Math.min(100, n + 1))}>+</button>
                       <span className="inst-step-lbl">תשלומים</span>
                     </div>
                     {recAmt && parseFloat(recAmt) > 0 && (
