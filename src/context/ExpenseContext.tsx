@@ -15,6 +15,12 @@ export interface Category {
   isCustom?: boolean;
 }
 
+export interface InstallmentInfo {
+  current: number;
+  total: number;
+  groupId: string;
+}
+
 export interface Transaction {
   id: string;
   amount: number;
@@ -23,6 +29,7 @@ export interface Transaction {
   description: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
+  installments?: InstallmentInfo;
 }
 
 export interface RecurringExpense {
@@ -52,17 +59,18 @@ export interface AppState {
 }
 
 type Action =
-  | { type: 'ADD_TRANSACTION';      payload: Transaction }
-  | { type: 'DELETE_TRANSACTION';   payload: string }
-  | { type: 'ADD_RECURRING';        payload: RecurringExpense }
-  | { type: 'DELETE_RECURRING';     payload: string }
-  | { type: 'SET_BUDGET';           payload: number }
-  | { type: 'SET_SAVINGS_GOAL';     payload: number }
-  | { type: 'ADD_CATEGORY';         payload: Category }
-  | { type: 'DELETE_CATEGORY';      payload: string }
-  | { type: 'RENAME_CATEGORY';      payload: { id: string; name: string; color: string } }
-  | { type: 'UPDATE_LAST_POSTED';   payload: { id: string; month: string } }
-  | { type: 'SET_DASHBOARD_FILTER'; payload: Partial<DashboardFilter> };
+  | { type: 'ADD_TRANSACTION';           payload: Transaction }
+  | { type: 'DELETE_TRANSACTION';        payload: string }
+  | { type: 'DELETE_INSTALLMENT_GROUP';  payload: string }   // groupId
+  | { type: 'ADD_RECURRING';             payload: RecurringExpense }
+  | { type: 'DELETE_RECURRING';          payload: string }
+  | { type: 'SET_BUDGET';                payload: number }
+  | { type: 'SET_SAVINGS_GOAL';          payload: number }
+  | { type: 'ADD_CATEGORY';              payload: Category }
+  | { type: 'DELETE_CATEGORY';           payload: string }
+  | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string } }
+  | { type: 'UPDATE_LAST_POSTED';        payload: { id: string; month: string } }
+  | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -216,6 +224,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'DELETE_TRANSACTION':
         setTransactions(prev => prev.filter(t => t.id !== action.payload));
+        break;
+
+      case 'DELETE_INSTALLMENT_GROUP':
+        setTransactions(prev => prev.filter(t => t.installments?.groupId !== action.payload));
         break;
 
       case 'ADD_RECURRING':

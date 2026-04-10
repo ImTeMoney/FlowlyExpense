@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, PiggyBank,
+  Wallet, PiggyBank, Layers, Trash2,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -88,9 +88,11 @@ export default function DashboardPage() {
   const [catId, setCatId]         = useState(categories[0]?.id ?? '');
   const [desc, setDesc]           = useState('');
   const [date, setDate]           = useState(todayStr());
-  const [payMethod, setPayMethod] = useState<PaymentMethod>('credit');
-  const [toast, setToast]         = useState('');
-  const [toastTimer, setToastTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
+  const [splitEnabled, setSplitEnabled]   = useState(false);
+  const [numInstallments, setNumInstallments] = useState(3);
+  const [toast, setToast]                 = useState('');
+  const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const monthTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
   const spent      = useMemo(() => monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [monthTxns]);
@@ -114,6 +116,8 @@ export default function DashboardPage() {
     setAmount(''); setDesc(''); setDate(todayStr());
     setCatId(categories[0]?.id ?? '');
     setPayMethod('credit');
+    setSplitEnabled(false);
+    setNumInstallments(3);
     setShowModal(true);
   }
 
@@ -121,20 +125,52 @@ export default function DashboardPage() {
     const num = parseFloat(amount);
     if (!num || num <= 0 || !catId) return;
     const cat = categories.find(c => c.id === catId);
-    const tx: Transaction = {
-      id: `tx_${Date.now()}`,
-      amount: num, categoryId: catId,
-      date, description: desc.trim() || (cat?.name ?? ''),
-      isIncome,
-      paymentMethod: payMethod,
-    };
-    dispatch({ type: 'ADD_TRANSACTION', payload: tx });
+    const baseDesc = desc.trim() || (cat?.name ?? '');
+
+    if (!isIncome && splitEnabled && numInstallments > 1) {
+      // Create one transaction per installment spread across months
+      const groupId = `grp_${Date.now()}`;
+      const perInstallment = Math.round((num / numInstallments) * 100) / 100;
+      const [y, m, d] = date.split('-').map(Number);
+      for (let i = 0; i < numInstallments; i++) {
+        const dd = new Date(y, m - 1 + i, d);
+        const txDate = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
+        const installmentAmt = i === numInstallments - 1
+          ? Math.round((num - perInstallment * (numInstallments - 1)) * 100) / 100
+          : perInstallment;
+        const tx: Transaction = {
+          id: `tx_${Date.now()}_${i}`,
+          amount: installmentAmt,
+          categoryId: catId,
+          date: txDate,
+          description: baseDesc,
+          isIncome: false,
+          paymentMethod: payMethod,
+          installments: { current: i + 1, total: numInstallments, groupId },
+        };
+        dispatch({ type: 'ADD_TRANSACTION', payload: tx });
+      }
+    } else {
+      const tx: Transaction = {
+        id: `tx_${Date.now()}`,
+        amount: num, categoryId: catId,
+        date, description: baseDesc,
+        isIncome,
+        paymentMethod: payMethod,
+      };
+      dispatch({ type: 'ADD_TRANSACTION', payload: tx });
+    }
     setShowModal(false);
     showToast(t.added);
   }
 
   function handleDelete(id: string) {
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
+    showToast(t.deleted);
+  }
+
+  function handleDeleteGroup(groupId: string) {
+    dispatch({ type: 'DELETE_INSTALLMENT_GROUP', payload: groupId });
     showToast(t.deleted);
   }
 
@@ -302,6 +338,12 @@ export default function DashboardPage() {
                         <div className="txn-name">{tx.description}</div>
                         <div className="txn-meta">
                           <span className="txn-cat">{tx.isIncome ? t.income : (cat?.name ?? '')}</span>
+                          {tx.installments && (
+                            <span className="inst-badge">
+                              <Layers size={10} />
+                              {tx.installments.current}/{tx.installments.total}
+                            </span>
+                          )}
                           {tx.paymentMethod && PmIcon && (
                             <span className="txn-pm">
                               <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
@@ -313,6 +355,16 @@ export default function DashboardPage() {
                       <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
                         {tx.isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                       </div>
+                      {tx.installments && (
+                        <button
+                          className="txn-del txn-del-group"
+                          onClick={() => handleDeleteGroup(tx.installments!.groupId)}
+                          aria-label="Delete all installments"
+                          title="מחק את כל התשלומים"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                       <button
                         className="txn-del"
                         onClick={() => handleDelete(tx.id)}
@@ -414,6 +466,40 @@ export default function DashboardPage() {
                   })}
                 </div>
               </div>
+
+              {/* Installments */}
+              {!isIncome && (
+                <div className="split-section">
+                  <button
+                    type="button"
+                    className={`split-toggle-btn${splitEnabled ? ' active' : ''}`}
+                    onClick={() => setSplitEnabled(s => !s)}
+                  >
+                    <Layers size={14} />
+                    <span>חלוקה לתשלומים</span>
+                    <span className="split-toggle-pill">{splitEnabled ? 'פעיל' : 'כבוי'}</span>
+                  </button>
+                  {splitEnabled && (
+                    <div className="inst-chips">
+                      {[2, 3, 4, 6, 8, 10, 12, 18, 24, 36].map(n => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`inst-chip${numInstallments === n ? ' selected' : ''}`}
+                          onClick={() => setNumInstallments(n)}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {splitEnabled && amount && parseFloat(amount) > 0 && (
+                    <div className="split-preview">
+                      {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} לחודש
+                    </div>
+                  )}
+                </div>
+              )}
 
               <input
                 type="text"

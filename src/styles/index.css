@@ -1131,6 +1131,105 @@ select.sm-in option { background: var(--modal-bg); }
 /* (Single FAB defined above) */
 
 /* =====================================================
+   INSTALLMENTS / SPLIT
+   ===================================================== */
+/* Badge shown in transaction meta */
+.inst-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8B5CF6;
+  background: rgba(139,92,246,0.12);
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 5px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+
+/* Group-delete button (trash icon) */
+.txn-del-group {
+  color: var(--danger) !important;
+  opacity: 0.55;
+}
+.txn-del-group:hover { opacity: 1 !important; }
+
+/* Split section in modal */
+.split-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.split-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.split-toggle-btn.active {
+  border-color: rgba(139,92,246,0.5);
+  background: rgba(139,92,246,0.08);
+  color: #8B5CF6;
+}
+.split-toggle-pill {
+  margin-inline-start: auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--glass-border);
+  color: var(--text-muted);
+}
+.split-toggle-btn.active .split-toggle-pill {
+  background: rgba(139,92,246,0.2);
+  color: #8B5CF6;
+}
+
+/* Chips row for selecting number of installments */
+.inst-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.inst-chip {
+  min-width: 36px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.inst-chip.selected {
+  border-color: #8B5CF6;
+  background: rgba(139,92,246,0.15);
+  color: #8B5CF6;
+}
+
+/* Preview line: "3 × ₪400 לחודש" */
+.split-preview {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8B5CF6;
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
+/* =====================================================
    MODAL TYPE TOGGLE
    ===================================================== */
 .modal-type-toggle {
