@@ -396,30 +396,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Budget mini-bar — secondary info, appears below everything savings-related */}
-      {monthlyBudget > 0 && (() => {
-        const savings       = income - spent;
-        const savingsMet    = savingsGoal > 0 && savings >= savingsGoal;
-        const budgetPct     = spent / (monthlyBudget || 1);
-        // When savings goal is met → use neutral color so bar doesn't contradict good news above
-        const barColor = savingsMet
-          ? '#94A3B8'
-          : budgetPct > 0.9 ? '#EF4444' : budgetPct > 0.7 ? '#F59E0B' : '#8B5CF6';
-        return (
-          <div className="budget-mini-card">
-            <div className="budget-mini-label">
-              <span>תקציב הוצאות החודש</span>
-              <span>{formatCurrency(spent)} / {formatCurrency(monthlyBudget)}</span>
-            </div>
-            <div className="budget-mini-bar-bg">
-              <div
-                className="budget-mini-bar-fill"
-                style={{ width: `${Math.min(budgetPct * 100, 100)}%`, background: barColor }}
-              />
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Transaction feed */}
       <div className="txn-section">

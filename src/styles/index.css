@@ -770,7 +770,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: block; font-size: 22px; font-weight: 700; line-height: 1.1;
   color: var(--text);
 }
-.bcard-val.spent  { color: var(--danger); }
+.bcard-val.spent  { color: var(--text-secondary); }
 .bcard-val.left   { color: var(--success); }
 .bcard-val.over   { color: var(--danger); }
 .bcard-val.income-v { color: var(--success); }
@@ -820,7 +820,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .cb-track { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
 [data-theme="light"] .cb-track { background: rgba(0,0,0,0.08); }
 .cb-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
-.cb-amt { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; min-width: 72px; text-align: end; }
+.cb-amt { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: var(--text-muted); text-align: end; }
 
 .no-data { font-size: 13px; color: var(--text-dim); text-align: center; padding: 12px 0; }
 
@@ -1451,6 +1451,49 @@ select.sm-in option { background: var(--modal-bg); }
 .cb-change.down {
   color: var(--success);
   background: var(--success-dim);
+}
+
+/* cb-right: stacks amount + change % vertically, right-aligned */
+.cb-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  min-width: 72px;
+  gap: 2px;
+}
+
+/* cb-tags: inline context tags next to category name */
+.cb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.cat-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.5;
+}
+.cat-tag-fixed   { color: #8B5CF6; background: rgba(139,92,246,0.12); }
+.cat-tag-high    { color: #F59E0B; background: rgba(245,158,11,0.12); }
+.cat-tag-onetime { color: #94A3B8; background: rgba(148,163,184,0.12); }
+
+/* =====================================================
+   SETTINGS HELPER TEXT
+   ===================================================== */
+.settings-helper {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin: 4px 0 10px;
+  padding: 8px 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
 }
 
 /* =====================================================

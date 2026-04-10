@@ -147,7 +147,7 @@ const he: Translations = {
   salaryExample: 'משכורת',
   netflixExample: 'נטפליקס',
   saveRecurring: 'שמור',
-  overBudget: 'חריגה',
+  overBudget: 'מעל התכנון',
   day: 'יום',
   // Payment methods
   paymentMethod: 'אמצעי תשלום',
@@ -231,7 +231,7 @@ const en: Translations = {
   salaryExample: 'Salary',
   netflixExample: 'Netflix',
   saveRecurring: 'Save',
-  overBudget: 'Over budget',
+  overBudget: 'Above plan',
   day: 'Day',
   // Payment methods
   paymentMethod: 'Payment Method',

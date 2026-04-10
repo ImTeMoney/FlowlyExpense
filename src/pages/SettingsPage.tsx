@@ -93,30 +93,17 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── General Settings ── */}
+      {/* ── Financial Goals ── */}
       <div className="a-sec">
         <div className="a-sec-title">
-          <span className="title-text">{t.settings}</span>
+          <span className="title-text">יעדים פיננסיים</span>
         </div>
 
-        {/* Budget */}
-        <div className="set-row">
-          <span className="set-lbl">{t.monthlyBudget}</span>
-          <input
-            type="number" className="set-input"
-            value={budgetEdit}
-            onChange={e => setBudgetEdit(e.target.value)}
-            onBlur={saveBudget}
-            onKeyDown={e => e.key === 'Enter' && saveBudget()}
-            inputMode="numeric"
-          />
-        </div>
-
-        {/* Savings goal */}
+        {/* Savings goal — PRIMARY */}
         <div className="set-row">
           <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <PiggyBank size={13} color="#22C55E" />
-            יעד חסכון ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
+            יעד חיסכון ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
           </span>
           <input
             type="number" className="set-input"
@@ -128,6 +115,24 @@ const SettingsPage: React.FC = () => {
             inputMode="numeric"
           />
         </div>
+
+        {/* Budget — secondary */}
+        <div className="set-row">
+          <span className="set-lbl" style={{ opacity: 0.8 }}>{t.monthlyBudget}</span>
+          <input
+            type="number" className="set-input"
+            value={budgetEdit}
+            onChange={e => setBudgetEdit(e.target.value)}
+            onBlur={saveBudget}
+            onKeyDown={e => e.key === 'Enter' && saveBudget()}
+            inputMode="numeric"
+          />
+        </div>
+
+        <p className="settings-helper">
+          חיסכון = הכנסות − הוצאות. יעד החיסכון מגדיר כמה תרצה לחסוך בחודש.
+          התקציב עוקב אחר ההוצאות בלבד.
+        </p>
 
         {/* Main Currency */}
         <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
@@ -146,19 +151,23 @@ const SettingsPage: React.FC = () => {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* CSV Export */}
+      {/* ── Tools ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <span className="title-text">כלים</span>
+        </div>
+
         <button
           className="export-btn"
           onClick={exportCSV}
           disabled={monthTxns.length === 0}
-          style={{ marginTop: 6 }}
         >
           <Download size={13} />
           {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
         </button>
 
-        {/* Refresh app (useful when installed as PWA) */}
         <button
           className="export-btn"
           onClick={() => window.location.reload()}

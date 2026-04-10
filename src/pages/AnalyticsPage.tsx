@@ -24,7 +24,7 @@ const PM_COLOR: Record<string, string> = {
 export default function AnalyticsPage() {
   const { state, dispatch, formatCurrency } = useExpense();
   const { t, monthLabel } = useLang();
-  const { transactions, categories, recurringExpenses, monthlyBudget } = state;
+  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal } = state;
 
   // Month navigation
   const now = new Date();
@@ -54,9 +54,8 @@ export default function AnalyticsPage() {
 
   const spent      = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
   const income     = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-  const remaining  = monthlyBudget - spent;
-  const pct        = Math.min((spent / (monthlyBudget || 1)) * 100, 100);
-  const barClass   = pct > 90 ? 'danger' : pct > 70 ? 'warn' : '';
+  const savings    = income - spent;
+  const budgetPct  = Math.min((spent / (monthlyBudget || 1)) * 100, 100);
 
   const prevSpent  = prevTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
   const prevIncome = prevTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
@@ -70,17 +69,20 @@ export default function AnalyticsPage() {
   const daysPassed  = isCurrentMonth ? now.getDate() : daysInMonth;
   const dailyAvg    = daysPassed > 0 ? Math.round(spent / daysPassed) : 0;
 
-  // Category breakdown
+  // Category breakdown (with context tags)
   const catTotals = useMemo(() => {
     return categories
-      .map(cat => ({
-        cat,
-        total: monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0),
-        prevTotal: prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0),
-      }))
+      .map(cat => {
+        const catTxns  = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id);
+        const total    = catTxns.reduce((s,tx) => s + tx.amount, 0);
+        const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0);
+        const hasRecurring = recurringExpenses.some(r => r.categoryId === cat.id && !r.isIncome);
+        const txCount  = catTxns.length;
+        return { cat, total, prevTotal, hasRecurring, txCount };
+      })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
-  }, [categories, monthTxns, prevTxns]);
+  }, [categories, monthTxns, prevTxns, recurringExpenses]);
   const maxCat = catTotals[0]?.total || 1;
 
   // Payment method breakdown
@@ -161,31 +163,52 @@ export default function AnalyticsPage() {
         <button className="mnav-btn" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">›</button>
       </div>
 
-      {/* Budget overview */}
-      <div className="bcard">
-        <div className="bcard-nums">
-          <div className="bcard-block">
-            <span className="bcard-val spent">{formatCurrency(spent)}</span>
-            <div className="bcard-lbl">{t.spent}</div>
-          </div>
-          {income > 0 && (
-            <div className="bcard-block">
-              <span className="bcard-val income-v">+{formatCurrency(income)}</span>
-              <div className="bcard-lbl">{t.income}</div>
+      {/* Savings overview card */}
+      {(() => {
+        const hasSavingsGoal = savingsGoal > 0;
+        const savingsPct = hasSavingsGoal ? Math.min(Math.max(0, savings / savingsGoal), 1) : null;
+        const barPct = hasSavingsGoal ? (savingsPct! * 100) : budgetPct;
+        const barColor = hasSavingsGoal
+          ? (savingsPct! >= 1 ? '#22C55E' : savingsPct! >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444')
+          : (budgetPct > 90 ? '#EF4444' : budgetPct > 70 ? '#F59E0B' : '#8B5CF6');
+        const statusText = hasSavingsGoal
+          ? savings > savingsGoal
+            ? `+${formatCurrency(savings - savingsGoal)} מעל היעד`
+            : savings >= savingsGoal * 0.9
+              ? `${Math.round(savings / savingsGoal * 100)}% מהיעד · כמעט שם`
+              : `${Math.round(Math.max(0, savings / savingsGoal) * 100)}% מיעד החיסכון`
+          : income > 0
+            ? `מרווח: ${formatCurrency(income - spent)}`
+            : `${Math.round(budgetPct)}% מהתקציב`;
+        return (
+          <div className="bcard">
+            <div className="bcard-nums">
+              <div className="bcard-block">
+                <span className="bcard-val" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  {formatCurrency(Math.max(0, savings))}
+                </span>
+                <div className="bcard-lbl">נשמר החודש</div>
+              </div>
+              {income > 0 && (
+                <div className="bcard-block">
+                  <span className="bcard-val income-v">+{formatCurrency(income)}</span>
+                  <div className="bcard-lbl">{t.income}</div>
+                </div>
+              )}
+              <div className="bcard-block">
+                <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
+                <div className="bcard-lbl">הוצאות</div>
+              </div>
             </div>
-          )}
-          <div className="bcard-block">
-            <span className={`bcard-val ${remaining >= 0 ? 'left' : 'over'}`}>
-              {formatCurrency(Math.abs(remaining))}
-            </span>
-            <div className="bcard-lbl">{remaining >= 0 ? t.remaining : t.overBudget}</div>
+            <div className="budget-bar">
+              <div className="budget-bar-fill" style={{ width: `${barPct}%`, background: barColor }} />
+            </div>
+            <div className="bcard-of" style={{ color: hasSavingsGoal && savings >= savingsGoal ? 'var(--success)' : 'var(--text-dim)' }}>
+              {statusText}{hasSavingsGoal ? ` · יעד: ${formatCurrency(savingsGoal)}` : ''}
+            </div>
           </div>
-        </div>
-        <div className="budget-bar">
-          <div className={`budget-bar-fill ${barClass}`} style={{ width: `${pct}%` }} />
-        </div>
-        <div className="bcard-of">{Math.round(pct)}% {t.of} {formatCurrency(monthlyBudget)}</div>
-      </div>
+        );
+      })()}
 
       {/* Monthly comparison */}
       <div className="a-sec">
@@ -219,9 +242,11 @@ export default function AnalyticsPage() {
         {catTotals.length === 0 ? (
           <div className="no-data">{t.noData}</div>
         ) : (
-          catTotals.map(({ cat, total, prevTotal }) => {
-            const Icon = CAT_ICON[cat.id] ?? Package;
+          catTotals.map(({ cat, total, prevTotal, hasRecurring, txCount }) => {
+            const Icon   = CAT_ICON[cat.id] ?? Package;
             const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
+            const isHigher  = prevTotal > 0 && change > 30;
+            const isOneTime = txCount === 1 && !hasRecurring;
             return (
               <div key={cat.id} className="cb-row">
                 <div className="cb-icon" style={{ background: `${cat.color}18` }}>
@@ -230,20 +255,24 @@ export default function AnalyticsPage() {
                 <div className="cb-info">
                   <div className="cb-name-row">
                     <span className="cb-name">{cat.name}</span>
-                    {prevTotal > 0 && change !== 0 && (
-                      <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
-                        {change > 0 ? '+' : ''}{change}%
-                      </span>
-                    )}
+                    <div className="cb-tags">
+                      {hasRecurring && <span className="cat-tag cat-tag-fixed">קבוע</span>}
+                      {isHigher     && <span className="cat-tag cat-tag-high">גבוה מהרגיל</span>}
+                      {isOneTime    && <span className="cat-tag cat-tag-onetime">חד פעמי</span>}
+                    </div>
                   </div>
                   <div className="cb-track">
-                    <div
-                      className="cb-fill"
-                      style={{ width: `${(total/maxCat)*100}%`, background: cat.color }}
-                    />
+                    <div className="cb-fill" style={{ width: `${(total/maxCat)*100}%`, background: cat.color }} />
                   </div>
                 </div>
-                <span className="cb-amt">{formatCurrency(total)}</span>
+                <div className="cb-right">
+                  <span className="cb-amt">{formatCurrency(total)}</span>
+                  {prevTotal > 0 && change !== 0 && (
+                    <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
+                      {change > 0 ? '+' : ''}{change}%
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })
