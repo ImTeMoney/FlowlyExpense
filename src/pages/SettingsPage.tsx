@@ -10,7 +10,7 @@ const SettingsPage: React.FC = () => {
   const { t, toggleLang, lang, monthLabel } = useLang();
   const [theme, toggleTheme] = useTheme();
 
-  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency } = state;
+  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
 
   // Budget
   const [budgetEdit, setBudgetEdit] = useState(String(monthlyBudget));
@@ -78,7 +78,7 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="page" style={{ paddingBottom: 90 }}>
 
-      {/* Header — same as Dashboard */}
+      {/* Header */}
       <div className="aether-header">
         <div className="header-row">
           <div className="header-brand">הגדרות</div>
@@ -93,46 +93,96 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Financial Goals ── */}
+      {/* ── Money Management Mode ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <span className="title-text">איך אתה מנהל את הכסף שלך?</span>
+        </div>
+        <div className="mode-selector">
+          <button
+            className={`mode-btn${moneyMode === 'savings_based' ? ' active' : ''}`}
+            onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'savings_based' })}
+          >
+            <span className="mode-icon">🎯</span>
+            <span className="mode-label">מעקב חיסכון</span>
+            <span className="mode-desc">מזין הכנסות והוצאות, עוקב על מה שנשמר</span>
+          </button>
+          <button
+            className={`mode-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
+            onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' })}
+          >
+            <span className="mode-icon">📊</span>
+            <span className="mode-label">מעקב תקציב</span>
+            <span className="mode-desc">מנהל לפי תקציב חודשי, ללא צורך ברישום הכנסות</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Financial Goals (mode-dependent) ── */}
       <div className="a-sec">
         <div className="a-sec-title">
           <span className="title-text">יעדים פיננסיים</span>
         </div>
 
-        {/* Savings goal — PRIMARY */}
-        <div className="set-row">
-          <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <PiggyBank size={13} color="#22C55E" />
-            יעד חיסכון ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
-          </span>
-          <input
-            type="number" className="set-input"
-            placeholder="0"
-            value={goalEdit}
-            onChange={e => setGoalEdit(e.target.value)}
-            onBlur={saveGoal}
-            onKeyDown={e => e.key === 'Enter' && saveGoal()}
-            inputMode="numeric"
-          />
-        </div>
+        {moneyMode === 'savings_based' ? (
+          <>
+            {/* Savings goal — PRIMARY */}
+            <div className="set-row">
+              <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <PiggyBank size={13} color="#22C55E" />
+                יעד חיסכון ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
+              </span>
+              <input
+                type="number" className="set-input"
+                placeholder="0"
+                value={goalEdit}
+                onChange={e => setGoalEdit(e.target.value)}
+                onBlur={saveGoal}
+                onKeyDown={e => e.key === 'Enter' && saveGoal()}
+                inputMode="numeric"
+              />
+            </div>
 
-        {/* Budget — secondary */}
-        <div className="set-row">
-          <span className="set-lbl" style={{ opacity: 0.8 }}>{t.monthlyBudget}</span>
-          <input
-            type="number" className="set-input"
-            value={budgetEdit}
-            onChange={e => setBudgetEdit(e.target.value)}
-            onBlur={saveBudget}
-            onKeyDown={e => e.key === 'Enter' && saveBudget()}
-            inputMode="numeric"
-          />
-        </div>
+            {/* Budget — optional secondary */}
+            <div className="set-row">
+              <span className="set-lbl" style={{ opacity: 0.75 }}>
+                {t.monthlyBudget}
+                <span style={{ fontSize: 10, marginRight: 4, opacity: 0.6 }}>(אופציונלי)</span>
+              </span>
+              <input
+                type="number" className="set-input"
+                value={budgetEdit}
+                onChange={e => setBudgetEdit(e.target.value)}
+                onBlur={saveBudget}
+                onKeyDown={e => e.key === 'Enter' && saveBudget()}
+                inputMode="numeric"
+              />
+            </div>
 
-        <p className="settings-helper">
-          חיסכון = הכנסות − הוצאות. יעד החיסכון מגדיר כמה תרצה לחסוך בחודש.
-          התקציב עוקב אחר ההוצאות בלבד.
-        </p>
+            <p className="settings-helper">
+              חיסכון = הכנסות − הוצאות. הקפד לרשום גם הכנסות כדי לקבל תמונה מלאה.
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Budget — PRIMARY */}
+            <div className="set-row">
+              <span className="set-lbl">{t.monthlyBudget} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})</span>
+              <input
+                type="number" className="set-input"
+                value={budgetEdit}
+                onChange={e => setBudgetEdit(e.target.value)}
+                onBlur={saveBudget}
+                onKeyDown={e => e.key === 'Enter' && saveBudget()}
+                inputMode="numeric"
+              />
+            </div>
+
+            <p className="settings-helper">
+              האפליקציה עוקבת אחר ההוצאות שלך מול התקציב החודשי. אין צורך לרשום הכנסות.
+            </p>
+          </>
+        )}
 
         {/* Main Currency */}
         <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
@@ -153,31 +203,6 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Tools ── */}
-      <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text">כלים</span>
-        </div>
-
-        <button
-          className="export-btn"
-          onClick={exportCSV}
-          disabled={monthTxns.length === 0}
-        >
-          <Download size={13} />
-          {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
-        </button>
-
-        <button
-          className="export-btn"
-          onClick={() => window.location.reload()}
-          style={{ marginTop: 6 }}
-        >
-          <RefreshCw size={13} />
-          רענן אפליקציה
-        </button>
-      </div>
-
       {/* ── Category Manager ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -190,7 +215,6 @@ const SettingsPage: React.FC = () => {
         {state.categories.map(cat => (
           <div key={cat.id} className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
             {editingId === cat.id ? (
-              /* ── Edit mode ── */
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
                 <input
                   autoFocus
@@ -224,7 +248,6 @@ const SettingsPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* ── View mode ── */
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
@@ -272,6 +295,29 @@ const SettingsPage: React.FC = () => {
             <Plus size={13} /> הוסף קטגוריה
           </button>
         </form>
+      </div>
+
+      {/* ── Tools ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <span className="title-text">כלים</span>
+        </div>
+        <button
+          className="export-btn"
+          onClick={exportCSV}
+          disabled={monthTxns.length === 0}
+        >
+          <Download size={13} />
+          {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
+        </button>
+        <button
+          className="export-btn"
+          onClick={() => window.location.reload()}
+          style={{ marginTop: 6 }}
+        >
+          <RefreshCw size={13} />
+          רענן אפליקציה
+        </button>
       </div>
 
     </div>

@@ -4,6 +4,7 @@ import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'check' | 'transfer' | 'bit' | 'applepay';
+export type MoneyMode = 'savings_based' | 'budget_based';
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
   'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay',
@@ -63,6 +64,7 @@ export interface AppState {
   savingsGoal: number;
   dashboardFilter: DashboardFilter;
   mainCurrency: string;
+  moneyMode: MoneyMode;
 }
 
 type Action =
@@ -79,7 +81,8 @@ type Action =
   | { type: 'UPDATE_LAST_POSTED';        payload: { id: string; month: string } }
   | { type: 'SET_RECURRING_INSTALLMENTS'; payload: { id: string; totalInstallments: number } }
   | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> }
-  | { type: 'SET_MAIN_CURRENCY';         payload: string };
+  | { type: 'SET_MAIN_CURRENCY';         payload: string }
+  | { type: 'SET_MONEY_MODE';            payload: MoneyMode };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -112,6 +115,7 @@ const STORAGE_KEYS = {
   CATEGORIES:      'expense_categories_v2',
   DEVICE_ID:       'expense_device_id',
   MAIN_CURRENCY:   'expense_main_currency',
+  MONEY_MODE:      'expense_money_mode',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -195,6 +199,13 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [mainCurrency, setMainCurrency] = useState<string>(() =>
     localStorage.getItem(STORAGE_KEYS.MAIN_CURRENCY) ?? 'ILS'
   );
+  const [moneyMode, setMoneyMode] = useState<MoneyMode>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.MONEY_MODE);
+    if (stored === 'savings_based' || stored === 'budget_based') return stored;
+    // Auto-detect: existing users with a savings goal default to savings_based
+    const savedGoal = loadFromStorage<number>(STORAGE_KEYS.SAVINGS_GOAL, 0);
+    return savedGoal > 0 ? 'savings_based' : 'budget_based';
+  });
 
   const deviceId = useMemo(() => getDeviceId(), []);
 
@@ -223,6 +234,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.MAIN_CURRENCY, mainCurrency);
   }, [mainCurrency]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MONEY_MODE, moneyMode);
+  }, [moneyMode]);
 
   // Auto-post recurring expenses on mount
   useEffect(() => {
@@ -327,6 +341,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'SET_MAIN_CURRENCY':
         setMainCurrency(action.payload);
         break;
+
+      case 'SET_MONEY_MODE':
+        setMoneyMode(action.payload);
+        break;
     }
   }, []);
 
@@ -338,7 +356,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     savingsGoal,
     dashboardFilter,
     mainCurrency,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency]);
+    moneyMode,
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;

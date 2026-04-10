@@ -1483,6 +1483,74 @@ select.sm-in option { background: var(--modal-bg); }
 .cat-tag-onetime { color: #94A3B8; background: rgba(148,163,184,0.12); }
 
 /* =====================================================
+   MONEY MODE SELECTOR
+   ===================================================== */
+.mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--glass-bg);
+  border: 1.5px solid var(--glass-border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  width: 100%;
+  position: relative;
+}
+
+.mode-btn.active {
+  border-color: var(--purple);
+  background: rgba(139,92,246,0.08);
+}
+
+.mode-btn.active::before {
+  content: '✓';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--purple);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mode-icon {
+  font-size: 18px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.mode-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.mode-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ring-no-goal: small hint shown inside ring when no goal is set */
+.ring-no-goal {
+  font-size: 10px !important;
+  color: var(--text-dim) !important;
+  text-align: center;
+  max-width: 100px;
+  line-height: 1.3;
+}
+
+/* =====================================================
    SETTINGS HELPER TEXT
    ===================================================== */
 .settings-helper {

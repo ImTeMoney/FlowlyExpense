@@ -163,51 +163,93 @@ export default function AnalyticsPage() {
         <button className="mnav-btn" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">›</button>
       </div>
 
-      {/* Savings overview card */}
+      {/* Summary card — layout switches per moneyMode */}
       {(() => {
-        const hasSavingsGoal = savingsGoal > 0;
-        const savingsPct = hasSavingsGoal ? Math.min(Math.max(0, savings / savingsGoal), 1) : null;
-        const barPct = hasSavingsGoal ? (savingsPct! * 100) : budgetPct;
-        const barColor = hasSavingsGoal
-          ? (savingsPct! >= 1 ? '#22C55E' : savingsPct! >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444')
-          : (budgetPct > 90 ? '#EF4444' : budgetPct > 70 ? '#F59E0B' : '#8B5CF6');
-        const statusText = hasSavingsGoal
-          ? savings > savingsGoal
-            ? `+${formatCurrency(savings - savingsGoal)} מעל היעד`
-            : savings >= savingsGoal * 0.9
-              ? `${Math.round(savings / savingsGoal * 100)}% מהיעד · כמעט שם`
-              : `${Math.round(Math.max(0, savings / savingsGoal) * 100)}% מיעד החיסכון`
-          : income > 0
-            ? `מרווח: ${formatCurrency(income - spent)}`
-            : `${Math.round(budgetPct)}% מהתקציב`;
-        return (
-          <div className="bcard">
-            <div className="bcard-nums">
-              <div className="bcard-block">
-                <span className="bcard-val" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
-                  {formatCurrency(Math.max(0, savings))}
-                </span>
-                <div className="bcard-lbl">נשמר החודש</div>
-              </div>
-              {income > 0 && (
+        const { moneyMode } = state;
+
+        if (moneyMode === 'savings_based') {
+          const goal     = savingsGoal;
+          const pct      = goal > 0 ? Math.min(Math.max(0, savings / goal), 1) : 0;
+          const barColor = pct >= 1 ? '#22C55E' : pct >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444';
+          const statusText = goal > 0
+            ? savings > goal
+              ? `+${formatCurrency(savings - goal)} מעל היעד`
+              : `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · כמעט שם' : ''}`
+            : income > 0 ? `חיסכון: ${formatCurrency(savings)}` : 'אין הכנסות רשומות לחודש זה';
+          return (
+            <div className="bcard">
+              <div className="bcard-nums">
                 <div className="bcard-block">
-                  <span className="bcard-val income-v">+{formatCurrency(income)}</span>
-                  <div className="bcard-lbl">{t.income}</div>
+                  <span className="bcard-val" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                    {formatCurrency(Math.max(0, savings))}
+                  </span>
+                  <div className="bcard-lbl">נשמר החודש</div>
+                </div>
+                {income > 0 && (
+                  <div className="bcard-block">
+                    <span className="bcard-val income-v">+{formatCurrency(income)}</span>
+                    <div className="bcard-lbl">{t.income}</div>
+                  </div>
+                )}
+                <div className="bcard-block">
+                  <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
+                  <div className="bcard-lbl">הוצאות</div>
+                </div>
+              </div>
+              {goal > 0 && (
+                <div className="budget-bar">
+                  <div className="budget-bar-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
                 </div>
               )}
-              <div className="bcard-block">
-                <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
-                <div className="bcard-lbl">הוצאות</div>
+              <div className="bcard-of" style={{ color: goal > 0 && savings >= goal ? 'var(--success)' : 'var(--text-dim)' }}>
+                {statusText}{goal > 0 ? ` · יעד: ${formatCurrency(goal)}` : ''}
               </div>
             </div>
-            <div className="budget-bar">
-              <div className="budget-bar-fill" style={{ width: `${barPct}%`, background: barColor }} />
+          );
+        } else {
+          // budget_based
+          const goal      = monthlyBudget;
+          const remaining = goal - spent;
+          const pct       = goal > 0 ? Math.min(spent / goal, 1) : 0;
+          const barColor  = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
+          const statusText = goal > 0
+            ? remaining < 0
+              ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`
+              : `נשאר ${formatCurrency(remaining)} · ${Math.round((1 - pct) * 100)}% מהתקציב`
+            : `הוצאות החודש`;
+          return (
+            <div className="bcard">
+              <div className="bcard-nums">
+                <div className="bcard-block">
+                  <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
+                  <div className="bcard-lbl">הוצאות</div>
+                </div>
+                {goal > 0 && (
+                  <div className="bcard-block">
+                    <span className="bcard-val" style={{ color: remaining >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                      {formatCurrency(Math.abs(remaining))}
+                    </span>
+                    <div className="bcard-lbl">{remaining >= 0 ? 'נותר' : 'מעל התכנון'}</div>
+                  </div>
+                )}
+                {income > 0 && (
+                  <div className="bcard-block">
+                    <span className="bcard-val income-v">+{formatCurrency(income)}</span>
+                    <div className="bcard-lbl">{t.income}</div>
+                  </div>
+                )}
+              </div>
+              {goal > 0 && (
+                <div className="budget-bar">
+                  <div className="budget-bar-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                </div>
+              )}
+              <div className="bcard-of" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--text-dim)' }}>
+                {statusText}{goal > 0 ? ` · תקציב: ${formatCurrency(goal)}` : ''}
+              </div>
             </div>
-            <div className="bcard-of" style={{ color: hasSavingsGoal && savings >= savingsGoal ? 'var(--success)' : 'var(--text-dim)' }}>
-              {statusText}{hasSavingsGoal ? ` · יעד: ${formatCurrency(savingsGoal)}` : ''}
-            </div>
-          </div>
-        );
+          );
+        }
       })()}
 
       {/* Monthly comparison */}

@@ -8,6 +8,7 @@ import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../cont
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
+import { useMoneyMode } from '../hooks/useMoneyMode';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
 
 // ── Payment method icons ────────────────────────────────────────
@@ -44,46 +45,25 @@ function groupByDate(txns: Transaction[]) {
   return map;
 }
 
-// ── Savings Ring ──────────────────────────────────────────────
-// Shows savings progress vs goal. Falls back to budget ring when no goal is set.
-function SavingsRing({ savings, goal, spent, budget }: { savings: number; goal: number; spent: number; budget: number }) {
-  const r = 80;
-  const cx = 98, cy = 98;
+// ── Progress Ring ────────────────────────────────────────────
+// Pure display: receives pre-computed pct and color from useMoneyMode.
+function ProgressRing({ pct, color }: { pct: number; color: string }) {
+  const r = 80, cx = 98, cy = 98;
   const circumference = 2 * Math.PI * r;
-
-  let pct: number;
-  let color: string;
-  let glow: string;
-
-  if (goal > 0) {
-    // Savings mode: progress toward savings goal
-    pct   = Math.min(Math.max(0, savings / goal), 1);
-    color = pct >= 1 ? '#22C55E' : pct >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444';
-    glow  = pct >= 1 ? 'rgba(34,197,94,0.45)' : pct >= 0.8 ? 'rgba(245,158,11,0.45)' : savings > 0 ? 'rgba(139,92,246,0.45)' : 'rgba(239,68,68,0.45)';
-  } else {
-    // Budget fallback
-    pct   = Math.min(spent / (budget || 1), 1);
-    color = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
-    glow  = pct > 0.9 ? 'rgba(239,68,68,0.45)' : pct > 0.7 ? 'rgba(245,158,11,0.45)' : 'rgba(139,92,246,0.45)';
-  }
-
-  const dash = circumference * pct;
-
+  const dash = circumference * Math.min(pct, 1);
   return (
     <svg viewBox="0 0 196 196" width="196" height="196" aria-hidden="true">
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="13" />
       {pct > 0 && (
         <circle
-          cx={cx} cy={cy} r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth="13"
+          cx={cx} cy={cy} r={r} fill="none"
+          stroke={color} strokeWidth="13"
           strokeDasharray={`${dash} ${circumference - dash}`}
           strokeDashoffset={circumference / 4}
           strokeLinecap="round"
           style={{
             transition: 'stroke-dasharray 0.8s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s',
-            filter: `drop-shadow(0 0 8px ${glow})`,
+            filter: `drop-shadow(0 0 8px ${color}72)`,
           }}
         />
       )}
@@ -95,8 +75,9 @@ function SavingsRing({ savings, goal, spent, budget }: { savings: number; goal: 
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel } = useLang();
-  const { categories, monthlyBudget, savingsGoal, recurringExpenses, transactions, mainCurrency } = state;
+  const { categories, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
+  const kpi = useMoneyMode();
 
   const [showModal, setShowModal] = useState(false);
   const [isIncome, setIsIncome]   = useState(false);
@@ -115,9 +96,7 @@ export default function DashboardPage() {
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  const monthTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
-  const spent      = useMemo(() => monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [monthTxns]);
-  const income     = useMemo(() => monthTxns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [monthTxns]);
+  const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
@@ -278,96 +257,49 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Savings Ring */}
-      {(() => {
-        const savings = income - spent;
-        const gap     = savings - savingsGoal; // positive = exceeded goal
-
-        // Status message — precise, not generic
-        const statusMsg = savingsGoal > 0
-          ? gap > 0.005
-            ? `עברת את היעד ב־${formatCurrency(gap)} 💪`
-            : Math.abs(gap) <= 0.005
-              ? 'עמדת בדיוק ביעד 🎯'
-              : savings >= savingsGoal * 0.9
-                ? 'כמעט הגעת ליעד'
-                : `חסר לך ${formatCurrency(savingsGoal - savings)} כדי להגיע ליעד`
-          : null;
-
-        const statusColor = savingsGoal > 0
-          ? gap > 0 ? '#22C55E' : savings >= savingsGoal * 0.9 ? '#F59E0B' : 'var(--text-muted)'
-          : undefined;
-
-        return (
-          <div className="spend-ring-wrap">
-            <div className="spend-ring-container">
-              <SavingsRing savings={savings} goal={savingsGoal} spent={spent} budget={monthlyBudget} />
-              <div className="spend-ring-center">
-                {savingsGoal > 0 ? (
-                  <>
-                    <span className="ring-label">חיסכון</span>
-                    <span className="ring-amount">{formatCurrency(Math.max(0, savings))}</span>
-                    <span className="ring-of">מתוך {formatCurrency(savingsGoal)}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="ring-label">{t.spent}</span>
-                    <span className="ring-amount">{formatCurrency(spent)}</span>
-                    <span className="ring-of">{t.of} {formatCurrency(monthlyBudget)}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Status message */}
-            {statusMsg && (
-              <div className="ring-status" style={{ color: statusColor }}>{statusMsg}</div>
-            )}
-
-            {/* Gap indicator — +/- vs goal */}
-            {savingsGoal > 0 && (
-              <div className="ring-gap" style={{ color: gap >= 0 ? '#22C55E' : 'var(--text-dim)' }}>
-                {gap >= 0
-                  ? `+${formatCurrency(gap)} מעל היעד`
-                  : `-${formatCurrency(Math.abs(gap))} מהיעד`
-                }
-              </div>
+      {/* Progress Ring — driven entirely by useMoneyMode */}
+      <div className="spend-ring-wrap">
+        <div className="spend-ring-container">
+          <ProgressRing pct={kpi.progress} color={kpi.color} />
+          <div className="spend-ring-center">
+            {kpi.hasGoal ? (
+              <>
+                <span className="ring-label">{kpi.ringLabel}</span>
+                <span className="ring-amount">{formatCurrency(kpi.ringValue)}</span>
+                <span className="ring-of">{t.of} {formatCurrency(kpi.ringGoal)}</span>
+              </>
+            ) : (
+              <>
+                <span className="ring-label">{kpi.ringLabel}</span>
+                <span className="ring-amount">{formatCurrency(kpi.ringValue)}</span>
+                <span className="ring-of ring-no-goal">{kpi.statusMsg}</span>
+              </>
             )}
           </div>
-        );
-      })()}
+        </div>
+        {kpi.hasGoal && (
+          <>
+            <div className="ring-status" style={{ color: kpi.statusColor }}>{kpi.statusMsg}</div>
+            {kpi.gapLabel && (
+              <div className="ring-gap" style={{ color: kpi.gapColor }}>{kpi.gapLabel}</div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Summary line */}
-      {income > 0 && (
-        <div className="summary-line">
-          <span className="sum-income">הכנסת {formatCurrency(income)}</span>
-          <span className="sum-sep">·</span>
-          <span className="sum-expense">הוצאת {formatCurrency(spent)}</span>
-          {income - spent > 0 && (
-            <>
-              <span className="sum-sep">·</span>
-              <span className="sum-savings">חיסכון {formatCurrency(income - spent)}</span>
-            </>
-          )}
-        </div>
+      {kpi.summaryLine && (
+        <div className="summary-line">{kpi.summaryLine}</div>
       )}
 
-      {/* Stats row */}
+      {/* Stats row — mode-aware chips from hook */}
       <div className="stats-row">
-        <div className="stat-chip">
-          <span className="stat-chip-lbl">הוצאות</span>
-          <span className="stat-chip-val">{formatCurrency(spent)}</span>
-        </div>
-        <div className="stat-chip">
-          <span className="stat-chip-lbl">הכנסות</span>
-          <span className={`stat-chip-val ${income > 0 ? 'green' : ''}`}>
-            {formatCurrency(income)}
-          </span>
-        </div>
-        <div className="stat-chip">
-          <span className="stat-chip-lbl">{t.transactions}</span>
-          <span className="stat-chip-val gold">{monthTxns.length}</span>
-        </div>
+        {kpi.statsChips.map(chip => (
+          <div key={chip.label} className="stat-chip">
+            <span className="stat-chip-lbl">{chip.label}</span>
+            <span className={`stat-chip-val ${chip.colorClass}`}>{chip.value}</span>
+          </div>
+        ))}
       </div>
 
       {/* Planned recurring this month */}
