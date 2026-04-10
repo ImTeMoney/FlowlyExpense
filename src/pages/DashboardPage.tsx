@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, PiggyBank, GitFork, Trash2,
+  Wallet, GitFork, Trash2,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -44,15 +44,30 @@ function groupByDate(txns: Transaction[]) {
   return map;
 }
 
-// ── Spend Ring ────────────────────────────────────────────────
-function SpendRing({ spent, budget }: { spent: number; budget: number }) {
+// ── Savings Ring ──────────────────────────────────────────────
+// Shows savings progress vs goal. Falls back to budget ring when no goal is set.
+function SavingsRing({ savings, goal, spent, budget }: { savings: number; goal: number; spent: number; budget: number }) {
   const r = 80;
   const cx = 98, cy = 98;
   const circumference = 2 * Math.PI * r;
-  const pct   = Math.min(spent / (budget || 1), 1);
-  const dash  = circumference * pct;
-  const color = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
-  const glow  = pct > 0.9 ? 'rgba(239,68,68,0.45)' : pct > 0.7 ? 'rgba(245,158,11,0.45)' : 'rgba(139,92,246,0.45)';
+
+  let pct: number;
+  let color: string;
+  let glow: string;
+
+  if (goal > 0) {
+    // Savings mode: progress toward savings goal
+    pct   = Math.min(Math.max(0, savings / goal), 1);
+    color = pct >= 1 ? '#22C55E' : pct >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444';
+    glow  = pct >= 1 ? 'rgba(34,197,94,0.45)' : pct >= 0.8 ? 'rgba(245,158,11,0.45)' : savings > 0 ? 'rgba(139,92,246,0.45)' : 'rgba(239,68,68,0.45)';
+  } else {
+    // Budget fallback
+    pct   = Math.min(spent / (budget || 1), 1);
+    color = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
+    glow  = pct > 0.9 ? 'rgba(239,68,68,0.45)' : pct > 0.7 ? 'rgba(245,158,11,0.45)' : 'rgba(139,92,246,0.45)';
+  }
+
+  const dash = circumference * pct;
 
   return (
     <svg viewBox="0 0 196 196" width="196" height="196" aria-hidden="true">
@@ -107,8 +122,6 @@ export default function DashboardPage() {
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
-  const remaining  = monthlyBudget - spent;
-  const todaySpent = useMemo(() => transactions.filter(tx => tx.date === todayStr() && !tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [transactions]);
   const grouped    = useMemo(() => groupByDate(monthTxns), [monthTxns]);
 
   // Live exchange rate preview when currency differs from main
@@ -265,30 +278,73 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Spend Ring */}
-      <div className="spend-ring-wrap">
-        <div className="spend-ring-container">
-          <SpendRing spent={spent} budget={monthlyBudget} />
-          <div className="spend-ring-center">
-            <span className="ring-label">{t.spent}</span>
-            <span className="ring-amount">{formatCurrency(spent)}</span>
-            <span className="ring-of">{t.of} {formatCurrency(monthlyBudget)}</span>
+      {/* Savings Ring */}
+      {(() => {
+        const savings = income - spent;
+        const savingsPct = savingsGoal > 0 ? savings / savingsGoal : null;
+        const statusMsg = savingsGoal > 0
+          ? savings >= savingsGoal
+            ? 'עמדת ביעד! 💪'
+            : savings >= savingsGoal * 0.9
+              ? 'כמעט הגעת ליעד 🎯'
+              : `חסר לך ${formatCurrency(Math.max(0, savingsGoal - savings))} כדי להגיע ליעד`
+          : null;
+        const statusColor = savingsGoal > 0
+          ? savings >= savingsGoal ? '#22C55E' : savings >= savingsGoal * 0.9 ? '#F59E0B' : 'var(--text-muted)'
+          : undefined;
+
+        return (
+          <div className="spend-ring-wrap">
+            <div className="spend-ring-container">
+              <SavingsRing savings={savings} goal={savingsGoal} spent={spent} budget={monthlyBudget} />
+              <div className="spend-ring-center">
+                {savingsGoal > 0 ? (
+                  <>
+                    <span className="ring-label">חיסכון</span>
+                    <span className="ring-amount">{formatCurrency(Math.max(0, savings))}</span>
+                    <span className="ring-of">מתוך {formatCurrency(savingsGoal)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="ring-label">{t.spent}</span>
+                    <span className="ring-amount">{formatCurrency(spent)}</span>
+                    <span className="ring-of">{t.of} {formatCurrency(monthlyBudget)}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            {statusMsg && (
+              <div className="ring-status" style={{ color: statusColor }}>{statusMsg}</div>
+            )}
           </div>
+        );
+      })()}
+
+      {/* Summary line */}
+      {income > 0 && (
+        <div className="summary-line">
+          <span className="sum-income">הכנסת {formatCurrency(income)}</span>
+          <span className="sum-sep">·</span>
+          <span className="sum-expense">הוצאת {formatCurrency(spent)}</span>
+          {income - spent > 0 && (
+            <>
+              <span className="sum-sep">·</span>
+              <span className="sum-savings">חיסכון {formatCurrency(income - spent)}</span>
+            </>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Stats row */}
       <div className="stats-row">
         <div className="stat-chip">
-          <span className="stat-chip-lbl">{t.today}</span>
-          <span className={`stat-chip-val ${todaySpent > 0 ? 'red' : ''}`}>
-            {formatCurrency(todaySpent)}
-          </span>
+          <span className="stat-chip-lbl">הוצאות</span>
+          <span className="stat-chip-val">{formatCurrency(spent)}</span>
         </div>
         <div className="stat-chip">
-          <span className="stat-chip-lbl">{t.remaining}</span>
-          <span className={`stat-chip-val ${remaining >= 0 ? 'green' : 'red'}`}>
-            {remaining < 0 ? '-' : ''}{formatCurrency(Math.abs(remaining))}
+          <span className="stat-chip-lbl">הכנסות</span>
+          <span className={`stat-chip-val ${income > 0 ? 'green' : ''}`}>
+            {formatCurrency(income)}
           </span>
         </div>
         <div className="stat-chip">
@@ -323,46 +379,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Income summary (if exists) */}
-      {income > 0 && (
-        <div className="income-banner">
-          <TrendingUp size={14} />
-          <span>{t.totalIncome}: {formatCurrency(income)}</span>
-          <span className="income-net">
-            {t.netBalance}: <strong className={spent > income ? 'red' : 'green'}>{formatCurrency(income - spent)}</strong>
-          </span>
-        </div>
-      )}
-
-      {/* Savings goal */}
-      {savingsGoal > 0 && (
-        <div className="savings-goal-card">
-          <div className="savings-goal-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <PiggyBank size={15} color="#22C55E" />
-              <span>יעד חסכון חודשי</span>
-            </div>
-            <span className="savings-goal-amounts">
-              <strong style={{ color: income - spent >= 0 ? '#22C55E' : '#EF4444' }}>
-                {formatCurrency(Math.max(0, income - spent))}
-              </strong>
-              <span style={{ opacity: 0.5 }}> / {formatCurrency(savingsGoal)}</span>
-            </span>
+      {/* Budget mini-bar (secondary) */}
+      {monthlyBudget > 0 && (
+        <div className="budget-mini-card">
+          <div className="budget-mini-label">
+            <span>תקציב הוצאות</span>
+            <span>{formatCurrency(spent)} / {formatCurrency(monthlyBudget)}</span>
           </div>
-          <div className="savings-goal-bar-bg">
+          <div className="budget-mini-bar-bg">
             <div
-              className="savings-goal-bar-fill"
+              className="budget-mini-bar-fill"
               style={{
-                width: `${Math.min(Math.max(0, (income - spent) / savingsGoal) * 100, 100)}%`,
-                background: (income - spent) >= savingsGoal ? '#22C55E' : '#8B5CF6',
+                width: `${Math.min(spent / (monthlyBudget || 1) * 100, 100)}%`,
+                background: spent / (monthlyBudget || 1) > 0.9 ? '#EF4444' : spent / (monthlyBudget || 1) > 0.7 ? '#F59E0B' : '#8B5CF6',
               }}
             />
           </div>
-          {income - spent >= savingsGoal && (
-            <div style={{ fontSize: '0.72rem', color: '#22C55E', marginTop: 4, textAlign: 'right' }}>
-              יעד החסכון הושג החודש ✓
-            </div>
-          )}
         </div>
       )}
 
