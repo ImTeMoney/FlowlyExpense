@@ -285,6 +285,16 @@ input, select, textarea { font-family: inherit; color: inherit; }
   letter-spacing: 0.01em;
 }
 
+.ring-gap {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
 /* =====================================================
    SUMMARY LINE
    ===================================================== */
