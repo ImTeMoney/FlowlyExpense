@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -159,9 +160,12 @@ interface ExpenseContextProps {
   state: AppState;
   dispatch: (action: Action) => void;
   formatCurrency: (amount: number) => string;
+  /** Format an amount that is already in mainCurrency (no displayRate applied) */
+  formatCurrencyDirect: (amount: number) => string;
   filteredDashboardTransactions: Transaction[];
   isLoading: boolean;
   deviceId: string;
+  displayRate: number;
 }
 
 const ExpenseContext = createContext<ExpenseContextProps | undefined>(undefined);
@@ -193,6 +197,20 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const deviceId = useMemo(() => getDeviceId(), []);
+
+  // Rate: 1 ILS → mainCurrency  (1.0 when mainCurrency === 'ILS')
+  const [displayRate, setDisplayRate] = useState(1);
+  useEffect(() => {
+    if (mainCurrency === 'ILS') { setDisplayRate(1); return; }
+    const tryDate = (d: string) => convertAmount(1, 'ILS' as any, mainCurrency as any, d).then(r => r.rate);
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    tryDate(today)
+      .catch(() => tryDate(yesterday))
+      .catch(() => tryDate('latest'))
+      .then(rate => setDisplayRate(rate))
+      .catch(() => setDisplayRate(1));
+  }, [mainCurrency]);
 
   // Persist to localStorage
   useEffect(() => { saveToStorage(STORAGE_KEYS.TRANSACTIONS, transactions); }, [transactions]);
@@ -348,16 +366,35 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     return filtered;
   }, [transactions, dashboardFilter]);
 
-  const formatCurrency = useCallback((amount: number) =>
-    new Intl.NumberFormat('he-IL', {
-      style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
-    }).format(amount), []);
+  /** Format amount stored in ILS → display in mainCurrency */
+  const formatCurrency = useCallback((amount: number) => {
+    const converted = amount * displayRate;
+    if (mainCurrency === 'ILS') {
+      return new Intl.NumberFormat('he-IL', {
+        style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
+      }).format(converted);
+    }
+    const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
+    return `${sym}${converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [mainCurrency, displayRate]);
+
+  /** Format amount already in mainCurrency (no rate applied) */
+  const formatCurrencyDirect = useCallback((amount: number) => {
+    if (mainCurrency === 'ILS') {
+      return new Intl.NumberFormat('he-IL', {
+        style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
+      }).format(amount);
+    }
+    const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
+    return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [mainCurrency]);
 
   return (
-    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, filteredDashboardTransactions, isLoading: false, deviceId }}>
+    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, formatCurrencyDirect, filteredDashboardTransactions, isLoading: false, deviceId, displayRate }}>
       {children}
     </ExpenseContext.Provider>
   );
+
 };
 
 export const useExpense = () => {

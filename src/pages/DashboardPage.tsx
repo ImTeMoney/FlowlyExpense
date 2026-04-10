@@ -78,7 +78,7 @@ function SpendRing({ spent, budget }: { spent: number; budget: number }) {
 
 // ── Component ─────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { state, dispatch } = useExpense();
+  const { state, dispatch, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatCurrency, formatDateGroup, currentMonthLabel } = useLang();
   const { categories, monthlyBudget, savingsGoal, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
@@ -417,10 +417,21 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
-                        {tx.isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
-                        {tx.currency && tx.currency !== mainCurrency && tx.originalAmount && (
+                        {tx.isIncome ? '+' : '-'}
+                        {tx.currency && tx.currency === mainCurrency && tx.originalAmount !== undefined
+                          ? formatCurrencyDirect(tx.originalAmount)   // already in mainCurrency
+                          : formatCurrency(tx.amount)                  // ILS → mainCurrency via displayRate
+                        }
+                        {/* Show original amount small when currencies differ */}
+                        {tx.currency && tx.currency !== mainCurrency && tx.originalAmount !== undefined && (
                           <span className="txn-orig-currency">
-                            {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount}
+                            {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount.toLocaleString()}
+                          </span>
+                        )}
+                        {/* Show original ILS when mainCurrency ≠ ILS and no explicit currency on tx */}
+                        {!tx.currency && mainCurrency !== 'ILS' && (
+                          <span className="txn-orig-currency">
+                            ₪{tx.amount.toLocaleString('he-IL')}
                           </span>
                         )}
                       </div>
