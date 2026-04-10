@@ -23,13 +23,16 @@ export interface InstallmentInfo {
 
 export interface Transaction {
   id: string;
-  amount: number;
+  amount: number;             // always stored in mainCurrency
   categoryId: string;
   date: string;
   description: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
   installments?: InstallmentInfo;
+  currency?: string;          // original currency (if different from main)
+  originalAmount?: number;    // amount in original currency
+  exchangeRate?: number;      // rate used: 1 original = rate main
 }
 
 export interface RecurringExpense {
@@ -58,6 +61,7 @@ export interface AppState {
   monthlyBudget: number;
   savingsGoal: number;
   dashboardFilter: DashboardFilter;
+  mainCurrency: string;
 }
 
 type Action =
@@ -73,7 +77,8 @@ type Action =
   | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string } }
   | { type: 'UPDATE_LAST_POSTED';        payload: { id: string; month: string } }
   | { type: 'SET_RECURRING_INSTALLMENTS'; payload: { id: string; totalInstallments: number } }
-  | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> };
+  | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> }
+  | { type: 'SET_MAIN_CURRENCY';         payload: string };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -99,12 +104,13 @@ export const CATEGORY_COLORS = [
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
 const STORAGE_KEYS = {
-  TRANSACTIONS:   'expense_transactions',
-  RECURRING:      'expense_recurring',
-  BUDGET:         'expense_budget',
-  SAVINGS_GOAL:   'expense_savings_goal',
-  CATEGORIES:     'expense_categories_v2',   // full list (new key)
-  DEVICE_ID:      'expense_device_id',
+  TRANSACTIONS:    'expense_transactions',
+  RECURRING:       'expense_recurring',
+  BUDGET:          'expense_budget',
+  SAVINGS_GOAL:    'expense_savings_goal',
+  CATEGORIES:      'expense_categories_v2',
+  DEVICE_ID:       'expense_device_id',
+  MAIN_CURRENCY:   'expense_main_currency',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -182,6 +188,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     period: 'month',
     categoryId: 'all',
   });
+  const [mainCurrency, setMainCurrency] = useState<string>(() =>
+    localStorage.getItem(STORAGE_KEYS.MAIN_CURRENCY) ?? 'ILS'
+  );
 
   const deviceId = useMemo(() => getDeviceId(), []);
 
@@ -193,6 +202,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.CATEGORIES, categories);
   }, [categories]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MAIN_CURRENCY, mainCurrency);
+  }, [mainCurrency]);
 
   // Auto-post recurring expenses on mount
   useEffect(() => {
@@ -293,6 +305,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'SET_DASHBOARD_FILTER':
         setDashboardFilter(prev => ({ ...prev, ...action.payload }));
         break;
+
+      case 'SET_MAIN_CURRENCY':
+        setMainCurrency(action.payload);
+        break;
     }
   }, []);
 
@@ -303,7 +319,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     monthlyBudget,
     savingsGoal,
     dashboardFilter,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter]);
+    mainCurrency,
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;

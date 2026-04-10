@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
   Wallet, PiggyBank, GitFork, Trash2,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
+import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
@@ -79,7 +80,7 @@ function SpendRing({ spent, budget }: { spent: number; budget: number }) {
 export default function DashboardPage() {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, formatCurrency, formatDateGroup, currentMonthLabel } = useLang();
-  const { categories, monthlyBudget, savingsGoal, recurringExpenses, transactions } = state;
+  const { categories, monthlyBudget, savingsGoal, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
 
   const [showModal, setShowModal] = useState(false);
@@ -89,6 +90,9 @@ export default function DashboardPage() {
   const [desc, setDesc]           = useState('');
   const [date, setDate]           = useState(todayStr());
   const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
+  const [txCurrency, setTxCurrency]           = useState(mainCurrency);
+  const [ratePreview, setRatePreview]         = useState<string>('');
+  const [rateLoading, setRateLoading]         = useState(false);
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
@@ -107,6 +111,27 @@ export default function DashboardPage() {
   const todaySpent = useMemo(() => transactions.filter(tx => tx.date === todayStr() && !tx.isIncome).reduce((s,tx) => s + tx.amount, 0), [transactions]);
   const grouped    = useMemo(() => groupByDate(monthTxns), [monthTxns]);
 
+  // Live exchange rate preview when currency differs from main
+  useEffect(() => {
+    if (txCurrency === mainCurrency || !amount || parseFloat(amount) <= 0) {
+      setRatePreview(''); return;
+    }
+    let cancelled = false;
+    setRateLoading(true);
+    setRatePreview('');
+    convertAmount(parseFloat(amount), txCurrency, mainCurrency, date)
+      .then(({ convertedAmount, rate }) => {
+        if (!cancelled) {
+          setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString('he-IL')}  (שער: ${rate})`);
+          setRateLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) { setRatePreview('שגיאה בטעינת שער'); setRateLoading(false); }
+      });
+    return () => { cancelled = true; };
+  }, [txCurrency, mainCurrency, amount, date]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const showToast = useCallback((msg: string) => {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
@@ -118,49 +143,58 @@ export default function DashboardPage() {
     setAmount(''); setDesc(''); setDate(todayStr());
     setCatId(categories[0]?.id ?? '');
     setPayMethod('credit');
+    setTxCurrency(mainCurrency);
+    setRatePreview('');
     setSplitEnabled(false);
     setNumInstallments(3);
     setShowModal(true);
   }
 
-  function handleAdd() {
+  async function handleAdd() {
     const num = parseFloat(amount);
     if (!num || num <= 0 || !catId) return;
     const cat = categories.find(c => c.id === catId);
     const baseDesc = desc.trim() || (cat?.name ?? '');
 
+    // Resolve amount in main currency
+    let finalAmount = num;
+    let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
+    if (txCurrency !== mainCurrency) {
+      try {
+        const { convertedAmount, rate } = await convertAmount(num, txCurrency, mainCurrency, date);
+        finalAmount = convertedAmount;
+        txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
+      } catch {
+        // fallback: store as-is with currency tag
+        txCurrencyMeta = { currency: txCurrency, originalAmount: num };
+      }
+    }
+
     if (!isIncome && splitEnabled && numInstallments > 1) {
-      // Create one transaction per installment spread across months
       const groupId = `grp_${Date.now()}`;
-      const perInstallment = Math.round((num / numInstallments) * 100) / 100;
+      const perInstallment = Math.round((finalAmount / numInstallments) * 100) / 100;
       const [y, m, d] = date.split('-').map(Number);
       for (let i = 0; i < numInstallments; i++) {
         const dd = new Date(y, m - 1 + i, d);
         const txDate = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
         const installmentAmt = i === numInstallments - 1
-          ? Math.round((num - perInstallment * (numInstallments - 1)) * 100) / 100
+          ? Math.round((finalAmount - perInstallment * (numInstallments - 1)) * 100) / 100
           : perInstallment;
-        const tx: Transaction = {
-          id: `tx_${Date.now()}_${i}`,
-          amount: installmentAmt,
-          categoryId: catId,
-          date: txDate,
-          description: baseDesc,
-          isIncome: false,
-          paymentMethod: payMethod,
+        dispatch({ type: 'ADD_TRANSACTION', payload: {
+          id: `tx_${Date.now()}_${i}`, amount: installmentAmt,
+          categoryId: catId, date: txDate, description: baseDesc,
+          isIncome: false, paymentMethod: payMethod,
           installments: { current: i + 1, total: numInstallments, groupId },
-        };
-        dispatch({ type: 'ADD_TRANSACTION', payload: tx });
+          ...(i === 0 ? txCurrencyMeta : {}), // only first installment stores original
+        }});
       }
     } else {
-      const tx: Transaction = {
-        id: `tx_${Date.now()}`,
-        amount: num, categoryId: catId,
-        date, description: baseDesc,
-        isIncome,
-        paymentMethod: payMethod,
-      };
-      dispatch({ type: 'ADD_TRANSACTION', payload: tx });
+      dispatch({ type: 'ADD_TRANSACTION', payload: {
+        id: `tx_${Date.now()}`, amount: finalAmount,
+        categoryId: catId, date, description: baseDesc,
+        isIncome, paymentMethod: payMethod,
+        ...txCurrencyMeta,
+      }});
     }
     setShowModal(false);
     showToast(t.added);
@@ -384,6 +418,11 @@ export default function DashboardPage() {
                       </div>
                       <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
                         {tx.isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                        {tx.currency && tx.currency !== mainCurrency && tx.originalAmount && (
+                          <span className="txn-orig-currency">
+                            {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount}
+                          </span>
+                        )}
                       </div>
                       {!tx.isIncome && !tx.installments && (
                         <button
@@ -471,6 +510,25 @@ export default function DashboardPage() {
                 autoFocus
               />
             </div>
+
+            {/* Currency selector */}
+            <div className="currency-row">
+              {CURRENCIES.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`currency-pill${txCurrency === c ? ' active' : ''}`}
+                  onClick={() => setTxCurrency(c)}
+                >
+                  {CURRENCY_SYMBOL[c]} {c}
+                </button>
+              ))}
+            </div>
+            {txCurrency !== mainCurrency && (
+              <div className="rate-preview">
+                {rateLoading ? '...' : ratePreview}
+              </div>
+            )}
 
             {/* Installments — shown right below amount, always visible for expenses */}
             {!isIncome && (

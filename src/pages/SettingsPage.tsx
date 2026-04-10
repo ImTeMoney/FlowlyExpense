@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
+import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Pencil, Check, X, RefreshCw } from 'lucide-react';
@@ -9,7 +10,7 @@ const SettingsPage: React.FC = () => {
   const { t, toggleLang, lang, monthLabel } = useLang();
   const [theme, toggleTheme] = useTheme();
 
-  const { transactions, categories, monthlyBudget, savingsGoal } = state;
+  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency } = state;
 
   // Budget
   const [budgetEdit, setBudgetEdit] = useState(String(monthlyBudget));
@@ -126,6 +127,24 @@ const SettingsPage: React.FC = () => {
             onKeyDown={e => e.key === 'Enter' && saveGoal()}
             inputMode="numeric"
           />
+        </div>
+
+        {/* Main Currency */}
+        <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <span className="set-lbl">מטבע ראשי</span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {CURRENCIES.map(c => (
+              <button
+                key={c}
+                type="button"
+                className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
+                onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
+              >
+                {CURRENCY_SYMBOL[c]} {c}
+                <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {CURRENCY_NAME[c]}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* CSV Export */}
