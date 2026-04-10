@@ -646,7 +646,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 /* =====================================================
    ANALYTICS PAGE
    ===================================================== */
-.analytics-page { padding: 20px 13px 30px; }
+.analytics-page { padding: calc(env(safe-area-inset-top) + 20px) 13px 30px; }
 
 .month-nav {
   display: flex; align-items: center; justify-content: center;
