@@ -598,7 +598,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: var(--danger);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 0.45;
   transition: opacity 0.15s, background 0.15s;
 }
 .txn-item:hover .txn-del { opacity: 1; }
@@ -1158,7 +1158,7 @@ select.sm-in option { background: var(--modal-bg); }
 /* Split button on existing transactions */
 .txn-split-btn {
   color: #8B5CF6 !important;
-  opacity: 0.5;
+  opacity: 0.55 !important;
 }
 .txn-split-btn:hover { opacity: 1 !important; }
 
