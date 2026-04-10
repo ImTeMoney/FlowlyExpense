@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, PiggyBank, Layers, Trash2,
+  Wallet, PiggyBank, GitFork, Trash2,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -340,7 +340,7 @@ export default function DashboardPage() {
                           <span className="txn-cat">{tx.isIncome ? t.income : (cat?.name ?? '')}</span>
                           {tx.installments && (
                             <span className="inst-badge">
-                              <Layers size={10} />
+                              <GitFork size={10} />
                               {tx.installments.current}/{tx.installments.total}
                             </span>
                           )}
@@ -432,6 +432,40 @@ export default function DashboardPage() {
               />
             </div>
 
+            {/* Installments — shown right below amount, always visible for expenses */}
+            {!isIncome && (
+              <div className="split-section">
+                <button
+                  type="button"
+                  className={`split-toggle-btn${splitEnabled ? ' active' : ''}`}
+                  onClick={() => setSplitEnabled(s => !s)}
+                >
+                  <GitFork size={14} />
+                  <span>חלוקה לתשלומים</span>
+                  <span className="split-toggle-pill">{splitEnabled ? 'פעיל' : 'כבוי'}</span>
+                </button>
+                {splitEnabled && (
+                  <div className="inst-chips">
+                    {[2, 3, 4, 6, 8, 10, 12, 18, 24, 36].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`inst-chip${numInstallments === n ? ' selected' : ''}`}
+                        onClick={() => setNumInstallments(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {splitEnabled && amount && parseFloat(amount) > 0 && (
+                  <div className="split-preview">
+                    {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} לחודש
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="field-group">
               {/* Category picker (only for expenses) */}
               {!isIncome && (
@@ -466,40 +500,6 @@ export default function DashboardPage() {
                   })}
                 </div>
               </div>
-
-              {/* Installments */}
-              {!isIncome && (
-                <div className="split-section">
-                  <button
-                    type="button"
-                    className={`split-toggle-btn${splitEnabled ? ' active' : ''}`}
-                    onClick={() => setSplitEnabled(s => !s)}
-                  >
-                    <Layers size={14} />
-                    <span>חלוקה לתשלומים</span>
-                    <span className="split-toggle-pill">{splitEnabled ? 'פעיל' : 'כבוי'}</span>
-                  </button>
-                  {splitEnabled && (
-                    <div className="inst-chips">
-                      {[2, 3, 4, 6, 8, 10, 12, 18, 24, 36].map(n => (
-                        <button
-                          key={n}
-                          type="button"
-                          className={`inst-chip${numInstallments === n ? ' selected' : ''}`}
-                          onClick={() => setNumInstallments(n)}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {splitEnabled && amount && parseFloat(amount) > 0 && (
-                    <div className="split-preview">
-                      {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} לחודש
-                    </div>
-                  )}
-                </div>
-              )}
 
               <input
                 type="text"
