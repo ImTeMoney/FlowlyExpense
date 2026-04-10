@@ -1493,10 +1493,9 @@ select.sm-in option { background: var(--modal-bg); }
 
 .mode-btn {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
   padding: 12px 14px;
   background: var(--glass-bg);
   border: 1.5px solid var(--glass-border);
@@ -1504,7 +1503,8 @@ select.sm-in option { background: var(--modal-bg); }
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
   width: 100%;
-  position: relative;
+  text-align: right;
+  direction: rtl;
 }
 
 .mode-btn.active {
@@ -1512,21 +1512,17 @@ select.sm-in option { background: var(--modal-bg); }
   background: rgba(139,92,246,0.08);
 }
 
-.mode-btn.active::before {
-  content: '✓';
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--purple);
-  font-size: 14px;
-  font-weight: 700;
+.mode-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-.mode-icon {
-  font-size: 18px;
-  line-height: 1;
-  margin-bottom: 2px;
+.mode-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
 .mode-label {
@@ -1540,6 +1536,16 @@ select.sm-in option { background: var(--modal-bg); }
   color: var(--text-muted);
   line-height: 1.4;
 }
+
+.mode-check {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--purple);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.mode-btn.active .mode-check { opacity: 1; }
 
 /* ring-no-goal: small hint shown inside ring when no goal is set */
 .ring-no-goal {

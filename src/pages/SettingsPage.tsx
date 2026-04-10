@@ -104,16 +104,22 @@ const SettingsPage: React.FC = () => {
             onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'savings_based' })}
           >
             <span className="mode-icon">🎯</span>
-            <span className="mode-label">מעקב חיסכון</span>
-            <span className="mode-desc">מזין הכנסות והוצאות, עוקב על מה שנשמר</span>
+            <span className="mode-btn-text">
+              <span className="mode-label">מעקב חיסכון</span>
+              <span className="mode-desc">מזין הכנסות והוצאות, עוקב על מה שנשמר</span>
+            </span>
+            <span className="mode-check">✓</span>
           </button>
           <button
             className={`mode-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
             onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' })}
           >
             <span className="mode-icon">📊</span>
-            <span className="mode-label">מעקב תקציב</span>
-            <span className="mode-desc">מנהל לפי תקציב חודשי, ללא צורך ברישום הכנסות</span>
+            <span className="mode-btn-text">
+              <span className="mode-label">מעקב תקציב</span>
+              <span className="mode-desc">מנהל לפי תקציב חודשי, ללא צורך ברישום הכנסות</span>
+            </span>
+            <span className="mode-check">✓</span>
           </button>
         </div>
       </div>
@@ -139,22 +145,6 @@ const SettingsPage: React.FC = () => {
                 onChange={e => setGoalEdit(e.target.value)}
                 onBlur={saveGoal}
                 onKeyDown={e => e.key === 'Enter' && saveGoal()}
-                inputMode="numeric"
-              />
-            </div>
-
-            {/* Budget — optional secondary */}
-            <div className="set-row">
-              <span className="set-lbl" style={{ opacity: 0.75 }}>
-                {t.monthlyBudget}
-                <span style={{ fontSize: 10, marginRight: 4, opacity: 0.6 }}>(אופציונלי)</span>
-              </span>
-              <input
-                type="number" className="set-input"
-                value={budgetEdit}
-                onChange={e => setBudgetEdit(e.target.value)}
-                onBlur={saveBudget}
-                onKeyDown={e => e.key === 'Enter' && saveBudget()}
                 inputMode="numeric"
               />
             </div>
