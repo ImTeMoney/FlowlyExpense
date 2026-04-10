@@ -78,8 +78,8 @@ function SpendRing({ spent, budget }: { spent: number; budget: number }) {
 
 // ── Component ─────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { state, dispatch, formatCurrencyDirect, displayRate } = useExpense();
-  const { t, toggleLang, lang, formatCurrency, formatDateGroup, currentMonthLabel } = useLang();
+  const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
+  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel } = useLang();
   const { categories, monthlyBudget, savingsGoal, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
 

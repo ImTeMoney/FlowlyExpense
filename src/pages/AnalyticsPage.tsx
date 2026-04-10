@@ -21,8 +21,8 @@ const PM_COLOR: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
-  const { state, dispatch } = useExpense();
-  const { t, formatCurrency, monthLabel } = useLang();
+  const { state, dispatch, formatCurrency } = useExpense();
+  const { t, monthLabel } = useLang();
   const { transactions, categories, recurringExpenses, monthlyBudget } = state;
 
   // Month navigation
