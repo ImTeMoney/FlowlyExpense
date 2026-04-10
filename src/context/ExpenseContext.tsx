@@ -41,6 +41,8 @@ export interface RecurringExpense {
   lastPostedMonth?: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
+  totalInstallments?: number;   // if set → limited recurring, auto-deletes when done
+  postedCount?: number;         // how many months have been posted so far
 }
 
 export interface DashboardFilter {
@@ -196,9 +198,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     const currentDay = today.getDate();
-    const toPost = recurringExpenses.filter(
-      r => r.lastPostedMonth !== currentMonthStr && currentDay >= r.dayOfMonth
-    );
+    const toPost = recurringExpenses.filter(r => {
+      if (r.lastPostedMonth === currentMonthStr) return false;
+      if (currentDay < r.dayOfMonth) return false;
+      if (r.totalInstallments && (r.postedCount ?? 0) >= r.totalInstallments) return false;
+      return true;
+    });
     if (toPost.length === 0) return;
     const newTxns: Transaction[] = toPost.map(r => ({
       id:            generateId(),
@@ -210,9 +215,16 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: r.paymentMethod,
     }));
     setTransactions(prev => [...newTxns, ...prev]);
-    setRecurringExpenses(prev =>
-      prev.map(r => toPost.some(p => p.id === r.id) ? { ...r, lastPostedMonth: currentMonthStr } : r)
-    );
+    setRecurringExpenses(prev => {
+      const updated = prev.map(r => {
+        if (!toPost.some(p => p.id === r.id)) return r;
+        return { ...r, lastPostedMonth: currentMonthStr, postedCount: (r.postedCount ?? 0) + 1 };
+      });
+      // Auto-remove recurrings that have completed all installments
+      return updated.filter(r =>
+        !r.totalInstallments || (r.postedCount ?? 0) < r.totalInstallments
+      );
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dispatch = useCallback((action: Action) => {

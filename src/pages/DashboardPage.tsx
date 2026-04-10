@@ -89,8 +89,9 @@ export default function DashboardPage() {
   const [desc, setDesc]           = useState('');
   const [date, setDate]           = useState(todayStr());
   const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
-  const [splitEnabled, setSplitEnabled]   = useState(false);
+  const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
+  const [customInstallments, setCustomInstallments] = useState('');
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
 
@@ -118,6 +119,7 @@ export default function DashboardPage() {
     setPayMethod('credit');
     setSplitEnabled(false);
     setNumInstallments(3);
+    setCustomInstallments('');
     setShowModal(true);
   }
 
@@ -127,16 +129,17 @@ export default function DashboardPage() {
     const cat = categories.find(c => c.id === catId);
     const baseDesc = desc.trim() || (cat?.name ?? '');
 
-    if (!isIncome && splitEnabled && numInstallments > 1) {
+    const effectiveInst = customInstallments ? parseInt(customInstallments) : numInstallments;
+    if (!isIncome && splitEnabled && effectiveInst > 1) {
       // Create one transaction per installment spread across months
       const groupId = `grp_${Date.now()}`;
-      const perInstallment = Math.round((num / numInstallments) * 100) / 100;
+      const perInstallment = Math.round((num / effectiveInst) * 100) / 100;
       const [y, m, d] = date.split('-').map(Number);
-      for (let i = 0; i < numInstallments; i++) {
+      for (let i = 0; i < effectiveInst; i++) {
         const dd = new Date(y, m - 1 + i, d);
         const txDate = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
-        const installmentAmt = i === numInstallments - 1
-          ? Math.round((num - perInstallment * (numInstallments - 1)) * 100) / 100
+        const installmentAmt = i === effectiveInst - 1
+          ? Math.round((num - perInstallment * (effectiveInst - 1)) * 100) / 100
           : perInstallment;
         const tx: Transaction = {
           id: `tx_${Date.now()}_${i}`,
@@ -146,7 +149,7 @@ export default function DashboardPage() {
           description: baseDesc,
           isIncome: false,
           paymentMethod: payMethod,
-          installments: { current: i + 1, total: numInstallments, groupId },
+          installments: { current: i + 1, total: effectiveInst, groupId },
         };
         dispatch({ type: 'ADD_TRANSACTION', payload: tx });
       }
@@ -445,23 +448,35 @@ export default function DashboardPage() {
                   <span className="split-toggle-pill">{splitEnabled ? 'פעיל' : 'כבוי'}</span>
                 </button>
                 {splitEnabled && (
-                  <div className="inst-chips">
-                    {[2, 3, 4, 6, 8, 10, 12, 18, 24, 36].map(n => (
-                      <button
-                        key={n}
-                        type="button"
-                        className={`inst-chip${numInstallments === n ? ' selected' : ''}`}
-                        onClick={() => setNumInstallments(n)}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {splitEnabled && amount && parseFloat(amount) > 0 && (
-                  <div className="split-preview">
-                    {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} לחודש
-                  </div>
+                  <>
+                    <div className="inst-chips">
+                      {[2, 3, 4, 6, 8, 10, 12, 18, 24, 36].map(n => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`inst-chip${!customInstallments && numInstallments === n ? ' selected' : ''}`}
+                          onClick={() => { setNumInstallments(n); setCustomInstallments(''); }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                      <input
+                        type="number"
+                        className="inst-custom-input"
+                        placeholder="אחר"
+                        value={customInstallments}
+                        onChange={e => setCustomInstallments(e.target.value)}
+                        inputMode="numeric"
+                        min="2"
+                        max="120"
+                      />
+                    </div>
+                    {amount && parseFloat(amount) > 0 && (
+                      <div className="split-preview">
+                        {customInstallments ? parseInt(customInstallments) : numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / (customInstallments ? parseInt(customInstallments) : numInstallments) * 100) / 100)} לחודש
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

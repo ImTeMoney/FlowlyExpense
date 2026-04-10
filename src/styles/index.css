@@ -1220,6 +1220,23 @@ select.sm-in option { background: var(--modal-bg); }
   color: #8B5CF6;
 }
 
+/* Custom number input alongside chips */
+.inst-custom-input {
+  height: 32px;
+  width: 56px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.inst-custom-input::-webkit-outer-spin-button,
+.inst-custom-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.inst-custom-input[type=number] { -moz-appearance: textfield; }
+
 /* Preview line: "3 × ₪400 לחודש" */
 .split-preview {
   font-size: 12px;

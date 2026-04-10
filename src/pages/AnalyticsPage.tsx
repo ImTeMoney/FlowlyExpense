@@ -3,7 +3,7 @@ import {
   Package, Plus, X,
   TrendingDown, TrendingUp,
   Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple,
-  ArrowUpRight, ArrowDownRight, Minus,
+  ArrowUpRight, ArrowDownRight, Minus, GitFork,
 } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -115,13 +115,18 @@ export default function AnalyticsPage() {
   const maxWeek = Math.max(...weeklyTotals.map(w => w.total), 1);
 
   // Recurring form
-  const [showRecForm, setShowRecForm] = useState(false);
-  const [recDesc, setRecDesc]         = useState('');
-  const [recAmt, setRecAmt]           = useState('');
-  const [recDay, setRecDay]           = useState('10');
-  const [recCat, setRecCat]           = useState(categories[0]?.id ?? '');
-  const [recIsIncome, setRecIsIncome] = useState(false);
-  const [recPm, setRecPm]            = useState<PaymentMethod>('credit');
+  const [showRecForm, setShowRecForm]         = useState(false);
+  const [recDesc, setRecDesc]                 = useState('');
+  const [recAmt, setRecAmt]                   = useState('');
+  const [recDay, setRecDay]                   = useState('10');
+  const [recCat, setRecCat]                   = useState(categories[0]?.id ?? '');
+  const [recIsIncome, setRecIsIncome]         = useState(false);
+  const [recPm, setRecPm]                     = useState<PaymentMethod>('credit');
+  const [recSplitEnabled, setRecSplitEnabled] = useState(false);
+  const [recNumInst, setRecNumInst]           = useState(12);
+  const [recCustomInst, setRecCustomInst]     = useState('');
+
+  const recEffectiveInst = recCustomInst ? parseInt(recCustomInst) : recNumInst;
 
   function addRecurring() {
     const amt = parseFloat(recAmt);
@@ -134,9 +139,13 @@ export default function AnalyticsPage() {
       categoryId: recIsIncome ? 'cat_other' : recCat,
       isIncome: recIsIncome,
       paymentMethod: recPm,
+      ...(recSplitEnabled && recEffectiveInst > 1
+        ? { totalInstallments: recEffectiveInst, postedCount: 0 }
+        : {}),
     };
     dispatch({ type: 'ADD_RECURRING', payload: rec });
     setRecDesc(''); setRecAmt(''); setRecDay('10');
+    setRecSplitEnabled(false); setRecCustomInst('');
     setShowRecForm(false);
   }
 
@@ -357,6 +366,52 @@ export default function AnalyticsPage() {
               </select>
             </div>
 
+            {/* Installments toggle */}
+            {!recIsIncome && (
+              <div className="split-section">
+                <button
+                  type="button"
+                  className={`split-toggle-btn${recSplitEnabled ? ' active' : ''}`}
+                  onClick={() => setRecSplitEnabled(s => !s)}
+                >
+                  <GitFork size={14} />
+                  <span>מספר תשלומים מוגבל</span>
+                  <span className="split-toggle-pill">{recSplitEnabled ? 'פעיל' : 'ללא הגבלה'}</span>
+                </button>
+                {recSplitEnabled && (
+                  <>
+                    <div className="inst-chips">
+                      {[3, 6, 10, 12, 18, 24, 36].map(n => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`inst-chip${!recCustomInst && recNumInst === n ? ' selected' : ''}`}
+                          onClick={() => { setRecNumInst(n); setRecCustomInst(''); }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                      <input
+                        type="number"
+                        className="inst-custom-input"
+                        placeholder="אחר"
+                        value={recCustomInst}
+                        onChange={e => setRecCustomInst(e.target.value)}
+                        inputMode="numeric"
+                        min="2"
+                        max="120"
+                      />
+                    </div>
+                    {recAmt && parseFloat(recAmt) > 0 && (
+                      <div className="split-preview">
+                        {recEffectiveInst} × {formatCurrency(parseFloat(recAmt))} = {formatCurrency(recEffectiveInst * parseFloat(recAmt))} סה"כ
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             <button className="rec-submit" onClick={addRecurring}>
               {t.saveRecurring}
             </button>
@@ -384,6 +439,9 @@ export default function AnalyticsPage() {
                       {t.day} {r.dayOfMonth}
                       {!r.isIncome && cat ? ` · ${cat.name}` : ''}
                       {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
+                      {r.totalInstallments
+                        ? ` · תשלום ${(r.postedCount ?? 0)}/${r.totalInstallments}`
+                        : ''}
                     </div>
                   </div>
                   <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>

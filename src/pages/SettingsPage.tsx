@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Pencil, Check, X } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Pencil, Check, X, RefreshCw } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -137,6 +137,16 @@ const SettingsPage: React.FC = () => {
         >
           <Download size={13} />
           {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
+        </button>
+
+        {/* Refresh app (useful when installed as PWA) */}
+        <button
+          className="export-btn"
+          onClick={() => window.location.reload()}
+          style={{ marginTop: 6 }}
+        >
+          <RefreshCw size={13} />
+          רענן אפליקציה
         </button>
       </div>
 
