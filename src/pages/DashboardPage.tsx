@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
@@ -214,8 +215,13 @@ export default function DashboardPage() {
     const dx = touchStartX.current - e.changedTouches[0].clientX;
     const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
     if (dy > 40) return; // vertical scroll — ignore
-    if (dx > 45) { setSwipedId(id); }
-    else if (dx < -20) { setSwipedId(s => (s === id ? null : s)); }
+    // In RTL layouts the delete zone is on the inline-end (left) side,
+    // so the reveal gesture is a rightward swipe (dx negative).
+    const isRtl = lang === 'he';
+    const openSwipe  = isRtl ? dx < -45 : dx > 45;
+    const closeSwipe = isRtl ? dx > 20  : dx < -20;
+    if (openSwipe)  setSwipedId(id);
+    else if (closeSwipe) setSwipedId(s => (s === id ? null : s));
   }
 
   function handleSplitExisting() {
@@ -435,10 +441,14 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* FAB */}
-      <button className="fab" onClick={openModal} aria-label={t.addExpense}>
-        <Plus size={26} />
-      </button>
+      {/* FAB — rendered via portal so position:fixed is relative to the
+           viewport, not the .page element (which has an animation transform) */}
+      {createPortal(
+        <button className="fab" onClick={openModal} aria-label={t.addExpense}>
+          <Plus size={26} />
+        </button>,
+        document.body
+      )}
 
       {/* Add Transaction Modal */}
       {showModal && (
