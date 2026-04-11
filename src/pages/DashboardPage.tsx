@@ -97,6 +97,7 @@ export default function DashboardPage() {
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
   const [swipedId, setSwipedId]           = useState<string | null>(null);
+  const [confirmDeleteTx, setConfirmDeleteTx] = useState<Transaction | null>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
@@ -403,7 +404,7 @@ export default function DashboardPage() {
                       )}
                       <button
                         className="txn-del"
-                        onClick={() => handleDelete(tx.id)}
+                        onClick={() => setConfirmDeleteTx(tx)}
                         aria-label="Delete"
                       >
                         <X size={14} />
@@ -423,6 +424,34 @@ export default function DashboardPage() {
         <button className="fab" onClick={openModal} aria-label={t.addExpense}>
           <Plus size={26} />
         </button>,
+        document.body
+      )}
+
+      {/* Delete confirmation dialog */}
+      {confirmDeleteTx && createPortal(
+        <div className="confirm-overlay" onClick={() => setConfirmDeleteTx(null)}>
+          <div className="confirm-card" onClick={e => e.stopPropagation()}>
+            <div className="confirm-title">{t.confirmDeleteTitle}</div>
+            <div className="confirm-body">
+              <strong>"{confirmDeleteTx.description}"</strong>
+              {' '}
+              {lang === 'he'
+                ? `— ${formatCurrency(confirmDeleteTx.amount)}`
+                : `· ${formatCurrency(confirmDeleteTx.amount)}`}
+            </div>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-btn" onClick={() => setConfirmDeleteTx(null)}>
+                {t.cancel}
+              </button>
+              <button
+                className="confirm-delete-btn"
+                onClick={() => { handleDelete(confirmDeleteTx.id); setConfirmDeleteTx(null); }}
+              >
+                {t.deleteLabel}
+              </button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
 

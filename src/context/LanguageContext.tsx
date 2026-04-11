@@ -155,6 +155,7 @@ export interface Translations {
   addRecurring: string;
   deleteLabel: string;
   monthlyBadge: string;
+  confirmDeleteTitle: string;
 }
 
 const he: Translations = {
@@ -304,6 +305,7 @@ const he: Translations = {
   addRecurring: 'הוסף תשלום קבוע',
   deleteLabel: 'מחק',
   monthlyBadge: 'חודשי',
+  confirmDeleteTitle: 'מחק הוצאה?',
 };
 
 const en: Translations = {
@@ -453,6 +455,7 @@ const en: Translations = {
   addRecurring: 'Add Recurring',
   deleteLabel: 'Delete',
   monthlyBadge: 'Monthly',
+  confirmDeleteTitle: 'Delete expense?',
 };
 
 interface LanguageContextProps {
