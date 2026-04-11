@@ -84,6 +84,7 @@ export default function AnalyticsPage() {
       .sort((a,b) => b.total - a.total);
   }, [categories, monthTxns, prevTxns, recurringExpenses]);
   const maxCat = catTotals[0]?.total || 1;
+  const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
 
   // Payment method breakdown
   const pmTotals = useMemo(() => {
@@ -173,7 +174,9 @@ export default function AnalyticsPage() {
           const barColor = pct >= 1 ? '#22C55E' : pct >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444';
           const statusText = goal > 0
             ? savings > goal
-              ? lang === 'he' ? `+${formatCurrency(savings - goal)} מעל היעד` : `+${formatCurrency(savings - goal)} above goal`
+              ? lang === 'he'
+                ? `עברת את יעד החיסכון ב־${formatCurrency(savings - goal)} 💪`
+                : `You exceeded your savings goal by ${formatCurrency(savings - goal)} 💪`
               : lang === 'he'
                 ? `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
                 : `${Math.round(pct * 100)}% of savings goal${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
@@ -187,7 +190,7 @@ export default function AnalyticsPage() {
             <div className="bcard">
               <div className="bcard-nums">
                 <div className="bcard-block">
-                  <span className="bcard-val" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  <span className="bcard-val hero" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
                     {formatCurrency(Math.max(0, savings))}
                   </span>
                   <div className="bcard-lbl">{t.savedThisMonth}</div>
@@ -303,6 +306,7 @@ export default function AnalyticsPage() {
             const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
             const isHigher  = prevTotal > 0 && change > 30;
             const isOneTime = txCount === 1 && !hasRecurring;
+            const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
             return (
               <div key={cat.id} className="cb-row">
                 <div className="cb-icon" style={{ background: `${cat.color}18` }}>
@@ -315,6 +319,11 @@ export default function AnalyticsPage() {
                       {hasRecurring && <span className="cat-tag cat-tag-fixed">{t.tagFixed}</span>}
                       {isHigher     && <span className="cat-tag cat-tag-high">{t.tagHigh}</span>}
                       {isOneTime    && <span className="cat-tag cat-tag-onetime">{t.tagOneTime}</span>}
+                      {prevTotal > 0 && change !== 0 && (
+                        <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
+                          {change > 0 ? '+' : ''}{change}%
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="cb-track">
@@ -323,11 +332,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="cb-right">
                   <span className="cb-amt">{formatCurrency(total)}</span>
-                  {prevTotal > 0 && change !== 0 && (
-                    <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
-                      {change > 0 ? '+' : ''}{change}%
-                    </span>
-                  )}
+                  <span className="cb-pct">{pctOfTotal}%</span>
                 </div>
               </div>
             );

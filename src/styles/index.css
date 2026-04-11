@@ -24,12 +24,15 @@
   --glass-border: rgba(255, 255, 255, 0.09);
   --glass-hi:     rgba(255, 255, 255, 0.14);
   --text:         #F1F5F9;
+  --text-secondary: #94A3B8;
   --text-muted:   #64748B;
   --text-dim:     #334155;
   --nav-bg:       rgba(9, 9, 15, 0.96);
   --header-bg:    rgba(9, 9, 15, 0.95);
   --modal-bg:     #0F0F1E;
   --scrollbar:    rgba(255,255,255,0.06);
+  --bg-primary:     var(--bg);
+  --glass-bg:       var(--bg-card);
 
   --r-sm:   10px;
   --r-md:   16px;
@@ -46,6 +49,7 @@
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-hi:     rgba(0, 0, 0, 0.14);
   --text:         #0F172A;
+  --text-secondary: #475569;
   --text-muted:   #64748B;
   --text-dim:     #94A3B8;
   --nav-bg:       rgba(238, 242, 251, 0.96);
@@ -232,13 +236,17 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 16px 6px;
+  padding: 10px 16px 4px;
 }
 
 .spend-ring-container {
   position: relative;
   width: 196px;
   height: 196px;
+}
+.spend-ring-container.small {
+  width: 150px;
+  height: 150px;
 }
 
 .spend-ring-center {
@@ -263,7 +271,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 
 .ring-amount {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -272,7 +280,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .ring-of {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -774,6 +782,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .bcard-val.left   { color: var(--success); }
 .bcard-val.over   { color: var(--danger); }
 .bcard-val.income-v { color: var(--success); }
+.bcard-val.hero { font-size: 28px; }
 .bcard-lbl { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
 
 .budget-bar { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
@@ -820,7 +829,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .cb-track { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
 [data-theme="light"] .cb-track { background: rgba(0,0,0,0.08); }
 .cb-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
-.cb-amt { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: var(--text-muted); text-align: end; }
+.cb-amt { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: var(--text); text-align: end; }
+.cb-pct { font-size: 11px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: end; }
 
 .no-data { font-size: 13px; color: var(--text-dim); text-align: center; padding: 12px 0; }
 
@@ -1546,6 +1556,51 @@ select.sm-in option { background: var(--modal-bg); }
   transition: opacity 0.15s;
 }
 .mode-btn.active .mode-check { opacity: 1; }
+
+/* =====================================================
+   MODE SEGMENTED CONTROL
+   ===================================================== */
+.mode-seg-ctrl {
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.mode-seg-btn {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: calc(var(--r-md) - 3px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.mode-seg-btn.active {
+  background: var(--purple);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--purple-glow);
+}
+
+.mode-seg-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 4px 2px;
+  line-height: 1.4;
+  margin: 0;
+}
 
 /* ring-no-goal: small hint shown inside ring when no goal is set */
 .ring-no-goal {

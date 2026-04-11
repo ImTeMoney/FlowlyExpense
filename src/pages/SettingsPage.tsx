@@ -98,30 +98,25 @@ const SettingsPage: React.FC = () => {
         <div className="a-sec-title">
           <span className="title-text">{t.moneyModeTitle}</span>
         </div>
-        <div className="mode-selector">
+        <div className="mode-seg-ctrl">
           <button
-            className={`mode-btn${moneyMode === 'savings_based' ? ' active' : ''}`}
+            className={`mode-seg-btn${moneyMode === 'savings_based' ? ' active' : ''}`}
             onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'savings_based' })}
           >
-            <span className="mode-icon">🎯</span>
-            <span className="mode-btn-text">
-              <span className="mode-label">{t.modeTrackSavings}</span>
-              <span className="mode-desc">{t.modeTrackSavingsDesc}</span>
-            </span>
-            <span className="mode-check">✓</span>
+            <span>🎯</span>
+            <span>{t.modeTrackSavings}</span>
           </button>
           <button
-            className={`mode-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
+            className={`mode-seg-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
             onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' })}
           >
-            <span className="mode-icon">📊</span>
-            <span className="mode-btn-text">
-              <span className="mode-label">{t.modeTrackBudget}</span>
-              <span className="mode-desc">{t.modeTrackBudgetDesc}</span>
-            </span>
-            <span className="mode-check">✓</span>
+            <span>📊</span>
+            <span>{t.modeTrackBudget}</span>
           </button>
         </div>
+        <p className="mode-seg-desc">
+          {moneyMode === 'savings_based' ? t.modeTrackSavingsDesc : t.modeTrackBudgetDesc}
+        </p>
       </div>
 
       {/* ── Financial Goals (mode-dependent) ── */}
@@ -225,11 +220,11 @@ const SettingsPage: React.FC = () => {
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                   <button onClick={() => setEditingId(null)}
                     style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                    <X size={12} /> ביטול
+                    <X size={12} /> {t.cancel}
                   </button>
                   <button onClick={commitEdit}
                     style={{ background: 'var(--purple)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                    <Check size={12} /> שמור
+                    <Check size={12} /> {t.save}
                   </button>
                 </div>
               </div>

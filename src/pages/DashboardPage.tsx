@@ -48,16 +48,16 @@ function groupByDate(txns: Transaction[]) {
 // ── Progress Ring ────────────────────────────────────────────
 // Pure display: receives pre-computed pct and color from useMoneyMode.
 function ProgressRing({ pct, color }: { pct: number; color: string }) {
-  const r = 80, cx = 98, cy = 98;
+  const r = 58, cx = 75, cy = 75;
   const circumference = 2 * Math.PI * r;
   const dash = circumference * Math.min(pct, 1);
   return (
-    <svg viewBox="0 0 196 196" width="196" height="196" aria-hidden="true">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="13" />
+    <svg viewBox="0 0 150 150" width="150" height="150" aria-hidden="true">
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
       {pct > 0 && (
         <circle
           cx={cx} cy={cy} r={r} fill="none"
-          stroke={color} strokeWidth="13"
+          stroke={color} strokeWidth="10"
           strokeDasharray={`${dash} ${circumference - dash}`}
           strokeDashoffset={circumference / 4}
           strokeLinecap="round"
@@ -259,7 +259,7 @@ export default function DashboardPage() {
 
       {/* Progress Ring — driven entirely by useMoneyMode */}
       <div className="spend-ring-wrap">
-        <div className="spend-ring-container">
+        <div className="spend-ring-container small">
           <ProgressRing pct={kpi.progress} color={kpi.color} />
           <div className="spend-ring-center">
             {kpi.hasGoal ? (
@@ -277,20 +277,10 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        {kpi.hasGoal && (
-          <>
-            <div className="ring-status" style={{ color: kpi.statusColor }}>{kpi.statusMsg}</div>
-            {kpi.gapLabel && (
-              <div className="ring-gap" style={{ color: kpi.gapColor }}>{kpi.gapLabel}</div>
-            )}
-          </>
+        {kpi.hasGoal && kpi.statusMsg && (
+          <div className="ring-status" style={{ color: kpi.statusColor }}>{kpi.statusMsg}</div>
         )}
       </div>
-
-      {/* Summary line */}
-      {kpi.summaryLine && (
-        <div className="summary-line">{kpi.summaryLine}</div>
-      )}
 
       {/* Stats row — mode-aware chips from hook */}
       <div className="stats-row">
@@ -301,33 +291,6 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
-
-      {/* Planned recurring this month */}
-      {(plannedExpense > 0 || plannedIncome > 0) && (
-        <div className="planned-banner">
-          <span className="planned-title">{t.plannedThisMonth}</span>
-          <div className="planned-items">
-            {plannedIncome > 0 && (
-              <span className="planned-income">
-                <TrendingUp size={12} />
-                {formatCurrency(plannedIncome)}
-              </span>
-            )}
-            {plannedExpense > 0 && (
-              <span className="planned-expense">
-                <TrendingDown size={12} />
-                {formatCurrency(plannedExpense)}
-              </span>
-            )}
-            {plannedIncome > 0 && plannedExpense > 0 && (
-              <span className="planned-net" style={{ color: plannedIncome >= plannedExpense ? 'var(--success)' : 'var(--danger)' }}>
-                {t.net}: {formatCurrency(plannedIncome - plannedExpense)}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
 
       {/* Transaction feed */}
       <div className="txn-section">

@@ -238,14 +238,14 @@ const he: Translations = {
   // Money mode selector
   moneyModeTitle: 'איך אתה מנהל את הכסף שלך?',
   modeTrackSavings: 'מעקב חיסכון',
-  modeTrackSavingsDesc: 'מזין הכנסות והוצאות, עוקב על מה שנשמר',
+  modeTrackSavingsDesc: 'עוקב אחרי הכנסות, הוצאות וחיסכון',
   modeTrackBudget: 'מעקב תקציב',
-  modeTrackBudgetDesc: 'מנהל לפי תקציב חודשי, ללא צורך ברישום הכנסות',
+  modeTrackBudgetDesc: 'מנהל לפי תקציב חודשי בלבד',
   // Financial goals section
   financialGoals: 'יעדים פיננסיים',
   savingsGoalLabel: 'יעד חיסכון',
-  savingsHelperText: 'חיסכון = הכנסות − הוצאות. הקפד לרשום גם הכנסות כדי לקבל תמונה מלאה.',
-  budgetHelperText: 'האפליקציה עוקבת אחר ההוצאות שלך מול התקציב החודשי. אין צורך לרשום הכנסות.',
+  savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. כדי לראות חיסכון מדויק, הקפד לרשום גם הכנסות.',
+  budgetHelperText: 'עוקב אחרי ההוצאות שלך ביחס לתקציב החודשי. אין צורך לרשום הכנסות.',
   mainCurrencyLabel: 'מטבע ראשי',
   // Categories section
   categoriesTitle: 'קטגוריות',
@@ -268,8 +268,8 @@ const he: Translations = {
   plannedThisMonth: 'צפוי החודש',
   net: 'נטו',
   // KPI labels
-  savedThisMonth: 'נשמר החודש',
-  savingsRingLabel: 'נשמר החודש',
+  savedThisMonth: 'חיסכון החודש',
+  savingsRingLabel: 'חיסכון החודש',
   budgetRingLabel: 'הוצאות החודש',
   remainingLabel: 'נותר',
   // useMoneyMode pure status strings
@@ -383,14 +383,14 @@ const en: Translations = {
   // Money mode selector
   moneyModeTitle: 'How do you manage your money?',
   modeTrackSavings: 'Savings Tracking',
-  modeTrackSavingsDesc: 'Track income & expenses, see what you save',
+  modeTrackSavingsDesc: 'Track income, expenses, and savings',
   modeTrackBudget: 'Budget Tracking',
-  modeTrackBudgetDesc: 'Manage with a monthly budget, no income tracking needed',
+  modeTrackBudgetDesc: 'Manage with a monthly budget only',
   // Financial goals section
   financialGoals: 'Financial Goals',
   savingsGoalLabel: 'Savings Goal',
-  savingsHelperText: 'Savings = income − expenses. Make sure to record your income too.',
-  budgetHelperText: 'The app tracks your expenses against your monthly budget. No need to record income.',
+  savingsHelperText: 'Savings are calculated as income minus expenses. To see accurate savings, record income too.',
+  budgetHelperText: 'Tracks your expenses against your monthly budget. No need to record income.',
   mainCurrencyLabel: 'Main Currency',
   // Categories section
   categoriesTitle: 'Categories',
@@ -413,8 +413,8 @@ const en: Translations = {
   plannedThisMonth: 'Planned this month',
   net: 'Net',
   // KPI labels
-  savedThisMonth: 'Saved this month',
-  savingsRingLabel: 'Saved this month',
+  savedThisMonth: 'Monthly Savings',
+  savingsRingLabel: 'Monthly Savings',
   budgetRingLabel: 'Monthly Expenses',
   remainingLabel: 'Left',
   // useMoneyMode pure status strings
