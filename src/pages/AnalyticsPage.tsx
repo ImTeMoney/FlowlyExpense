@@ -133,6 +133,8 @@ export default function AnalyticsPage() {
   const [splitRec, setSplitRec]               = useState<RecurringExpense | null>(null);
   const [splitRecN, setSplitRecN]             = useState(12);
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(now.getFullYear());
 
   function addRecurring() {
     const amt = parseFloat(recAmt);
@@ -163,7 +165,13 @@ export default function AnalyticsPage() {
       {/* Month nav */}
       <div className="month-nav">
         <button className="mnav-btn" onClick={prevMonth} aria-label="Previous month">‹</button>
-        <span className="mnav-title">{monthLabel(year, month)}</span>
+        <button
+          className="mnav-title mnav-title-btn"
+          onClick={() => { setPickerYear(year); setShowMonthPicker(true); }}
+          aria-label="Open month picker"
+        >
+          {monthLabel(year, month)}
+        </button>
         <button className="mnav-btn" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">›</button>
       </div>
 
@@ -179,44 +187,35 @@ export default function AnalyticsPage() {
             ? savings > goal
               ? lang === 'he'
                 ? `עברת את יעד החיסכון ב־${formatCurrency(savings - goal)} 💪`
-                : `You exceeded your savings goal by ${formatCurrency(savings - goal)} 💪`
+                : `Exceeded savings goal by ${formatCurrency(savings - goal)} 💪`
               : lang === 'he'
                 ? `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
                 : `${Math.round(pct * 100)}% of savings goal${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
             : income > 0
-              ? lang === 'he' ? `חיסכון: ${formatCurrency(savings)}` : `Savings: ${formatCurrency(savings)}`
+              ? null
               : t.noIncomeRecorded;
-          const goalSuffix = goal > 0
-            ? ` · ${lang === 'he' ? 'יעד' : 'Goal'}: ${formatCurrency(goal)}`
-            : '';
+          const subLine = (income > 0 || spent > 0)
+            ? lang === 'he'
+              ? `הכנסות ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}`
+              : `Income ${formatCurrency(income)} · Expenses ${formatCurrency(spent)}`
+            : null;
           return (
             <div className="bcard">
-              <div className="bcard-nums">
-                <div className="bcard-block">
-                  <span className="bcard-val hero" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
-                    {formatCurrency(Math.max(0, savings))}
-                  </span>
-                  <div className="bcard-lbl">{t.savedThisMonth}</div>
-                </div>
-                {income > 0 && (
-                  <div className="bcard-block">
-                    <span className="bcard-val income-v">+{formatCurrency(income)}</span>
-                    <div className="bcard-lbl">{t.income}</div>
-                  </div>
-                )}
-                <div className="bcard-block">
-                  <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
-                  <div className="bcard-lbl">{t.spent}</div>
-                </div>
+              <div className="bcard-hero-lbl">{t.savedThisMonth}</div>
+              <div className="bcard-hero-val" style={{ color: savings > 0 ? 'var(--success)' : savings < 0 ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                {formatCurrency(savings)}
               </div>
+              {subLine && <div className="bcard-sub-line">{subLine}</div>}
               {goal > 0 && (
-                <div className="budget-bar">
+                <div className="budget-bar" style={{ marginTop: 14 }}>
                   <div className="budget-bar-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
                 </div>
               )}
-              <div className="bcard-of" style={{ color: goal > 0 && savings >= goal ? 'var(--success)' : 'var(--text-dim)' }}>
-                {statusText}{goalSuffix}
-              </div>
+              {statusText && (
+                <div className="bcard-of" style={{ color: goal > 0 && savings >= goal ? 'var(--success)' : 'var(--text-dim)', marginTop: goal > 0 ? 0 : 8 }}>
+                  {statusText}
+                </div>
+              )}
             </div>
           );
         } else {
@@ -225,48 +224,46 @@ export default function AnalyticsPage() {
           const remaining = goal - spent;
           const pct       = goal > 0 ? Math.min(spent / goal, 1) : 0;
           const barColor  = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
+
+          // Hero: remaining if budget set, otherwise spent
+          const heroVal   = goal > 0 ? Math.abs(remaining) : spent;
+          const heroLbl   = goal > 0 ? (remaining >= 0 ? t.remainingLabel : t.overBudget) : t.budgetThisMonth;
+          const heroColor = goal > 0 ? (remaining >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-secondary)';
+
+          const subParts: string[] = [];
+          if (income > 0) subParts.push(`${lang === 'he' ? 'הכנסות' : 'Income'} ${formatCurrency(income)}`);
+          subParts.push(`${lang === 'he' ? 'הוצאות' : 'Spent'} ${formatCurrency(spent)}`);
+          if (goal > 0 && income === 0) subParts.push(`${lang === 'he' ? 'תקציב' : 'Budget'} ${formatCurrency(goal)}`);
+
           const statusText = goal > 0
             ? remaining < 0
               ? lang === 'he'
                 ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`
                 : `Over budget by ${formatCurrency(Math.abs(remaining))}`
               : lang === 'he'
-                ? `נשאר ${formatCurrency(remaining)} · ${Math.round((1 - pct) * 100)}% מהתקציב`
-                : `${formatCurrency(remaining)} left · ${Math.round((1 - pct) * 100)}% of budget`
-            : t.budgetThisMonth;
-          const budgetSuffix = goal > 0
-            ? ` · ${lang === 'he' ? 'תקציב' : 'Budget'}: ${formatCurrency(goal)}`
-            : '';
+                ? `${Math.round((1 - pct) * 100)}% מהתקציב נשאר`
+                : `${Math.round((1 - pct) * 100)}% of budget remaining`
+            : null;
+
           return (
             <div className="bcard">
-              <div className="bcard-nums">
-                <div className="bcard-block">
-                  <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
-                  <div className="bcard-lbl">{t.spent}</div>
-                </div>
-                {goal > 0 && (
-                  <div className="bcard-block">
-                    <span className="bcard-val" style={{ color: remaining >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                      {formatCurrency(Math.abs(remaining))}
-                    </span>
-                    <div className="bcard-lbl">{remaining >= 0 ? t.remainingLabel : t.overBudget}</div>
-                  </div>
-                )}
-                {income > 0 && (
-                  <div className="bcard-block">
-                    <span className="bcard-val income-v">+{formatCurrency(income)}</span>
-                    <div className="bcard-lbl">{t.income}</div>
-                  </div>
-                )}
+              <div className="bcard-hero-lbl">{heroLbl}</div>
+              <div className="bcard-hero-val" style={{ color: heroColor }}>
+                {formatCurrency(heroVal)}
               </div>
+              {subParts.length > 0 && (
+                <div className="bcard-sub-line">{subParts.join(' · ')}</div>
+              )}
               {goal > 0 && (
-                <div className="budget-bar">
+                <div className="budget-bar" style={{ marginTop: 14 }}>
                   <div className="budget-bar-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
                 </div>
               )}
-              <div className="bcard-of" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--text-dim)' }}>
-                {statusText}{budgetSuffix}
-              </div>
+              {statusText && (
+                <div className="bcard-of" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--text-dim)', marginTop: goal > 0 ? 0 : 8 }}>
+                  {statusText}
+                </div>
+              )}
             </div>
           );
         }
@@ -634,6 +631,44 @@ export default function AnalyticsPage() {
             }}>
               {t.save}
             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Month / Year picker */}
+      {showMonthPicker && createPortal(
+        <div className="mpicker-overlay" onClick={() => setShowMonthPicker(false)}>
+          <div className="mpicker-card" onClick={e => e.stopPropagation()}>
+            <div className="mpicker-year-nav">
+              <button className="mpicker-yr-btn" onClick={() => setPickerYear(y => y - 1)}>‹</button>
+              <span className="mpicker-yr-label">{pickerYear}</span>
+              <button
+                className="mpicker-yr-btn"
+                onClick={() => setPickerYear(y => y + 1)}
+                disabled={pickerYear >= now.getFullYear()}
+              >›</button>
+            </div>
+            <div className="mpicker-grid">
+              {Array.from({ length: 12 }, (_, i) => {
+                const m = i + 1;
+                const isFuture = pickerYear > now.getFullYear() ||
+                  (pickerYear === now.getFullYear() && m > now.getMonth() + 1);
+                const isSelected = pickerYear === year && m === month;
+                const label = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-US', { month: 'short' })
+                  .format(new Date(2000, i, 1));
+                return (
+                  <button
+                    key={m}
+                    className={`mpicker-month-btn${isSelected ? ' active' : ''}`}
+                    disabled={isFuture}
+                    onClick={() => { setYear(pickerYear); setMonth(m); setShowMonthPicker(false); }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>,
         document.body
