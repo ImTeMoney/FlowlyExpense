@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Package, Plus, X,
   TrendingDown, TrendingUp,
@@ -595,7 +596,7 @@ export default function AnalyticsPage() {
         />
       )}
 
-      {splitRec && (
+      {splitRec && createPortal(
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSplitRec(null)}>
           <div className="modal-sheet">
             <div className="modal-handle" />
@@ -634,7 +635,8 @@ export default function AnalyticsPage() {
               {t.save}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

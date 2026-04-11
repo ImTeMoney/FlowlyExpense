@@ -441,8 +441,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Add Transaction Modal */}
-      {showModal && (
+      {/* Add Transaction Modal — portalled so position:fixed is viewport-relative */}
+      {showModal && createPortal(
         <div
           className="modal-overlay"
           onClick={e => e.target === e.currentTarget && setShowModal(false)}
@@ -609,13 +609,14 @@ export default function DashboardPage() {
               {t.add}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && createPortal(<div className="toast">{toast}</div>, document.body)}
 
-      {/* Split existing transaction sheet */}
-      {splitTx && (
+      {/* Split existing transaction sheet — portalled so position:fixed is viewport-relative */}
+      {splitTx && createPortal(
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSplitTx(null)}>
           <div className="modal-sheet" style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)` }}>
             <div className="modal-handle" />
@@ -651,7 +652,8 @@ export default function DashboardPage() {
               {t.splitToInstallments}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
