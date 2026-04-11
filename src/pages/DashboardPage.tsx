@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
@@ -96,10 +97,7 @@ export default function DashboardPage() {
   const [splitN, setSplitN]                   = useState(3);
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
-  const [swipedId, setSwipedId]           = useState<string | null>(null);
-  const [confirmDeleteTx, setConfirmDeleteTx] = useState<Transaction | null>(null);
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
+  const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
@@ -205,24 +203,6 @@ export default function DashboardPage() {
   function handleDeleteGroup(groupId: string) {
     dispatch({ type: 'DELETE_INSTALLMENT_GROUP', payload: groupId });
     showToast(t.deleted);
-  }
-
-  function handleSwipeTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  }
-
-  function handleSwipeTouchEnd(id: string, e: React.TouchEvent) {
-    const dx = touchStartX.current - e.changedTouches[0].clientX;
-    const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
-    if (dy > 40) return; // vertical scroll — ignore
-    // In RTL layouts the delete zone is on the inline-end (left) side,
-    // so the reveal gesture is a rightward swipe (dx negative).
-    const isRtl = lang === 'he';
-    const openSwipe  = isRtl ? dx < -45 : dx > 45;
-    const closeSwipe = isRtl ? dx > 20  : dx < -20;
-    if (openSwipe)  setSwipedId(id);
-    else if (closeSwipe) setSwipedId(s => (s === id ? null : s));
   }
 
   function handleSplitExisting() {
@@ -395,7 +375,19 @@ export default function DashboardPage() {
                       {tx.installments && (
                         <button
                           className="txn-del txn-del-group"
-                          onClick={() => handleDeleteGroup(tx.installments!.groupId)}
+                          onClick={() => setConfirm({
+                            title: t.deleteAllInstallments,
+                            body: (
+                              <>
+                                <strong>"{tx.description}"</strong>
+                                {' '}
+                                {lang === 'he'
+                                  ? `(${tx.installments!.current}/${tx.installments!.total} תשלומים)`
+                                  : `(${tx.installments!.current}/${tx.installments!.total} installments)`}
+                              </>
+                            ),
+                            onConfirm: () => { handleDeleteGroup(tx.installments!.groupId); setConfirm(null); },
+                          })}
                           aria-label="Delete all installments"
                           title={t.deleteAllInstallments}
                         >
@@ -404,7 +396,19 @@ export default function DashboardPage() {
                       )}
                       <button
                         className="txn-del"
-                        onClick={() => setConfirmDeleteTx(tx)}
+                        onClick={() => setConfirm({
+                          title: t.confirmDeleteTitle,
+                          body: (
+                            <>
+                              <strong>"{tx.description}"</strong>
+                              {' '}
+                              {lang === 'he'
+                                ? `— ${formatCurrency(tx.amount)}`
+                                : `· ${formatCurrency(tx.amount)}`}
+                            </>
+                          ),
+                          onConfirm: () => { handleDelete(tx.id); setConfirm(null); },
+                        })}
                         aria-label="Delete"
                       >
                         <X size={14} />
@@ -427,32 +431,14 @@ export default function DashboardPage() {
         document.body
       )}
 
-      {/* Delete confirmation dialog */}
-      {confirmDeleteTx && createPortal(
-        <div className="confirm-overlay" onClick={() => setConfirmDeleteTx(null)}>
-          <div className="confirm-card" onClick={e => e.stopPropagation()}>
-            <div className="confirm-title">{t.confirmDeleteTitle}</div>
-            <div className="confirm-body">
-              <strong>"{confirmDeleteTx.description}"</strong>
-              {' '}
-              {lang === 'he'
-                ? `— ${formatCurrency(confirmDeleteTx.amount)}`
-                : `· ${formatCurrency(confirmDeleteTx.amount)}`}
-            </div>
-            <div className="confirm-actions">
-              <button className="confirm-cancel-btn" onClick={() => setConfirmDeleteTx(null)}>
-                {t.cancel}
-              </button>
-              <button
-                className="confirm-delete-btn"
-                onClick={() => { handleDelete(confirmDeleteTx.id); setConfirmDeleteTx(null); }}
-              >
-                {t.deleteLabel}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* Delete confirmation */}
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          body={confirm.body}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
       )}
 
       {/* Add Transaction Modal */}

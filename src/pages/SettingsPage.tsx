@@ -4,6 +4,7 @@ import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchange
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Check, X, RefreshCw, ChevronRight } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -62,6 +63,7 @@ const SettingsPage: React.FC = () => {
 
   // New category
   const [newCatName,  setNewCatName]  = useState('');
+  const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
   const [newCatColor, setNewCatColor] = useState(CATEGORY_COLORS[4]);
 
   function handleAddCategory(e: React.FormEvent) {
@@ -220,7 +222,15 @@ const SettingsPage: React.FC = () => {
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
                   {/* Delete — available in edit mode only */}
                   <button
-                    onClick={() => { dispatch({ type: 'DELETE_CATEGORY', payload: editingId! }); setEditingId(null); }}
+                    onClick={() => setConfirm({
+                      title: t.confirmDeleteCatTitle,
+                      body: <strong>"{editingName}"</strong>,
+                      onConfirm: () => {
+                        dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
+                        setEditingId(null);
+                        setConfirm(null);
+                      },
+                    })}
                     style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}
                   >
                     <Trash2 size={12} /> {t.deleteLabel}
@@ -307,6 +317,16 @@ const SettingsPage: React.FC = () => {
           {t.refreshApp}
         </button>
       </div>
+
+      {/* Delete confirmation */}
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          body={confirm.body}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
 
     </div>
   );

@@ -156,6 +156,8 @@ export interface Translations {
   deleteLabel: string;
   monthlyBadge: string;
   confirmDeleteTitle: string;
+  confirmDeleteRecTitle: string;
+  confirmDeleteCatTitle: string;
 }
 
 const he: Translations = {
@@ -306,6 +308,8 @@ const he: Translations = {
   deleteLabel: 'מחק',
   monthlyBadge: 'חודשי',
   confirmDeleteTitle: 'מחק הוצאה?',
+  confirmDeleteRecTitle: 'מחק תשלום קבוע?',
+  confirmDeleteCatTitle: 'מחק קטגוריה?',
 };
 
 const en: Translations = {
@@ -456,6 +460,8 @@ const en: Translations = {
   deleteLabel: 'Delete',
   monthlyBadge: 'Monthly',
   confirmDeleteTitle: 'Delete expense?',
+  confirmDeleteRecTitle: 'Delete recurring expense?',
+  confirmDeleteCatTitle: 'Delete category?',
 };
 
 interface LanguageContextProps {

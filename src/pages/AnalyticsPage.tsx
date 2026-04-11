@@ -9,6 +9,7 @@ import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '..
 import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
 import { CURRENCY_SYMBOL } from '../services/exchangeRate';
+import ConfirmModal from '../components/ConfirmModal';
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -130,6 +131,7 @@ export default function AnalyticsPage() {
   const [recNumInst, setRecNumInst]           = useState(12);
   const [splitRec, setSplitRec]               = useState<RecurringExpense | null>(null);
   const [splitRecN, setSplitRecN]             = useState(12);
+  const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
 
   function addRecurring() {
     const amt = parseFloat(recAmt);
@@ -558,7 +560,19 @@ export default function AnalyticsPage() {
                   )}
                   <button
                     className="rec-del"
-                    onClick={() => dispatch({ type: 'DELETE_RECURRING', payload: r.id })}
+                    onClick={() => setConfirm({
+                      title: t.confirmDeleteRecTitle,
+                      body: (
+                        <>
+                          <strong>"{r.description}"</strong>
+                          {' '}
+                          {lang === 'he'
+                            ? `— ${formatCurrency(r.amount)} לחודש`
+                            : `· ${formatCurrency(r.amount)}/mo`}
+                        </>
+                      ),
+                      onConfirm: () => { dispatch({ type: 'DELETE_RECURRING', payload: r.id }); setConfirm(null); },
+                    })}
                     aria-label="Delete"
                   >
                     <X size={14} />
@@ -571,6 +585,16 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Set installments on existing recurring */}
+      {/* Delete confirmation */}
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          body={confirm.body}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
       {splitRec && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSplitRec(null)}>
           <div className="modal-sheet">
