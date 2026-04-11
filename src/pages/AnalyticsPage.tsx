@@ -369,8 +369,8 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* Weekly breakdown */}
-      {weeklyTotals.some(w => w.total > 0) && (
+      {/* Weekly breakdown — always show all weeks for context */}
+      {weeklyTotals.length > 0 && (
         <div className="a-sec">
           <div className="a-sec-title">
             <span className="title-text">{t.weeklyBreakdown}</span>
@@ -378,11 +378,13 @@ export default function AnalyticsPage() {
           <div className="weekly-chart">
             {weeklyTotals.map((w, i) => (
               <div key={i} className="weekly-bar-wrap">
-                <div className="weekly-amt">{w.total > 0 ? formatCurrency(w.total) : ''}</div>
+                <div className="weekly-amt" style={{ color: w.total === 0 ? 'var(--text-dim)' : undefined }}>
+                  {w.total > 0 ? formatCurrency(w.total) : '—'}
+                </div>
                 <div className="weekly-bar-bg">
                   <div
-                    className="weekly-bar-fill"
-                    style={{ height: `${(w.total / maxWeek) * 100}%` }}
+                    className={`weekly-bar-fill${w.total === 0 ? ' zero' : ''}`}
+                    style={{ height: w.total > 0 ? `${(w.total / maxWeek) * 100}%` : undefined }}
                   />
                 </div>
                 <div className="weekly-label">{w.label}</div>
@@ -396,9 +398,16 @@ export default function AnalyticsPage() {
       <div className="a-sec">
         <div className="a-sec-title">
           <span className="title-text">{t.recurringExpenses}</span>
-          <button className="toggle-btn" onClick={() => setShowRecForm(s => !s)}>
-            {showRecForm ? <X size={14} /> : <Plus size={14} />}
-          </button>
+          {showRecForm ? (
+            <button className="rec-close-btn" onClick={() => setShowRecForm(false)} aria-label="Close form">
+              <X size={13} />
+            </button>
+          ) : (
+            <button className="rec-add-btn" onClick={() => setShowRecForm(true)}>
+              <Plus size={13} />
+              <span>{t.addRecurring}</span>
+            </button>
+          )}
         </div>
 
         {showRecForm && (
@@ -512,6 +521,9 @@ export default function AnalyticsPage() {
             {recurringExpenses.map(r => {
               const cat  = categories.find(c => c.id === r.categoryId);
               const Icon = r.isIncome ? TrendingUp : (CAT_ICON[r.categoryId] ?? Package);
+              const badgeLabel = r.totalInstallments
+                ? `${r.postedCount ?? 0}/${r.totalInstallments}`
+                : t.monthlyBadge;
               return (
                 <div key={r.id} className="rec-item">
                   <div
@@ -521,14 +533,14 @@ export default function AnalyticsPage() {
                     <Icon size={15} color={r.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} />
                   </div>
                   <div className="rec-info">
-                    <div className="rec-name">{r.description}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <div className="rec-name" style={{ marginBottom: 0 }}>{r.description}</div>
+                      <span className="rec-badge">{badgeLabel}</span>
+                    </div>
                     <div className="rec-meta">
                       {t.day} {r.dayOfMonth}
                       {!r.isIncome && cat ? ` · ${cat.name}` : ''}
                       {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
-                      {r.totalInstallments
-                        ? ` · ${t.installmentProgress} ${(r.postedCount ?? 0)}/${r.totalInstallments}`
-                        : ''}
                     </div>
                   </div>
                   <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>

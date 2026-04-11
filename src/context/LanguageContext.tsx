@@ -151,6 +151,10 @@ export interface Translations {
   // Rate
   rateLabel: string;
   rateError: string;
+  // UI actions
+  addRecurring: string;
+  deleteLabel: string;
+  monthlyBadge: string;
 }
 
 const he: Translations = {
@@ -296,6 +300,10 @@ const he: Translations = {
   // Rate
   rateLabel: 'שער',
   rateError: 'שגיאה בטעינת שער',
+  // UI actions
+  addRecurring: 'הוסף תשלום קבוע',
+  deleteLabel: 'מחק',
+  monthlyBadge: 'חודשי',
 };
 
 const en: Translations = {
@@ -398,7 +406,7 @@ const en: Translations = {
   addCategory: 'Add Category',
   // Tools section
   toolsTitle: 'Tools',
-  refreshApp: 'Refresh App',
+  refreshApp: 'Reload App',
   // Installments / splits
   installmentSplit: 'Split into installments',
   installments: 'installments',
@@ -441,6 +449,10 @@ const en: Translations = {
   // Rate
   rateLabel: 'Rate',
   rateError: 'Rate load error',
+  // UI actions
+  addRecurring: 'Add Recurring',
+  deleteLabel: 'Delete',
+  monthlyBadge: 'Monthly',
 };
 
 interface LanguageContextProps {

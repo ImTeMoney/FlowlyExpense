@@ -3,7 +3,7 @@ import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Pencil, Check, X, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Check, X, RefreshCw, ChevronRight } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -217,34 +217,38 @@ const SettingsPage: React.FC = () => {
                     />
                   ))}
                 </div>
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                  <button onClick={() => setEditingId(null)}
-                    style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                    <X size={12} /> {t.cancel}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
+                  {/* Delete — available in edit mode only */}
+                  <button
+                    onClick={() => { dispatch({ type: 'DELETE_CATEGORY', payload: editingId! }); setEditingId(null); }}
+                    style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}
+                  >
+                    <Trash2 size={12} /> {t.deleteLabel}
                   </button>
-                  <button onClick={commitEdit}
-                    style={{ background: 'var(--purple)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                    <Check size={12} /> {t.save}
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setEditingId(null)}
+                      style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                      <X size={12} /> {t.cancel}
+                    </button>
+                    <button onClick={commitEdit}
+                      style={{ background: 'var(--purple)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                      <Check size={12} /> {t.save}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              /* Tap whole row to enter edit mode */
+              <button
+                onClick={() => startEdit(cat.id, cat.name, cat.color)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', textAlign: 'start' }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                   <span className="set-lbl">{cat.name}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button onClick={() => startEdit(cat.id, cat.name, cat.color)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', opacity: 0.7 }}>
-                    <Pencil size={13} />
-                  </button>
-                  <button onClick={() => dispatch({ type: 'DELETE_CATEGORY', payload: cat.id })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', opacity: 0.75 }}>
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
+                <ChevronRight size={14} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
+              </button>
             )}
           </div>
         ))}
@@ -270,7 +274,10 @@ const SettingsPage: React.FC = () => {
               />
             ))}
           </div>
-          <button type="submit" className="export-btn" disabled={!newCatName.trim()}
+          <button
+            type="submit"
+            className={`export-btn${newCatName.trim() ? ' primary' : ''}`}
+            disabled={!newCatName.trim()}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             <Plus size={13} /> {t.addCategory}

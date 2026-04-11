@@ -400,7 +400,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
    ===================================================== */
 .fab {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom) + 8px);
+  bottom: calc(env(safe-area-inset-bottom) + 78px);
   left: 50%;
   margin-left: -27px;
   width: 54px;
@@ -607,7 +607,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 /* =====================================================
    TRANSACTION FEED
    ===================================================== */
-.txn-section { padding: 4px 13px calc(80px + env(safe-area-inset-bottom)); }
+.txn-section { padding: 4px 13px calc(155px + env(safe-area-inset-bottom)); }
 
 .date-group { margin-bottom: 14px; }
 
@@ -657,8 +657,12 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .txn-info { flex: 1; min-width: 0; }
 .txn-name {
   font-size: 14px; font-weight: 500; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   margin-bottom: 2px;
+  line-height: 1.35;
 }
 /* .txn-cat moved to TRANSACTION META LINE section */
 
@@ -676,11 +680,11 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: var(--danger);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  opacity: 0.45;
-  transition: opacity 0.15s, background 0.15s;
+  opacity: 0;
+  transition: opacity 0.18s, background 0.15s;
 }
-.txn-item:hover .txn-del { opacity: 1; }
-.txn-del:hover { background: rgba(239,68,68,0.25); }
+.txn-item:hover .txn-del { opacity: 0.8; }
+.txn-del:hover { background: rgba(239,68,68,0.25); opacity: 1 !important; }
 .txn-del svg { width: 14px; height: 14px; }
 
 /* Empty state */
@@ -857,11 +861,13 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .rec-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .rec-amt { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; color: var(--purple); flex-shrink: 0; }
 .rec-amt.income { color: var(--success); }
-.rec-del { color: var(--text-dim); transition: color 0.15s, background 0.15s; padding: 4px; border-radius: 6px; }
-.rec-del:hover { color: var(--danger); background: var(--danger-dim); }
+.rec-del { color: var(--text-dim); transition: color 0.15s, background 0.15s, opacity 0.18s; padding: 4px; border-radius: 6px; opacity: 0; }
+.rec-item:hover .rec-del { opacity: 0.65; }
+.rec-del:hover { color: var(--danger); background: var(--danger-dim); opacity: 1 !important; }
 .rec-del svg { width: 14px; height: 14px; display: block; }
-.rec-split-btn { color: #8B5CF6 !important; opacity: 0.7; }
-.rec-split-btn:hover { opacity: 1; background: rgba(139,92,246,0.12) !important; }
+.rec-split-btn { color: #8B5CF6 !important; opacity: 0.6; }
+.rec-item:hover .rec-split-btn { opacity: 0.85; }
+.rec-split-btn:hover { opacity: 1 !important; background: rgba(139,92,246,0.12) !important; }
 
 /* Add recurring form */
 .add-rec-form {
@@ -1230,11 +1236,12 @@ select.sm-in option { background: var(--modal-bg); }
   line-height: 1.4;
 }
 
-/* Group-delete button (trash icon) */
+/* Group-delete button (trash icon) — hidden by default, shown on row hover */
 .txn-del-group {
   color: var(--danger) !important;
-  opacity: 0.55;
+  opacity: 0 !important;
 }
+.txn-item:hover .txn-del-group { opacity: 0.65 !important; }
 .txn-del-group:hover { opacity: 1 !important; }
 
 /* Split button on existing transactions */
@@ -1667,12 +1674,144 @@ select.sm-in option { background: var(--modal-bg); }
   background: linear-gradient(180deg, var(--purple), rgba(139,92,246,0.4));
   border-radius: 4px 4px 0 0;
   transition: height 0.6s ease;
-  min-height: 2px;
+  min-height: 4px;
+}
+.weekly-bar-fill.zero {
+  background: rgba(139,92,246,0.18);
+  min-height: 4px;
 }
 .weekly-label {
   font-size: 10px;
   color: var(--text-dim);
   font-weight: 500;
+}
+
+/* =====================================================
+   SWIPE TO DELETE (transactions)
+   ===================================================== */
+.txn-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  margin-bottom: 6px;
+}
+
+.txn-swipe-bg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239,68,68,0.15);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+
+.txn-swipe-del-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.txn-swipe-del-btn:hover { transform: scale(1.08); background: #DC2626; }
+.txn-swipe-del-btn:active { transform: scale(0.92); }
+.txn-swipe-del-btn svg { width: 16px; height: 16px; }
+
+/* Item inside wrap — no outer margin (wrap handles it) */
+.txn-swipe-wrap .txn-item {
+  margin-bottom: 0;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.txn-swipe-wrap .txn-item.swiped {
+  transform: translateX(-80px);
+}
+
+/* =====================================================
+   ADD RECURRING BUTTON (Analytics section header)
+   ===================================================== */
+.rec-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--purple-dim);
+  border: 1px solid rgba(139,92,246,0.3);
+  color: #C4B5FD;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.rec-add-btn:hover {
+  background: rgba(139,92,246,0.22);
+  box-shadow: 0 0 8px var(--purple-glow);
+}
+.rec-add-btn svg { width: 13px; height: 13px; }
+
+/* Shown only when form is open — a plain close icon */
+.rec-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.rec-close-btn:hover { background: var(--danger-dim); color: var(--danger); }
+.rec-close-btn svg { width: 13px; height: 13px; }
+
+/* Monthly badge on recurring items */
+.rec-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #8B5CF6;
+  background: rgba(139,92,246,0.12);
+  line-height: 1.5;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* =====================================================
+   ADD CATEGORY BUTTON (Settings) — prominent when enabled
+   ===================================================== */
+.export-btn.primary:not(:disabled) {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: #fff;
+  box-shadow: 0 0 16px var(--purple-glow);
+}
+.export-btn.primary:not(:disabled):hover {
+  background: #7C3AED;
+  box-shadow: 0 0 24px var(--purple-glow);
 }
 
 /* =====================================================
