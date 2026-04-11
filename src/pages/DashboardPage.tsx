@@ -315,7 +315,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Transaction feed */}
-      <div className="txn-section" onScroll={() => setSwipedId(null)}>
+      <div className="txn-section">
         {grouped.size === 0 ? (
           <div className="empty-state">
             <div className="empty-icon"><TrendingDown size={22} /></div>
@@ -332,106 +332,82 @@ export default function DashboardPage() {
                   <span className="dg-total">{formatCurrency(dayTotal)}</span>
                 </div>
                 {txns.map(tx => {
-                  const cat  = categories.find(c => c.id === tx.categoryId);
-                  const Icon = tx.isIncome ? TrendingUp : (CAT_ICON[tx.categoryId] ?? Package);
+                  const cat    = categories.find(c => c.id === tx.categoryId);
+                  const Icon   = tx.isIncome ? TrendingUp : (CAT_ICON[tx.categoryId] ?? Package);
                   const PmIcon = tx.paymentMethod ? PM_ICON[tx.paymentMethod] : null;
-                  const isSwiped = swipedId === tx.id;
                   return (
-                    <div
-                      key={tx.id}
-                      className="txn-swipe-wrap"
-                      onTouchStart={handleSwipeTouchStart}
-                      onTouchEnd={e => handleSwipeTouchEnd(tx.id, e)}
-                    >
-                      {/* Delete zone revealed on swipe */}
-                      <div className="txn-swipe-bg">
-                        <button
-                          className="txn-swipe-del-btn"
-                          onClick={() => { handleDelete(tx.id); setSwipedId(null); }}
-                          aria-label="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                    <div key={tx.id} className="txn-item">
                       <div
-                        className={`txn-item${isSwiped ? ' swiped' : ''}`}
-                        onClick={() => { if (isSwiped) setSwipedId(null); }}
+                        className="txn-icon"
+                        style={{
+                          background: tx.isIncome ? 'rgba(34,197,94,0.1)' : `${cat?.color ?? '#8B5CF6'}18`,
+                          border: `1px solid ${tx.isIncome ? 'rgba(34,197,94,0.25)' : `${cat?.color ?? '#8B5CF6'}30`}`,
+                        }}
                       >
-                        <div
-                          className="txn-icon"
-                          style={{
-                            background: tx.isIncome ? 'rgba(34,197,94,0.1)' : `${cat?.color ?? '#8B5CF6'}18`,
-                            border: `1px solid ${tx.isIncome ? 'rgba(34,197,94,0.25)' : `${cat?.color ?? '#8B5CF6'}30`}`,
-                          }}
-                        >
-                          <Icon size={18} color={tx.isIncome ? '#22C55E' : (cat?.color ?? '#8B5CF6')} />
-                        </div>
-                        <div className="txn-info">
-                          <div className="txn-name">{tx.description}</div>
-                          <div className="txn-meta">
-                            <span className="txn-cat">{tx.isIncome ? t.income : (cat?.name ?? '')}</span>
-                            {tx.installments && (
-                              <span className="inst-badge">
-                                <GitFork size={10} />
-                                {tx.installments.current}/{tx.installments.total}
-                              </span>
-                            )}
-                            {tx.paymentMethod && PmIcon && (
-                              <span className="txn-pm">
-                                <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
-                                {pmLabel(tx.paymentMethod)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
-                          {tx.isIncome ? '+' : '-'}
-                          {tx.currency && tx.currency === mainCurrency && tx.originalAmount !== undefined
-                            ? formatCurrencyDirect(tx.originalAmount)
-                            : formatCurrency(tx.amount)
-                          }
-                          {tx.currency && tx.currency !== mainCurrency && tx.originalAmount !== undefined && (
-                            <span className="txn-orig-currency">
-                              {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount.toLocaleString()}
-                            </span>
-                          )}
-                          {!tx.currency && mainCurrency !== 'ILS' && (
-                            <span className="txn-orig-currency">
-                              ₪{tx.amount.toLocaleString('he-IL')}
-                            </span>
-                          )}
-                        </div>
-                        {/* Split button — always accessible (non-destructive) */}
-                        {!tx.isIncome && !tx.installments && (
-                          <button
-                            className="txn-del txn-split-btn"
-                            onClick={e => { e.stopPropagation(); setSplitTx(tx); setSplitN(3); }}
-                            aria-label="Split to installments"
-                            title={t.splitToInstallments}
-                          >
-                            <GitFork size={13} />
-                          </button>
-                        )}
-                        {/* Group delete — hidden until hover */}
-                        {tx.installments && (
-                          <button
-                            className="txn-del txn-del-group"
-                            onClick={e => { e.stopPropagation(); handleDeleteGroup(tx.installments!.groupId); }}
-                            aria-label="Delete all installments"
-                            title={t.deleteAllInstallments}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                        {/* Desktop delete — hidden until hover, swipe on mobile */}
-                        <button
-                          className="txn-del"
-                          onClick={e => { e.stopPropagation(); handleDelete(tx.id); }}
-                          aria-label="Delete"
-                        >
-                          <X size={14} />
-                        </button>
+                        <Icon size={18} color={tx.isIncome ? '#22C55E' : (cat?.color ?? '#8B5CF6')} />
                       </div>
+                      <div className="txn-info">
+                        <div className="txn-name">{tx.description}</div>
+                        <div className="txn-meta">
+                          <span className="txn-cat">{tx.isIncome ? t.income : (cat?.name ?? '')}</span>
+                          {tx.installments && (
+                            <span className="inst-badge">
+                              <GitFork size={10} />
+                              {tx.installments.current}/{tx.installments.total}
+                            </span>
+                          )}
+                          {tx.paymentMethod && PmIcon && (
+                            <span className="txn-pm">
+                              <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
+                              {pmLabel(tx.paymentMethod)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
+                        {tx.isIncome ? '+' : '-'}
+                        {tx.currency && tx.currency === mainCurrency && tx.originalAmount !== undefined
+                          ? formatCurrencyDirect(tx.originalAmount)
+                          : formatCurrency(tx.amount)
+                        }
+                        {tx.currency && tx.currency !== mainCurrency && tx.originalAmount !== undefined && (
+                          <span className="txn-orig-currency">
+                            {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount.toLocaleString()}
+                          </span>
+                        )}
+                        {!tx.currency && mainCurrency !== 'ILS' && (
+                          <span className="txn-orig-currency">
+                            ₪{tx.amount.toLocaleString('he-IL')}
+                          </span>
+                        )}
+                      </div>
+                      {!tx.isIncome && !tx.installments && (
+                        <button
+                          className="txn-del txn-split-btn"
+                          onClick={() => { setSplitTx(tx); setSplitN(3); }}
+                          aria-label="Split to installments"
+                          title={t.splitToInstallments}
+                        >
+                          <GitFork size={13} />
+                        </button>
+                      )}
+                      {tx.installments && (
+                        <button
+                          className="txn-del txn-del-group"
+                          onClick={() => handleDeleteGroup(tx.installments!.groupId)}
+                          aria-label="Delete all installments"
+                          title={t.deleteAllInstallments}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                      <button
+                        className="txn-del"
+                        onClick={() => handleDelete(tx.id)}
+                        aria-label="Delete"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   );
                 })}

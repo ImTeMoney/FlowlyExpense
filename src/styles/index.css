@@ -680,11 +680,11 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: var(--danger);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.18s, background 0.15s;
+  opacity: 0.45;
+  transition: opacity 0.15s, background 0.15s;
 }
-.txn-item:hover .txn-del { opacity: 0.8; }
-.txn-del:hover { background: rgba(239,68,68,0.25); opacity: 1 !important; }
+.txn-item:hover .txn-del { opacity: 1; }
+.txn-del:hover { background: rgba(239,68,68,0.25); }
 .txn-del svg { width: 14px; height: 14px; }
 
 /* Empty state */
@@ -1236,12 +1236,11 @@ select.sm-in option { background: var(--modal-bg); }
   line-height: 1.4;
 }
 
-/* Group-delete button (trash icon) — hidden by default, shown on row hover */
+/* Group-delete button (trash icon) */
 .txn-del-group {
   color: var(--danger) !important;
-  opacity: 0 !important;
+  opacity: 0.55;
 }
-.txn-item:hover .txn-del-group { opacity: 0.65 !important; }
 .txn-del-group:hover { opacity: 1 !important; }
 
 /* Split button on existing transactions */
