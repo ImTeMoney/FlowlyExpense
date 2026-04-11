@@ -90,6 +90,67 @@ export interface Translations {
   dailyAvg: string;
   weeklyBreakdown: string;
   addIncome: string;
+  // Money mode selector
+  moneyModeTitle: string;
+  modeTrackSavings: string;
+  modeTrackSavingsDesc: string;
+  modeTrackBudget: string;
+  modeTrackBudgetDesc: string;
+  // Financial goals section
+  financialGoals: string;
+  savingsGoalLabel: string;
+  savingsHelperText: string;
+  budgetHelperText: string;
+  mainCurrencyLabel: string;
+  // Categories section
+  categoriesTitle: string;
+  newCategoryPlaceholder: string;
+  addCategory: string;
+  // Tools section
+  toolsTitle: string;
+  refreshApp: string;
+  // Installments / splits
+  installmentSplit: string;
+  installments: string;
+  perMonth: string;
+  monthly: string;
+  active: string;
+  off: string;
+  splitToInstallments: string;
+  splitDone: string;
+  deleteAllInstallments: string;
+  // Dashboard planned banner
+  plannedThisMonth: string;
+  net: string;
+  // KPI labels
+  savedThisMonth: string;
+  savingsRingLabel: string;
+  budgetRingLabel: string;
+  remainingLabel: string;
+  // useMoneyMode pure status strings
+  setGoalInSettings: string;
+  addIncomeToCalc: string;
+  exactGoal: string;
+  almostGoal: string;
+  setBudgetInSettings: string;
+  exactBudget: string;
+  budgetThisMonth: string;
+  almostThere: string;
+  noIncomeRecorded: string;
+  // Category context tags
+  tagFixed: string;
+  tagHigh: string;
+  tagOneTime: string;
+  // Recurring / installments
+  limitedInstallments: string;
+  unlimited: string;
+  total: string;
+  setRecInstallments: string;
+  setInstallments: string;
+  installmentProgress: string;
+  // Rate
+  rateLabel: string;
+  rateError: string;
 }
 
 const he: Translations = {
@@ -174,6 +235,67 @@ const he: Translations = {
   dailyAvg: 'ממוצע יומי',
   weeklyBreakdown: 'לפי שבועות',
   addIncome: 'הוסף הכנסה',
+  // Money mode selector
+  moneyModeTitle: 'איך אתה מנהל את הכסף שלך?',
+  modeTrackSavings: 'מעקב חיסכון',
+  modeTrackSavingsDesc: 'מזין הכנסות והוצאות, עוקב על מה שנשמר',
+  modeTrackBudget: 'מעקב תקציב',
+  modeTrackBudgetDesc: 'מנהל לפי תקציב חודשי, ללא צורך ברישום הכנסות',
+  // Financial goals section
+  financialGoals: 'יעדים פיננסיים',
+  savingsGoalLabel: 'יעד חיסכון',
+  savingsHelperText: 'חיסכון = הכנסות − הוצאות. הקפד לרשום גם הכנסות כדי לקבל תמונה מלאה.',
+  budgetHelperText: 'האפליקציה עוקבת אחר ההוצאות שלך מול התקציב החודשי. אין צורך לרשום הכנסות.',
+  mainCurrencyLabel: 'מטבע ראשי',
+  // Categories section
+  categoriesTitle: 'קטגוריות',
+  newCategoryPlaceholder: 'שם קטגוריה חדשה',
+  addCategory: 'הוסף קטגוריה',
+  // Tools section
+  toolsTitle: 'כלים',
+  refreshApp: 'רענן אפליקציה',
+  // Installments / splits
+  installmentSplit: 'חלוקה לתשלומים',
+  installments: 'תשלומים',
+  perMonth: 'לחודש',
+  monthly: 'לחודש',
+  active: 'פעיל',
+  off: 'כבוי',
+  splitToInstallments: 'פצל לתשלומים',
+  splitDone: 'פוצל לתשלומים ✓',
+  deleteAllInstallments: 'מחק את כל התשלומים',
+  // Dashboard planned banner
+  plannedThisMonth: 'צפוי החודש',
+  net: 'נטו',
+  // KPI labels
+  savedThisMonth: 'נשמר החודש',
+  savingsRingLabel: 'נשמר החודש',
+  budgetRingLabel: 'הוצאות החודש',
+  remainingLabel: 'נותר',
+  // useMoneyMode pure status strings
+  setGoalInSettings: 'הגדר יעד חיסכון בהגדרות',
+  addIncomeToCalc: 'הוסף הכנסה כדי לחשב חיסכון',
+  exactGoal: 'עמדת בדיוק ביעד 🎯',
+  almostGoal: 'כמעט הגעת ליעד',
+  setBudgetInSettings: 'הגדר תקציב חודשי בהגדרות',
+  exactBudget: 'עמדת בדיוק על התקציב',
+  budgetThisMonth: 'הוצאות החודש',
+  almostThere: 'כמעט שם',
+  noIncomeRecorded: 'אין הכנסות רשומות לחודש זה',
+  // Category context tags
+  tagFixed: 'קבוע',
+  tagHigh: 'גבוה מהרגיל',
+  tagOneTime: 'חד פעמי',
+  // Recurring / installments
+  limitedInstallments: 'מספר תשלומים מוגבל',
+  unlimited: 'ללא הגבלה',
+  total: 'סה"כ',
+  setRecInstallments: 'הגדר תשלומים קבועים',
+  setInstallments: 'הגדר תשלומים',
+  installmentProgress: 'תשלום',
+  // Rate
+  rateLabel: 'שער',
+  rateError: 'שגיאה בטעינת שער',
 };
 
 const en: Translations = {
@@ -258,6 +380,67 @@ const en: Translations = {
   dailyAvg: 'Daily Avg',
   weeklyBreakdown: 'By Weeks',
   addIncome: 'Add Income',
+  // Money mode selector
+  moneyModeTitle: 'How do you manage your money?',
+  modeTrackSavings: 'Savings Tracking',
+  modeTrackSavingsDesc: 'Track income & expenses, see what you save',
+  modeTrackBudget: 'Budget Tracking',
+  modeTrackBudgetDesc: 'Manage with a monthly budget, no income tracking needed',
+  // Financial goals section
+  financialGoals: 'Financial Goals',
+  savingsGoalLabel: 'Savings Goal',
+  savingsHelperText: 'Savings = income − expenses. Make sure to record your income too.',
+  budgetHelperText: 'The app tracks your expenses against your monthly budget. No need to record income.',
+  mainCurrencyLabel: 'Main Currency',
+  // Categories section
+  categoriesTitle: 'Categories',
+  newCategoryPlaceholder: 'New category name',
+  addCategory: 'Add Category',
+  // Tools section
+  toolsTitle: 'Tools',
+  refreshApp: 'Refresh App',
+  // Installments / splits
+  installmentSplit: 'Split into installments',
+  installments: 'installments',
+  perMonth: '/month',
+  monthly: '/month',
+  active: 'Active',
+  off: 'Off',
+  splitToInstallments: 'Split to installments',
+  splitDone: 'Split into installments ✓',
+  deleteAllInstallments: 'Delete all installments',
+  // Dashboard planned banner
+  plannedThisMonth: 'Planned this month',
+  net: 'Net',
+  // KPI labels
+  savedThisMonth: 'Saved this month',
+  savingsRingLabel: 'Saved this month',
+  budgetRingLabel: 'Monthly Expenses',
+  remainingLabel: 'Left',
+  // useMoneyMode pure status strings
+  setGoalInSettings: 'Set a savings goal in Settings',
+  addIncomeToCalc: 'Add income to calculate savings',
+  exactGoal: 'Exactly on target 🎯',
+  almostGoal: 'Almost reached your goal',
+  setBudgetInSettings: 'Set a monthly budget in Settings',
+  exactBudget: 'Exactly on budget',
+  budgetThisMonth: 'Monthly Expenses',
+  almostThere: 'Almost there',
+  noIncomeRecorded: 'No income recorded this month',
+  // Category context tags
+  tagFixed: 'Fixed',
+  tagHigh: 'Above usual',
+  tagOneTime: 'One-time',
+  // Recurring / installments
+  limitedInstallments: 'Limited installments',
+  unlimited: 'Unlimited',
+  total: 'Total',
+  setRecInstallments: 'Set recurring installments',
+  setInstallments: 'Set installments',
+  installmentProgress: 'Payment',
+  // Rate
+  rateLabel: 'Rate',
+  rateError: 'Rate load error',
 };
 
 interface LanguageContextProps {

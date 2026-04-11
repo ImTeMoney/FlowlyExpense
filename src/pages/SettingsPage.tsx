@@ -81,7 +81,7 @@ const SettingsPage: React.FC = () => {
       {/* Header */}
       <div className="aether-header">
         <div className="header-row">
-          <div className="header-brand">הגדרות</div>
+          <div className="header-brand">{t.settings}</div>
           <div className="header-actions">
             <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
               {lang === 'he' ? 'EN' : 'עב'}
@@ -96,7 +96,7 @@ const SettingsPage: React.FC = () => {
       {/* ── Money Management Mode ── */}
       <div className="a-sec">
         <div className="a-sec-title">
-          <span className="title-text">איך אתה מנהל את הכסף שלך?</span>
+          <span className="title-text">{t.moneyModeTitle}</span>
         </div>
         <div className="mode-selector">
           <button
@@ -105,8 +105,8 @@ const SettingsPage: React.FC = () => {
           >
             <span className="mode-icon">🎯</span>
             <span className="mode-btn-text">
-              <span className="mode-label">מעקב חיסכון</span>
-              <span className="mode-desc">מזין הכנסות והוצאות, עוקב על מה שנשמר</span>
+              <span className="mode-label">{t.modeTrackSavings}</span>
+              <span className="mode-desc">{t.modeTrackSavingsDesc}</span>
             </span>
             <span className="mode-check">✓</span>
           </button>
@@ -116,8 +116,8 @@ const SettingsPage: React.FC = () => {
           >
             <span className="mode-icon">📊</span>
             <span className="mode-btn-text">
-              <span className="mode-label">מעקב תקציב</span>
-              <span className="mode-desc">מנהל לפי תקציב חודשי, ללא צורך ברישום הכנסות</span>
+              <span className="mode-label">{t.modeTrackBudget}</span>
+              <span className="mode-desc">{t.modeTrackBudgetDesc}</span>
             </span>
             <span className="mode-check">✓</span>
           </button>
@@ -127,7 +127,7 @@ const SettingsPage: React.FC = () => {
       {/* ── Financial Goals (mode-dependent) ── */}
       <div className="a-sec">
         <div className="a-sec-title">
-          <span className="title-text">יעדים פיננסיים</span>
+          <span className="title-text">{t.financialGoals}</span>
         </div>
 
         {moneyMode === 'savings_based' ? (
@@ -136,7 +136,7 @@ const SettingsPage: React.FC = () => {
             <div className="set-row">
               <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <PiggyBank size={13} color="#22C55E" />
-                יעד חיסכון ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
+                {t.savingsGoalLabel} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
               </span>
               <input
                 type="number" className="set-input"
@@ -149,9 +149,7 @@ const SettingsPage: React.FC = () => {
               />
             </div>
 
-            <p className="settings-helper">
-              חיסכון = הכנסות − הוצאות. הקפד לרשום גם הכנסות כדי לקבל תמונה מלאה.
-            </p>
+            <p className="settings-helper">{t.savingsHelperText}</p>
           </>
         ) : (
           <>
@@ -168,15 +166,13 @@ const SettingsPage: React.FC = () => {
               />
             </div>
 
-            <p className="settings-helper">
-              האפליקציה עוקבת אחר ההוצאות שלך מול התקציב החודשי. אין צורך לרשום הכנסות.
-            </p>
+            <p className="settings-helper">{t.budgetHelperText}</p>
           </>
         )}
 
         {/* Main Currency */}
         <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <span className="set-lbl">מטבע ראשי</span>
+          <span className="set-lbl">{t.mainCurrencyLabel}</span>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {CURRENCIES.map(c => (
               <button
@@ -198,7 +194,7 @@ const SettingsPage: React.FC = () => {
         <div className="a-sec-title">
           <span className="title-text" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <Tag size={14} />
-            קטגוריות
+            {t.categoriesTitle}
           </span>
         </div>
 
@@ -261,7 +257,7 @@ const SettingsPage: React.FC = () => {
         <form onSubmit={handleAddCategory} style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <input
             type="text" className="set-input"
-            placeholder="שם קטגוריה חדשה"
+            placeholder={t.newCategoryPlaceholder}
             value={newCatName}
             onChange={e => setNewCatName(e.target.value)}
             maxLength={30}
@@ -282,7 +278,7 @@ const SettingsPage: React.FC = () => {
           <button type="submit" className="export-btn" disabled={!newCatName.trim()}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
-            <Plus size={13} /> הוסף קטגוריה
+            <Plus size={13} /> {t.addCategory}
           </button>
         </form>
       </div>
@@ -290,7 +286,7 @@ const SettingsPage: React.FC = () => {
       {/* ── Tools ── */}
       <div className="a-sec">
         <div className="a-sec-title">
-          <span className="title-text">כלים</span>
+          <span className="title-text">{t.toolsTitle}</span>
         </div>
         <button
           className="export-btn"
@@ -306,7 +302,7 @@ const SettingsPage: React.FC = () => {
           style={{ marginTop: 6 }}
         >
           <RefreshCw size={13} />
-          רענן אפליקציה
+          {t.refreshApp}
         </button>
       </div>
 

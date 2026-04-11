@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useExpense } from '../context/ExpenseContext';
+import { useLang } from '../context/LanguageContext';
 
 function currentMonthStr() {
   const d = new Date();
@@ -37,6 +38,7 @@ export interface MoneyModeKPI {
 
 export function useMoneyMode(): MoneyModeKPI {
   const { state, formatCurrency } = useExpense();
+  const { t, lang } = useLang();
   const { moneyMode, monthlyBudget, savingsGoal, transactions } = state;
 
   return useMemo(() => {
@@ -65,27 +67,39 @@ export function useMoneyMode(): MoneyModeKPI {
       let statusMsg: string;
       let gapLabel: string;
       if (!hasGoal) {
-        statusMsg = 'הגדר יעד חיסכון בהגדרות';
+        statusMsg = t.setGoalInSettings;
         gapLabel  = '';
       } else if (income === 0) {
-        statusMsg = 'הוסף הכנסה כדי לחשב חיסכון';
+        statusMsg = t.addIncomeToCalc;
         gapLabel  = '';
       } else if (gap > 0.005) {
-        statusMsg = `עברת את יעד החיסכון ב־${formatCurrency(gap)} 💪`;
-        gapLabel  = `+${formatCurrency(gap)} מעל היעד`;
+        statusMsg = lang === 'he'
+          ? `עברת את יעד החיסכון ב־${formatCurrency(gap)} 💪`
+          : `Exceeded your savings goal by ${formatCurrency(gap)} 💪`;
+        gapLabel  = lang === 'he'
+          ? `+${formatCurrency(gap)} מעל היעד`
+          : `+${formatCurrency(gap)} above goal`;
       } else if (Math.abs(gap) <= 0.005) {
-        statusMsg = 'עמדת בדיוק ביעד 🎯';
-        gapLabel  = 'בדיוק ביעד';
+        statusMsg = t.exactGoal;
+        gapLabel  = lang === 'he' ? 'בדיוק ביעד' : 'Exactly on target';
       } else if (progress >= 0.9) {
-        statusMsg = 'כמעט הגעת ליעד';
-        gapLabel  = `-${formatCurrency(Math.abs(gap))} מהיעד`;
+        statusMsg = t.almostGoal;
+        gapLabel  = lang === 'he'
+          ? `-${formatCurrency(Math.abs(gap))} מהיעד`
+          : `-${formatCurrency(Math.abs(gap))} from goal`;
       } else {
-        statusMsg = `חסר לך ${formatCurrency(Math.abs(gap))} ליעד החיסכון`;
-        gapLabel  = `-${formatCurrency(Math.abs(gap))} מהיעד`;
+        statusMsg = lang === 'he'
+          ? `חסר לך ${formatCurrency(Math.abs(gap))} ליעד החיסכון`
+          : `${formatCurrency(Math.abs(gap))} short of your savings goal`;
+        gapLabel  = lang === 'he'
+          ? `-${formatCurrency(Math.abs(gap))} מהיעד`
+          : `-${formatCurrency(Math.abs(gap))} from goal`;
       }
 
       const summaryLine = income > 0
-        ? `הכנסת ${formatCurrency(income)} · הוצאת ${formatCurrency(spent)}${savings > 0 ? ` · חיסכון ${formatCurrency(savings)}` : ''}`
+        ? lang === 'he'
+          ? `הכנסת ${formatCurrency(income)} · הוצאת ${formatCurrency(spent)}${savings > 0 ? ` · חיסכון ${formatCurrency(savings)}` : ''}`
+          : `Income ${formatCurrency(income)} · Expenses ${formatCurrency(spent)}${savings > 0 ? ` · Saved ${formatCurrency(savings)}` : ''}`
         : null;
 
       return {
@@ -93,14 +107,14 @@ export function useMoneyMode(): MoneyModeKPI {
         spent, income,
         ringValue: Math.max(0, savings),
         ringGoal: goal,
-        ringLabel: 'נשמר החודש',
-        goalLabel: 'יעד חיסכון',
+        ringLabel: t.savingsRingLabel,
+        goalLabel: t.savingsGoalLabel,
         progress, color, statusMsg, gapLabel, statusColor, gapColor,
         hasGoal, hasIncome: income > 0,
         statsChips: [
-          { label: 'הכנסות', value: formatCurrency(income),       colorClass: income > 0 ? 'green' : '' },
-          { label: 'הוצאות', value: formatCurrency(spent),        colorClass: '' },
-          { label: 'עסקאות', value: String(monthTxns.length),     colorClass: 'gold' },
+          { label: t.income,       value: formatCurrency(income),   colorClass: income > 0 ? 'green' : '' },
+          { label: t.spent,        value: formatCurrency(spent),    colorClass: '' },
+          { label: t.transactions, value: String(monthTxns.length), colorClass: 'gold' },
         ],
         summaryLine,
         txCount: monthTxns.length,
@@ -113,54 +127,74 @@ export function useMoneyMode(): MoneyModeKPI {
       const progress  = hasGoal ? Math.min(spent / goal, 1) : 0;
 
       const color = progress > 0.9 ? '#EF4444' : progress > 0.7 ? '#F59E0B' : '#8B5CF6';
-      const statusColor = remaining < 0              ? '#EF4444'
-                        : remaining / (goal || 1) < 0.3 ? '#F59E0B'
+      const statusColor = remaining < 0                   ? '#EF4444'
+                        : remaining / (goal || 1) < 0.3   ? '#F59E0B'
                         : '#22C55E';
       const gapColor = remaining >= 0 ? '#22C55E' : '#EF4444';
 
       let statusMsg: string;
       let gapLabel: string;
       if (!hasGoal) {
-        statusMsg = 'הגדר תקציב חודשי בהגדרות';
+        statusMsg = t.setBudgetInSettings;
         gapLabel  = '';
       } else if (remaining < 0) {
-        statusMsg = `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`;
-        gapLabel  = `חרגת ב־${formatCurrency(Math.abs(remaining))}`;
+        statusMsg = lang === 'he'
+          ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`
+          : `Over budget by ${formatCurrency(Math.abs(remaining))}`;
+        gapLabel  = lang === 'he'
+          ? `חרגת ב־${formatCurrency(Math.abs(remaining))}`
+          : `Over by ${formatCurrency(Math.abs(remaining))}`;
       } else if (remaining === 0) {
-        statusMsg = 'עמדת בדיוק על התקציב';
-        gapLabel  = 'התקציב הסתיים בדיוק';
+        statusMsg = t.exactBudget;
+        gapLabel  = lang === 'he' ? 'התקציב הסתיים בדיוק' : 'Budget used exactly';
       } else if (remaining / goal < 0.1) {
-        statusMsg = `נותר ${formatCurrency(remaining)} — קרוב לתקציב`;
-        gapLabel  = `נשאר ${formatCurrency(remaining)}`;
+        statusMsg = lang === 'he'
+          ? `נותר ${formatCurrency(remaining)} — קרוב לתקציב`
+          : `${formatCurrency(remaining)} left — near budget limit`;
+        gapLabel  = lang === 'he'
+          ? `נשאר ${formatCurrency(remaining)}`
+          : `${formatCurrency(remaining)} left`;
       } else if (remaining / goal < 0.3) {
-        statusMsg = `שים לב — נותר ${formatCurrency(remaining)} בלבד`;
-        gapLabel  = `נשאר ${formatCurrency(remaining)}`;
+        statusMsg = lang === 'he'
+          ? `שים לב — נותר ${formatCurrency(remaining)} בלבד`
+          : `Watch out — only ${formatCurrency(remaining)} left`;
+        gapLabel  = lang === 'he'
+          ? `נשאר ${formatCurrency(remaining)}`
+          : `${formatCurrency(remaining)} left`;
       } else {
-        statusMsg = `מצוין — נשאר לך ${formatCurrency(remaining)}`;
-        gapLabel  = `נשאר ${formatCurrency(remaining)}`;
+        statusMsg = lang === 'he'
+          ? `מצוין — נשאר לך ${formatCurrency(remaining)}`
+          : `Great — ${formatCurrency(remaining)} remaining`;
+        gapLabel  = lang === 'he'
+          ? `נשאר ${formatCurrency(remaining)}`
+          : `${formatCurrency(remaining)} left`;
       }
 
       const summaryLine = hasGoal
-        ? `הוצאת ${formatCurrency(spent)} מתוך ${formatCurrency(goal)} · נשאר ${formatCurrency(Math.max(0, remaining))}`
-        : `הוצאת ${formatCurrency(spent)} החודש`;
+        ? lang === 'he'
+          ? `הוצאת ${formatCurrency(spent)} מתוך ${formatCurrency(goal)} · נשאר ${formatCurrency(Math.max(0, remaining))}`
+          : `Spent ${formatCurrency(spent)} of ${formatCurrency(goal)} · ${formatCurrency(Math.max(0, remaining))} left`
+        : lang === 'he'
+          ? `הוצאת ${formatCurrency(spent)} החודש`
+          : `Spent ${formatCurrency(spent)} this month`;
 
       return {
         mode: 'budget_based',
         spent, income,
         ringValue: spent,
         ringGoal: goal,
-        ringLabel: 'הוצאות החודש',
-        goalLabel: 'תקציב חודשי',
+        ringLabel: t.budgetRingLabel,
+        goalLabel: t.monthlyBudget,
         progress, color, statusMsg, gapLabel, statusColor, gapColor,
         hasGoal, hasIncome: income > 0,
         statsChips: [
-          { label: 'הוצאות', value: formatCurrency(spent),                       colorClass: '' },
-          { label: 'נותר',   value: formatCurrency(Math.max(0, remaining)),      colorClass: remaining >= 0 ? 'green' : 'red' },
-          { label: 'עסקאות', value: String(expTxCount),                          colorClass: 'gold' },
+          { label: t.spent,          value: formatCurrency(spent),                  colorClass: '' },
+          { label: t.remainingLabel, value: formatCurrency(Math.max(0, remaining)), colorClass: remaining >= 0 ? 'green' : 'red' },
+          { label: t.transactions,   value: String(expTxCount),                     colorClass: 'gold' },
         ],
         summaryLine,
         txCount: monthTxns.length,
       };
     }
-  }, [moneyMode, monthlyBudget, savingsGoal, transactions, formatCurrency]);
+  }, [moneyMode, monthlyBudget, savingsGoal, transactions, formatCurrency, t, lang]);
 }

@@ -114,12 +114,12 @@ export default function DashboardPage() {
     convertAmount(parseFloat(amount), txCurrency, mainCurrency, date)
       .then(({ convertedAmount, rate }) => {
         if (!cancelled) {
-          setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString('he-IL')}  (שער: ${rate})`);
+          setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString()}  (${t.rateLabel}: ${rate})`);
           setRateLoading(false);
         }
       })
       .catch(() => {
-        if (!cancelled) { setRatePreview('שגיאה בטעינת שער'); setRateLoading(false); }
+        if (!cancelled) { setRatePreview(t.rateError); setRateLoading(false); }
       });
     return () => { cancelled = true; };
   }, [txCurrency, mainCurrency, amount, date]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -227,7 +227,7 @@ export default function DashboardPage() {
       });
     }
     setSplitTx(null);
-    showToast('פוצל לתשלומים ✓');
+    showToast(t.splitDone);
   }
 
   // Payment method label
@@ -305,7 +305,7 @@ export default function DashboardPage() {
       {/* Planned recurring this month */}
       {(plannedExpense > 0 || plannedIncome > 0) && (
         <div className="planned-banner">
-          <span className="planned-title">צפוי החודש</span>
+          <span className="planned-title">{t.plannedThisMonth}</span>
           <div className="planned-items">
             {plannedIncome > 0 && (
               <span className="planned-income">
@@ -321,7 +321,7 @@ export default function DashboardPage() {
             )}
             {plannedIncome > 0 && plannedExpense > 0 && (
               <span className="planned-net" style={{ color: plannedIncome >= plannedExpense ? 'var(--success)' : 'var(--danger)' }}>
-                נטו: {formatCurrency(plannedIncome - plannedExpense)}
+                {t.net}: {formatCurrency(plannedIncome - plannedExpense)}
               </span>
             )}
           </div>
@@ -403,7 +403,7 @@ export default function DashboardPage() {
                           className="txn-del txn-split-btn"
                           onClick={() => { setSplitTx(tx); setSplitN(3); }}
                           aria-label="Split to installments"
-                          title="פצל לתשלומים"
+                          title={t.splitToInstallments}
                         >
                           <GitFork size={13} />
                         </button>
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                           className="txn-del txn-del-group"
                           onClick={() => handleDeleteGroup(tx.installments!.groupId)}
                           aria-label="Delete all installments"
-                          title="מחק את כל התשלומים"
+                          title={t.deleteAllInstallments}
                         >
                           <Trash2 size={13} />
                         </button>
@@ -513,8 +513,8 @@ export default function DashboardPage() {
                   onClick={() => setSplitEnabled(s => !s)}
                 >
                   <GitFork size={14} />
-                  <span>חלוקה לתשלומים</span>
-                  <span className="split-toggle-pill">{splitEnabled ? 'פעיל' : 'כבוי'}</span>
+                  <span>{t.installmentSplit}</span>
+                  <span className="split-toggle-pill">{splitEnabled ? t.active : t.off}</span>
                 </button>
                 {splitEnabled && (
                   <>
@@ -535,11 +535,11 @@ export default function DashboardPage() {
                       />
                       <button type="button" className="inst-step-btn"
                         onClick={() => setNumInstallments(n => Math.min(100, n + 1))}>+</button>
-                      <span className="inst-step-lbl">תשלומים</span>
+                      <span className="inst-step-lbl">{t.installments}</span>
                     </div>
                     {amount && parseFloat(amount) > 0 && (
                       <div className="split-preview">
-                        {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} לחודש
+                        {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} {t.perMonth}
                       </div>
                     )}
                   </>
@@ -618,7 +618,7 @@ export default function DashboardPage() {
           <div className="modal-sheet" style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)` }}>
             <div className="modal-handle" />
             <div className="modal-title">
-              <span>פצל לתשלומים</span>
+              <span>{t.splitToInstallments}</span>
               <button className="modal-close" onClick={() => setSplitTx(null)}><X size={14} /></button>
             </div>
             <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -640,13 +640,13 @@ export default function DashboardPage() {
               />
               <button type="button" className="inst-step-btn"
                 onClick={() => setSplitN(n => Math.min(100, n + 1))}>+</button>
-              <span className="inst-step-lbl">תשלומים</span>
+              <span className="inst-step-lbl">{t.installments}</span>
             </div>
             <div className="split-preview" style={{ marginBottom: 16 }}>
-              {splitN} × {formatCurrency(Math.round(splitTx.amount / splitN * 100) / 100)} לחודש
+              {splitN} × {formatCurrency(Math.round(splitTx.amount / splitN * 100) / 100)} {t.perMonth}
             </div>
             <button className="submit-btn" onClick={handleSplitExisting}>
-              פצל לתשלומים
+              {t.splitToInstallments}
             </button>
           </div>
         </div>

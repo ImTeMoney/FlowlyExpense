@@ -23,7 +23,7 @@ const PM_COLOR: Record<string, string> = {
 
 export default function AnalyticsPage() {
   const { state, dispatch, formatCurrency } = useExpense();
-  const { t, monthLabel } = useLang();
+  const { t, lang, monthLabel } = useLang();
   const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal } = state;
 
   // Month navigation
@@ -173,9 +173,16 @@ export default function AnalyticsPage() {
           const barColor = pct >= 1 ? '#22C55E' : pct >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444';
           const statusText = goal > 0
             ? savings > goal
-              ? `+${formatCurrency(savings - goal)} מעל היעד`
-              : `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · כמעט שם' : ''}`
-            : income > 0 ? `חיסכון: ${formatCurrency(savings)}` : 'אין הכנסות רשומות לחודש זה';
+              ? lang === 'he' ? `+${formatCurrency(savings - goal)} מעל היעד` : `+${formatCurrency(savings - goal)} above goal`
+              : lang === 'he'
+                ? `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
+                : `${Math.round(pct * 100)}% of savings goal${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
+            : income > 0
+              ? lang === 'he' ? `חיסכון: ${formatCurrency(savings)}` : `Savings: ${formatCurrency(savings)}`
+              : t.noIncomeRecorded;
+          const goalSuffix = goal > 0
+            ? ` · ${lang === 'he' ? 'יעד' : 'Goal'}: ${formatCurrency(goal)}`
+            : '';
           return (
             <div className="bcard">
               <div className="bcard-nums">
@@ -183,7 +190,7 @@ export default function AnalyticsPage() {
                   <span className="bcard-val" style={{ color: savings > 0 ? 'var(--success)' : 'var(--danger)' }}>
                     {formatCurrency(Math.max(0, savings))}
                   </span>
-                  <div className="bcard-lbl">נשמר החודש</div>
+                  <div className="bcard-lbl">{t.savedThisMonth}</div>
                 </div>
                 {income > 0 && (
                   <div className="bcard-block">
@@ -193,7 +200,7 @@ export default function AnalyticsPage() {
                 )}
                 <div className="bcard-block">
                   <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
-                  <div className="bcard-lbl">הוצאות</div>
+                  <div className="bcard-lbl">{t.spent}</div>
                 </div>
               </div>
               {goal > 0 && (
@@ -202,7 +209,7 @@ export default function AnalyticsPage() {
                 </div>
               )}
               <div className="bcard-of" style={{ color: goal > 0 && savings >= goal ? 'var(--success)' : 'var(--text-dim)' }}>
-                {statusText}{goal > 0 ? ` · יעד: ${formatCurrency(goal)}` : ''}
+                {statusText}{goalSuffix}
               </div>
             </div>
           );
@@ -214,22 +221,29 @@ export default function AnalyticsPage() {
           const barColor  = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
           const statusText = goal > 0
             ? remaining < 0
-              ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`
-              : `נשאר ${formatCurrency(remaining)} · ${Math.round((1 - pct) * 100)}% מהתקציב`
-            : `הוצאות החודש`;
+              ? lang === 'he'
+                ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`
+                : `Over budget by ${formatCurrency(Math.abs(remaining))}`
+              : lang === 'he'
+                ? `נשאר ${formatCurrency(remaining)} · ${Math.round((1 - pct) * 100)}% מהתקציב`
+                : `${formatCurrency(remaining)} left · ${Math.round((1 - pct) * 100)}% of budget`
+            : t.budgetThisMonth;
+          const budgetSuffix = goal > 0
+            ? ` · ${lang === 'he' ? 'תקציב' : 'Budget'}: ${formatCurrency(goal)}`
+            : '';
           return (
             <div className="bcard">
               <div className="bcard-nums">
                 <div className="bcard-block">
                   <span className="bcard-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(spent)}</span>
-                  <div className="bcard-lbl">הוצאות</div>
+                  <div className="bcard-lbl">{t.spent}</div>
                 </div>
                 {goal > 0 && (
                   <div className="bcard-block">
                     <span className="bcard-val" style={{ color: remaining >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                       {formatCurrency(Math.abs(remaining))}
                     </span>
-                    <div className="bcard-lbl">{remaining >= 0 ? 'נותר' : 'מעל התכנון'}</div>
+                    <div className="bcard-lbl">{remaining >= 0 ? t.remainingLabel : t.overBudget}</div>
                   </div>
                 )}
                 {income > 0 && (
@@ -245,7 +259,7 @@ export default function AnalyticsPage() {
                 </div>
               )}
               <div className="bcard-of" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--text-dim)' }}>
-                {statusText}{goal > 0 ? ` · תקציב: ${formatCurrency(goal)}` : ''}
+                {statusText}{budgetSuffix}
               </div>
             </div>
           );
@@ -298,9 +312,9 @@ export default function AnalyticsPage() {
                   <div className="cb-name-row">
                     <span className="cb-name">{cat.name}</span>
                     <div className="cb-tags">
-                      {hasRecurring && <span className="cat-tag cat-tag-fixed">קבוע</span>}
-                      {isHigher     && <span className="cat-tag cat-tag-high">גבוה מהרגיל</span>}
-                      {isOneTime    && <span className="cat-tag cat-tag-onetime">חד פעמי</span>}
+                      {hasRecurring && <span className="cat-tag cat-tag-fixed">{t.tagFixed}</span>}
+                      {isHigher     && <span className="cat-tag cat-tag-high">{t.tagHigh}</span>}
+                      {isOneTime    && <span className="cat-tag cat-tag-onetime">{t.tagOneTime}</span>}
                     </div>
                   </div>
                   <div className="cb-track">
@@ -446,8 +460,8 @@ export default function AnalyticsPage() {
                   onClick={() => setRecSplitEnabled(s => !s)}
                 >
                   <GitFork size={14} />
-                  <span>מספר תשלומים מוגבל</span>
-                  <span className="split-toggle-pill">{recSplitEnabled ? 'פעיל' : 'ללא הגבלה'}</span>
+                  <span>{t.limitedInstallments}</span>
+                  <span className="split-toggle-pill">{recSplitEnabled ? t.active : t.unlimited}</span>
                 </button>
                 {recSplitEnabled && (
                   <>
@@ -468,11 +482,11 @@ export default function AnalyticsPage() {
                       />
                       <button type="button" className="inst-step-btn"
                         onClick={() => setRecNumInst(n => Math.min(100, n + 1))}>+</button>
-                      <span className="inst-step-lbl">תשלומים</span>
+                      <span className="inst-step-lbl">{t.installments}</span>
                     </div>
                     {recAmt && parseFloat(recAmt) > 0 && (
                       <div className="split-preview">
-                        {recNumInst} × {formatCurrency(parseFloat(recAmt))} = {formatCurrency(recNumInst * parseFloat(recAmt))} סה"כ
+                        {recNumInst} × {formatCurrency(parseFloat(recAmt))} = {formatCurrency(recNumInst * parseFloat(recAmt))} {t.total}
                       </div>
                     )}
                   </>
@@ -508,7 +522,7 @@ export default function AnalyticsPage() {
                       {!r.isIncome && cat ? ` · ${cat.name}` : ''}
                       {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
                       {r.totalInstallments
-                        ? ` · תשלום ${(r.postedCount ?? 0)}/${r.totalInstallments}`
+                        ? ` · ${t.installmentProgress} ${(r.postedCount ?? 0)}/${r.totalInstallments}`
                         : ''}
                     </div>
                   </div>
@@ -520,7 +534,7 @@ export default function AnalyticsPage() {
                       className="rec-del rec-split-btn"
                       onClick={() => { setSplitRec(r); setSplitRecN(12); }}
                       aria-label="Split to installments"
-                      title="הגדר תשלומים"
+                      title={t.setInstallments}
                     >
                       <GitFork size={13} />
                     </button>
@@ -545,12 +559,12 @@ export default function AnalyticsPage() {
           <div className="modal-sheet">
             <div className="modal-handle" />
             <div className="modal-title">
-              <span>הגדר תשלומים קבועים</span>
+              <span>{t.setRecInstallments}</span>
               <button className="modal-close" onClick={() => setSplitRec(null)}><X size={14} /></button>
             </div>
             <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{splitRec.description}</span>
-              {' — '}{formatCurrency(splitRec.amount)} {t.monthly ?? 'לחודש'}
+              {' — '}{formatCurrency(splitRec.amount)} {t.perMonth}
             </div>
             <div className="inst-stepper" style={{ marginBottom: 12 }}>
               <button type="button" className="inst-step-btn"
@@ -567,16 +581,16 @@ export default function AnalyticsPage() {
               />
               <button type="button" className="inst-step-btn"
                 onClick={() => setSplitRecN(n => Math.min(100, n + 1))}>+</button>
-              <span className="inst-step-lbl">תשלומים</span>
+              <span className="inst-step-lbl">{t.installments}</span>
             </div>
             <div className="split-preview" style={{ marginBottom: 16 }}>
-              {splitRecN} × {formatCurrency(splitRec.amount)} = {formatCurrency(splitRecN * splitRec.amount)} סה"כ
+              {splitRecN} × {formatCurrency(splitRec.amount)} = {formatCurrency(splitRecN * splitRec.amount)} {t.total}
             </div>
             <button className="submit-btn" onClick={() => {
               dispatch({ type: 'SET_RECURRING_INSTALLMENTS', payload: { id: splitRec.id, totalInstallments: splitRecN } });
               setSplitRec(null);
             }}>
-              שמור
+              {t.save}
             </button>
           </div>
         </div>
