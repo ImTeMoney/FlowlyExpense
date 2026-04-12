@@ -3,3 +3,8 @@
 .vercel
 node_modules/
 dist/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
