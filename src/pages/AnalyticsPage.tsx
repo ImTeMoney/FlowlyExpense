@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Package, Plus, X,
   TrendingDown, TrendingUp,
   Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple,
-  ArrowUpRight, ArrowDownRight, Minus, GitFork, Repeat,
+  ArrowUpRight, ArrowDownRight, Minus, GitFork, Repeat, BarChart2, RefreshCcw,
 } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -138,6 +138,15 @@ export default function AnalyticsPage() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
 
+  // Toast
+  const [toast, setToast] = useState('');
+  const [toastTimer, setToastTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((msg: string) => {
+    if (toastTimer) clearTimeout(toastTimer);
+    setToast(msg);
+    setToastTimer(setTimeout(() => setToast(''), 2200));
+  }, [toastTimer]);
+
   function addRecurring() {
     const amt = parseFloat(recAmt);
     const day = parseInt(recDay);
@@ -157,6 +166,7 @@ export default function AnalyticsPage() {
     setRecDesc(''); setRecAmt(''); setRecDay('10');
     setRecSplitEnabled(false);
     setShowRecForm(false);
+    showToast(t.savedRecurring);
   }
 
   const pmLabel = (pm: string) => (t as any)[`pm_${pm}`] ?? pm;
@@ -280,17 +290,41 @@ export default function AnalyticsPage() {
           <div className="compare-item">
             <div className="compare-label">{t.totalExpenses}</div>
             <div className="compare-val">{formatCurrency(spent)}</div>
-            <div className={`compare-change ${spentChange > 0 ? 'up' : spentChange < 0 ? 'down' : ''}`}>
-              {spentChange > 0 ? <ArrowUpRight size={13} /> : spentChange < 0 ? <ArrowDownRight size={13} /> : <Minus size={13} />}
-              {spentChange !== 0 ? `${Math.abs(spentChange)}%` : t.noChange}
-            </div>
+            {prevSpent > 0 ? (
+              <div className={`compare-change ${spentChange > 0 ? 'up' : spentChange < 0 ? 'down' : ''}`}>
+                {spentChange > 0 ? <ArrowUpRight size={13} /> : spentChange < 0 ? <ArrowDownRight size={13} /> : <Minus size={13} />}
+                {spentChange !== 0 ? `${Math.abs(spentChange)}%` : t.noChange}
+              </div>
+            ) : (
+              <div className="compare-change"><Minus size={13} />{t.noChange}</div>
+            )}
             <div className="compare-prev">{t.lastMonth}: {formatCurrency(prevSpent)}</div>
           </div>
           <div className="compare-item">
-            <div className="compare-label">{t.dailyAvg}</div>
-            <div className="compare-val">{formatCurrency(dailyAvg)}</div>
-            <div className="compare-prev">{daysPassed} / {daysInMonth} {t.day}</div>
+            <div className="compare-label">{t.totalIncomeLbl}</div>
+            <div className="compare-val" style={{ color: income > 0 ? 'var(--success)' : undefined }}>
+              {formatCurrency(income)}
+            </div>
+            {prevIncome > 0 ? (
+              <div className={`compare-change ${incomeChange < 0 ? 'up' : incomeChange > 0 ? 'down' : ''}`}>
+                {incomeChange > 0 ? <ArrowUpRight size={13} /> : incomeChange < 0 ? <ArrowDownRight size={13} /> : <Minus size={13} />}
+                {incomeChange !== 0 ? `${Math.abs(incomeChange)}%` : t.noChange}
+              </div>
+            ) : (
+              <div className="compare-change"><Minus size={13} />{t.noChange}</div>
+            )}
+            <div className="compare-prev">{t.lastMonth}: {formatCurrency(prevIncome)}</div>
           </div>
+        </div>
+        {/* Daily average — shown below grid as a supporting metric */}
+        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 4px 0', borderTop: '1px solid var(--glass-border)' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.dailyAvg}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+            {formatCurrency(dailyAvg)}
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400, marginInlineStart: 4 }}>
+              ({daysPassed}/{daysInMonth} {t.day})
+            </span>
+          </span>
         </div>
       </div>
 
@@ -301,7 +335,11 @@ export default function AnalyticsPage() {
           <span>{catTotals.length} {t.activeCategories}</span>
         </div>
         {catTotals.length === 0 ? (
-          <div className="no-data">{t.noData}</div>
+          <div className="a-sec-empty">
+            <div className="a-sec-empty-icon"><BarChart2 size={18} /></div>
+            <div className="a-sec-empty-msg">{t.noData}</div>
+            <div className="a-sec-empty-hint">{t.noDataHint}</div>
+          </div>
         ) : (
           catTotals.map(({ cat, total, prevTotal, hasRecurring, txCount }) => {
             const Icon   = CAT_ICON[cat.id] ?? Package;
@@ -517,7 +555,11 @@ export default function AnalyticsPage() {
         )}
 
         {recurringExpenses.length === 0 && !showRecForm ? (
-          <div className="no-data">{t.noRecurring}</div>
+          <div className="a-sec-empty">
+            <div className="a-sec-empty-icon"><RefreshCcw size={18} /></div>
+            <div className="a-sec-empty-msg">{t.noRecurring}</div>
+            <div className="a-sec-empty-hint">{t.noRecurringHint}</div>
+          </div>
         ) : (
           <div className="rec-list">
             {recurringExpenses.map(r => {
@@ -637,6 +679,8 @@ export default function AnalyticsPage() {
         </div>,
         document.body
       )}
+
+      {toast && createPortal(<div className="toast">{toast}</div>, document.body)}
 
       {/* Month / Year picker */}
       {showMonthPicker && createPortal(

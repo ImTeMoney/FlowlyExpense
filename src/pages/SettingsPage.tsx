@@ -1,9 +1,10 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transaction } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, ChevronRight, Target, BarChart2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const SettingsPage: React.FC = () => {
@@ -12,6 +13,15 @@ const SettingsPage: React.FC = () => {
   const [theme, toggleTheme] = useTheme();
 
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
+
+  // Toast feedback
+  const [toast, setToast] = useState('');
+  const [toastTimer, setToastTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  function showToast(msg: string) {
+    if (toastTimer) clearTimeout(toastTimer);
+    setToast(msg);
+    setToastTimer(setTimeout(() => setToast(''), 2200));
+  }
 
   // Refresh guard — ref is synchronous so rapid taps can't bypass it
   const refreshingRef = useRef(false);
@@ -29,7 +39,7 @@ const SettingsPage: React.FC = () => {
   const [budgetEdit, setBudgetEdit] = useState(String(monthlyBudget));
   function saveBudget() {
     const val = parseFloat(budgetEdit);
-    if (val > 0) dispatch({ type: 'SET_BUDGET', payload: val });
+    if (val > 0) { dispatch({ type: 'SET_BUDGET', payload: val }); showToast(t.savedSettings); }
   }
 
   // Savings goal
@@ -37,6 +47,7 @@ const SettingsPage: React.FC = () => {
   function saveGoal() {
     const val = parseFloat(goalEdit);
     dispatch({ type: 'SET_SAVINGS_GOAL', payload: !isNaN(val) && val > 0 ? val : 0 });
+    showToast(t.savedSettings);
   }
 
   // CSV export (current month)
@@ -69,6 +80,7 @@ const SettingsPage: React.FC = () => {
   function commitEdit() {
     if (editingId && editingName.trim()) {
       dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name: editingName.trim(), color: editingColor } });
+      showToast(t.categoryUpdated);
     }
     setEditingId(null);
   }
@@ -269,14 +281,14 @@ const SettingsPage: React.FC = () => {
             className={`mode-seg-btn${moneyMode === 'savings_based' ? ' active' : ''}`}
             onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'savings_based' })}
           >
-            <span>🎯</span>
+            <Target size={14} />
             <span>{t.modeTrackSavings}</span>
           </button>
           <button
             className={`mode-seg-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
             onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' })}
           >
-            <span>📊</span>
+            <BarChart2 size={14} />
             <span>{t.modeTrackBudget}</span>
           </button>
         </div>
@@ -519,6 +531,8 @@ const SettingsPage: React.FC = () => {
           onCancel={() => { setConfirm(null); setPendingRows(null); }}
         />
       )}
+
+      {toast && createPortal(<div className="toast">{toast}</div>, document.body)}
 
     </div>
   );

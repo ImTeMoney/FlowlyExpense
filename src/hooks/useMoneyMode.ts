@@ -74,8 +74,8 @@ export function useMoneyMode(): MoneyModeKPI {
         gapLabel  = '';
       } else if (gap > 0.005) {
         statusMsg = lang === 'he'
-          ? `עברת את יעד החיסכון ב־${formatCurrency(gap)} 💪`
-          : `Exceeded your savings goal by ${formatCurrency(gap)} 💪`;
+          ? `עברת את יעד החיסכון ב־${formatCurrency(gap)}`
+          : `Exceeded your savings goal by ${formatCurrency(gap)}`;
         gapLabel  = lang === 'he'
           ? `+${formatCurrency(gap)} מעל היעד`
           : `+${formatCurrency(gap)} above goal`;

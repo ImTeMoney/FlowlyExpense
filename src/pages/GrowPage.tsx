@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { TrendingUp, PiggyBank, Banknote, Info } from 'lucide-react';
+import { TrendingUp, PiggyBank, Banknote, Info, AlertTriangle } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -178,7 +178,7 @@ export default function GrowPage() {
                     <div className="grow-sc-gained">
                       +{formatCurrencyDirect(Math.round(gained))}{' '}
                       <span style={{ opacity: 0.65 }}>
-                        {iHe ? 'רווח' : 'growth'}
+                        {iHe ? 'תשואה על ההפקדות' : 'returns on contributions'}
                       </span>
                     </div>
                   )}
@@ -232,11 +232,19 @@ export default function GrowPage() {
 
       {/* ── Disclaimer ── */}
       <div className="grow-disclaimer">
-        <p>
-          {iHe
-            ? '⚠️ הסימולציה היא לצרכים חינוכיים בלבד ואינה מהווה ייעוץ השקעות. תשואות עבר אינן ערובה לתשואות עתידיות. מספרי ה-7% ו-4% הם הערכות היסטוריות בלבד. טרם כל השקעה מומלץ להתייעץ עם יועץ פיננסי מורשה.'
-            : '⚠️ This simulation is for educational purposes only and does not constitute investment advice. Past performance is not a guarantee of future results. The 7% and 4% figures are historical estimates only. Always consult a licensed financial advisor before investing.'}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <AlertTriangle size={14} style={{ color: 'var(--gold)', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>
+              {t.disclaimerTitle}
+            </div>
+            <p className="grow-disclaimer-body">
+              {iHe
+                ? 'הסימולציה מיועדת ללמידה בלבד ואינה ייעוץ השקעות. תשואות עבר אינן ערובה לעתיד. אחוזי ה-7% וה-4% הם ממוצעים היסטוריים. יש להתייעץ עם יועץ פיננסי מורשה.'
+                : 'For educational use only. Not investment advice. Past performance is no guarantee of future results. The 7% and 4% figures are historical averages. Consult a licensed financial advisor.'}
+            </p>
+          </div>
+        </div>
       </div>
 
     </div>

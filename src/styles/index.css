@@ -963,9 +963,8 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   border: 1px solid rgba(245,158,11,0.18);
   border-radius: var(--r-md);
 }
-.grow-disclaimer p {
-  font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin: 0;
-}
+.grow-disclaimer p { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin: 0; }
+.grow-disclaimer-body { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; margin: 0; }
 
 /* Budget overview card */
 .bcard {
@@ -2172,6 +2171,87 @@ select.sm-in option { background: var(--modal-bg); }
 }
 .confirm-delete-btn:hover { background: #DC2626; box-shadow: 0 0 20px rgba(239,68,68,0.4); }
 .confirm-delete-btn:active { transform: scale(0.97); }
+
+/* =====================================================
+   UX POLISH — MISSING / IMPROVED CLASSES
+   ===================================================== */
+
+/* ring-no-goal: status text under ring when no goal is set */
+.ring-no-goal {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  opacity: 0.7;
+  text-align: center;
+  max-width: 100px;
+  line-height: 1.3;
+}
+
+/* export-btn primary variant */
+.export-btn.primary {
+  background: var(--purple-dim);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: var(--purple);
+}
+.export-btn.primary:hover:not(:disabled) {
+  background: var(--purple);
+  color: #fff;
+  border-color: var(--purple);
+  box-shadow: 0 0 16px var(--purple-glow);
+}
+
+/* Section-level empty state with optional icon */
+.a-sec-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px 20px;
+  text-align: center;
+}
+.a-sec-empty-icon {
+  width: 42px; height: 42px;
+  border-radius: var(--r-full);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.a-sec-empty-icon svg { width: 18px; height: 18px; }
+.a-sec-empty-msg {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.a-sec-empty-hint {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  max-width: 240px;
+}
+
+/* bcard sub-line: small income/expense breakdown row */
+.bcard-sub-line {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.bcard-sub-income { color: var(--success); font-weight: 600; }
+.bcard-sub-expense { color: var(--text-secondary); }
+.bcard-sub-sep { opacity: 0.4; }
+
+/* Planned banner polish */
+.planned-banner {
+  cursor: default;
+}
+.planned-net.positive { color: var(--success); }
+.planned-net.negative { color: var(--danger); }
 
 /* =====================================================
    ACCESSIBILITY

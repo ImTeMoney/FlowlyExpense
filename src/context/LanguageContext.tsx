@@ -167,6 +167,20 @@ export interface Translations {
   importError: string;
   importInvalidFormat: string;
   importTransactionsOnly: string;
+  // Save feedback toasts
+  savedRecurring: string;
+  savedSettings: string;
+  categoryUpdated: string;
+  // Analytics empty states
+  noDataHint: string;
+  noRecurringHint: string;
+  // Analytics income comparison
+  totalIncomeLbl: string;
+  // Dashboard planned banner
+  projectedThisMonth: string;
+  projectedExpense: string;
+  projectedIncome: string;
+  projectedNet: string;
   // Grow / Savings & Investing screen
   growLabel: string;
   growTitle: string;
@@ -183,6 +197,8 @@ export interface Translations {
   etfOption: string;
   assumedReturnLabel: string;
   growFromDashboard: string;
+  // Grow disclaimer
+  disclaimerTitle: string;
 }
 
 const he: Translations = {
@@ -343,6 +359,20 @@ const he: Translations = {
   importError: 'לא ניתן לייבא את הקובץ',
   importInvalidFormat: 'קובץ ה-CSV אינו בפורמט תקין',
   importTransactionsOnly: 'ייבוא עסקאות בלבד — לא כולל קטגוריות, הוצאות קבועות או הגדרות',
+  // Save feedback toasts
+  savedRecurring: 'תשלום קבוע נשמר ✓',
+  savedSettings: 'נשמר ✓',
+  categoryUpdated: 'קטגוריה עודכנה ✓',
+  // Analytics empty states
+  noDataHint: 'הוסף הוצאות כדי לראות פירוט לפי קטגוריה',
+  noRecurringHint: 'תשלומים קבועים כגון שכר דירה, מנויים ומשכורת',
+  // Analytics income comparison
+  totalIncomeLbl: 'הכנסות',
+  // Dashboard planned banner
+  projectedThisMonth: 'צפוי החודש',
+  projectedExpense: 'הוצאות קבועות',
+  projectedIncome: 'הכנסות קבועות',
+  projectedNet: 'נטו צפוי',
   growLabel: 'צמיחה',
   growTitle: 'חיסכון וצמיחה',
   savingsThisMonth: 'החיסכון שלך החודש',
@@ -358,6 +388,7 @@ const he: Translations = {
   etfOption: 'מדד מניות',
   assumedReturnLabel: 'תשואה שנתית',
   growFromDashboard: 'ראה איך זה יכול לצמוח',
+  disclaimerTitle: 'לצרכים חינוכיים בלבד',
 };
 
 const en: Translations = {
@@ -518,6 +549,20 @@ const en: Translations = {
   importError: 'Failed to import file',
   importInvalidFormat: 'CSV file is not in valid format',
   importTransactionsOnly: 'Transactions only — categories, recurring expenses and settings are not imported',
+  // Save feedback toasts
+  savedRecurring: 'Recurring saved ✓',
+  savedSettings: 'Saved ✓',
+  categoryUpdated: 'Category updated ✓',
+  // Analytics empty states
+  noDataHint: 'Add expenses to see a category breakdown',
+  noRecurringHint: 'Fixed items like rent, subscriptions and salary',
+  // Analytics income comparison
+  totalIncomeLbl: 'Income',
+  // Dashboard planned banner
+  projectedThisMonth: 'Projected this month',
+  projectedExpense: 'Fixed expenses',
+  projectedIncome: 'Fixed income',
+  projectedNet: 'Net projection',
   growLabel: 'Grow',
   growTitle: 'Savings & Growth',
   savingsThisMonth: 'Your savings this month',
@@ -533,6 +578,7 @@ const en: Translations = {
   etfOption: 'Index ETF',
   assumedReturnLabel: 'Est. annual return',
   growFromDashboard: 'See how it could grow',
+  disclaimerTitle: 'For educational purposes only',
 };
 
 interface LanguageContextProps {
