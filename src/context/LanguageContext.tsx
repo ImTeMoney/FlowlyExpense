@@ -158,6 +158,13 @@ export interface Translations {
   confirmDeleteTitle: string;
   confirmDeleteRecTitle: string;
   confirmDeleteCatTitle: string;
+  // CSV import
+  importCSV: string;
+  importConfirmTitle: string;
+  importLabel: string;
+  importSuccess: string;
+  importError: string;
+  importInvalidFormat: string;
 }
 
 const he: Translations = {
@@ -310,6 +317,12 @@ const he: Translations = {
   confirmDeleteTitle: 'מחק הוצאה?',
   confirmDeleteRecTitle: 'מחק תשלום קבוע?',
   confirmDeleteCatTitle: 'מחק קטגוריה?',
+  importCSV: 'ייבוא CSV',
+  importConfirmTitle: 'לייבא נתונים מקובץ?',
+  importLabel: 'ייבוא',
+  importSuccess: 'הנתונים יובאו בהצלחה',
+  importError: 'לא ניתן לייבא את הקובץ',
+  importInvalidFormat: 'קובץ ה-CSV אינו בפורמט תקין',
 };
 
 const en: Translations = {
@@ -462,6 +475,12 @@ const en: Translations = {
   confirmDeleteTitle: 'Delete expense?',
   confirmDeleteRecTitle: 'Delete recurring expense?',
   confirmDeleteCatTitle: 'Delete category?',
+  importCSV: 'Import CSV',
+  importConfirmTitle: 'Import data from file?',
+  importLabel: 'Import',
+  importSuccess: 'Data imported successfully',
+  importError: 'Failed to import file',
+  importInvalidFormat: 'CSV file is not in valid format',
 };
 
 interface LanguageContextProps {

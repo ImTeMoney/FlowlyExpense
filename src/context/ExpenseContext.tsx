@@ -82,7 +82,8 @@ type Action =
   | { type: 'SET_RECURRING_INSTALLMENTS'; payload: { id: string; totalInstallments: number } }
   | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> }
   | { type: 'SET_MAIN_CURRENCY';         payload: string }
-  | { type: 'SET_MONEY_MODE';            payload: MoneyMode };
+  | { type: 'SET_MONEY_MODE';            payload: MoneyMode }
+  | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] };  // append imported rows
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -238,6 +239,41 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(STORAGE_KEYS.MONEY_MODE, moneyMode);
   }, [moneyMode]);
 
+  // Cross-tab sync: when another tab writes to localStorage, mirror the change here
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (!e.key || e.newValue === null) return;
+      try {
+        switch (e.key) {
+          case STORAGE_KEYS.TRANSACTIONS:
+            setTransactions(JSON.parse(e.newValue));
+            break;
+          case STORAGE_KEYS.RECURRING:
+            setRecurringExpenses(JSON.parse(e.newValue));
+            break;
+          case STORAGE_KEYS.BUDGET:
+            setMonthlyBudget(JSON.parse(e.newValue));
+            break;
+          case STORAGE_KEYS.SAVINGS_GOAL:
+            setSavingsGoal(JSON.parse(e.newValue));
+            break;
+          case STORAGE_KEYS.CATEGORIES:
+            setCategories(JSON.parse(e.newValue));
+            break;
+          case STORAGE_KEYS.MAIN_CURRENCY:
+            setMainCurrency(e.newValue);
+            break;
+          case STORAGE_KEYS.MONEY_MODE:
+            if (e.newValue === 'savings_based' || e.newValue === 'budget_based')
+              setMoneyMode(e.newValue);
+            break;
+        }
+      } catch { /* malformed JSON – ignore */ }
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Auto-post recurring expenses on mount
   useEffect(() => {
     const today = new Date();
@@ -344,6 +380,11 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'SET_MONEY_MODE':
         setMoneyMode(action.payload);
+        break;
+
+      case 'MERGE_TRANSACTIONS':
+        // Append imported rows; keep existing transactions intact
+        setTransactions(prev => [...action.payload, ...prev]);
         break;
     }
   }, []);

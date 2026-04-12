@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
+import React, { useState, useRef, useMemo } from 'react';
+import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transaction } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Check, X, RefreshCw, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, ChevronRight } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const SettingsPage: React.FC = () => {
@@ -65,6 +65,132 @@ const SettingsPage: React.FC = () => {
   const [newCatName,  setNewCatName]  = useState('');
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
   const [newCatColor, setNewCatColor] = useState(CATEGORY_COLORS[4]);
+
+  // CSV import
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [pendingRows, setPendingRows] = useState<Transaction[] | null>(null);
+
+  // Build reverse map: localized payment label → PaymentMethod key
+  const pmReverseMap = useMemo<Record<string, PaymentMethod>>(() => {
+    const map: Record<string, PaymentMethod> = {};
+    for (const pm of PAYMENT_METHODS) {
+      const label = (t as any)[`pm_${pm}`] as string | undefined;
+      if (label) map[label.toLowerCase()] = pm;
+      map[pm.toLowerCase()] = pm; // also accept raw key
+    }
+    return map;
+  }, [t]);
+
+  function parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let i = 0, cur = '';
+    while (i < line.length) {
+      if (line[i] === '"') {
+        i++;
+        while (i < line.length) {
+          if (line[i] === '"' && line[i + 1] === '"') { cur += '"'; i += 2; }
+          else if (line[i] === '"') { i++; break; }
+          else cur += line[i++];
+        }
+      } else if (line[i] === ',') {
+        result.push(cur); cur = ''; i++;
+      } else {
+        cur += line[i++];
+      }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function parseCSVImport(text: string): { rows: Transaction[]; errors: string[] } {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) return { rows: [], errors: [t.importInvalidFormat] };
+
+    const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+    const required = ['date', 'description', 'category', 'type', 'amount', 'payment method'];
+    if (!required.every(r => header.includes(r)))
+      return { rows: [], errors: [t.importInvalidFormat] };
+
+    const idx = {
+      date: header.indexOf('date'),
+      desc: header.indexOf('description'),
+      cat:  header.indexOf('category'),
+      type: header.indexOf('type'),
+      amt:  header.indexOf('amount'),
+      pm:   header.indexOf('payment method'),
+    };
+
+    const rows: Transaction[] = [];
+    const errors: string[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      const date = cols[idx.date]?.trim() ?? '';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        errors.push(`${lang === 'he' ? 'שורה' : 'Row'} ${i + 1}: ${lang === 'he' ? 'תאריך לא תקין' : 'invalid date'}`);
+        continue;
+      }
+      const amt = parseFloat(cols[idx.amt]?.trim() ?? '');
+      if (isNaN(amt) || amt < 0) {
+        errors.push(`${lang === 'he' ? 'שורה' : 'Row'} ${i + 1}: ${lang === 'he' ? 'סכום לא תקין' : 'invalid amount'}`);
+        continue;
+      }
+      const catName = cols[idx.cat]?.trim() ?? '';
+      const cat = categories.find(c => c.name === catName);
+      const categoryId = cat?.id ?? 'cat_other';
+      const isIncome = (cols[idx.type]?.trim().toLowerCase() ?? '') === 'income';
+      const pmRaw = cols[idx.pm]?.trim().toLowerCase() ?? '';
+      const paymentMethod = pmReverseMap[pmRaw] ?? undefined;
+
+      rows.push({
+        id: `imp_${Date.now()}_${i}_${Math.random().toString(36).slice(2)}`,
+        date,
+        description: cols[idx.desc]?.trim() ?? '',
+        categoryId,
+        amount: amt,
+        isIncome,
+        paymentMethod,
+      });
+    }
+    return { rows, errors };
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = ev.target?.result as string;
+      const { rows, errors } = parseCSVImport(text);
+      if (errors.length > 0) {
+        setImportStatus({ type: 'error', msg: errors[0] });
+        return;
+      }
+      if (rows.length === 0) {
+        setImportStatus({ type: 'error', msg: t.importInvalidFormat });
+        return;
+      }
+      // Stash parsed rows and show confirmation
+      setPendingRows(rows);
+      setConfirm({
+        title: t.importConfirmTitle,
+        body: lang === 'he'
+          ? <>{rows.length} {rows.length === 1 ? 'רשומה תתווסף' : 'רשומות יתווספו'} לנתונים הקיימים.</>
+          : <>{rows.length} transaction{rows.length !== 1 ? 's' : ''} will be added to your existing data.</>,
+        onConfirm: () => {
+          dispatch({ type: 'MERGE_TRANSACTIONS', payload: rows });
+          setPendingRows(null);
+          setConfirm(null);
+          setImportStatus({ type: 'success', msg: t.importSuccess });
+          setTimeout(() => setImportStatus(null), 3500);
+        },
+      });
+    };
+    reader.onerror = () => setImportStatus({ type: 'error', msg: t.importError });
+    reader.readAsText(file, 'utf-8');
+  }
 
   function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
@@ -308,6 +434,32 @@ const SettingsPage: React.FC = () => {
           <Download size={13} />
           {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
         </button>
+
+        {/* Hidden file input for CSV import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+        <button
+          className="export-btn"
+          onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
+          style={{ marginTop: 6 }}
+        >
+          <Upload size={13} />
+          {t.importCSV}
+        </button>
+
+        {importStatus && (
+          <div
+            className={`import-status${importStatus.type === 'success' ? ' success' : ' error'}`}
+          >
+            {importStatus.msg}
+          </div>
+        )}
+
         <button
           className="export-btn"
           onClick={() => window.location.reload()}
@@ -324,7 +476,7 @@ const SettingsPage: React.FC = () => {
           title={confirm.title}
           body={confirm.body}
           onConfirm={confirm.onConfirm}
-          onCancel={() => setConfirm(null)}
+          onCancel={() => { setConfirm(null); setPendingRows(null); }}
         />
       )}
 
