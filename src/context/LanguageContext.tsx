@@ -74,6 +74,7 @@ export interface Translations {
   pm_transfer: string;
   pm_bit: string;
   pm_applepay: string;
+  pm_standing_order: string;
   // New analytics
   monthlyComparison: string;
   byPaymentMethod: string;
@@ -234,6 +235,7 @@ const he: Translations = {
   pm_transfer: 'העברה',
   pm_bit: 'ביט',
   pm_applepay: 'Apple Pay',
+  pm_standing_order: 'הוראת קבע',
   // New analytics
   monthlyComparison: 'השוואה חודשית',
   byPaymentMethod: 'לפי אמצעי תשלום',
@@ -393,6 +395,7 @@ const en: Translations = {
   pm_transfer: 'Transfer',
   pm_bit: 'Bit',
   pm_applepay: 'Apple Pay',
+  pm_standing_order: 'Standing Order',
   // New analytics
   monthlyComparison: 'Monthly Comparison',
   byPaymentMethod: 'By Payment Method',

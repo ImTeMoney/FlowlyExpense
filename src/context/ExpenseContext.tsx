@@ -3,11 +3,11 @@ import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'check' | 'transfer' | 'bit' | 'applepay';
+export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'check' | 'transfer' | 'bit' | 'applepay' | 'standing_order';
 export type MoneyMode = 'savings_based' | 'budget_based';
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
-  'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay',
+  'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay', 'standing_order',
 ];
 
 export interface Category {

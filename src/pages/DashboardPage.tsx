@@ -4,7 +4,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2,
+  Wallet, GitFork, Trash2, Repeat,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -15,18 +15,20 @@ import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
 
 // ── Payment method icons ────────────────────────────────────────
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
-  cash:     Banknote,
-  credit:   CreditCard,
-  debit:    Wallet,
-  check:    FileCheck,
-  transfer: Landmark,
-  bit:      Smartphone,
-  applepay: Apple,
+  cash:          Banknote,
+  credit:        CreditCard,
+  debit:         Wallet,
+  check:         FileCheck,
+  transfer:      Landmark,
+  bit:           Smartphone,
+  applepay:      Apple,
+  standing_order: Repeat,
 };
 
 const PM_COLOR: Record<string, string> = {
   cash: '#22C55E', credit: '#8B5CF6', debit: '#3B82F6',
   check: '#F59E0B', transfer: '#0EA5E9', bit: '#06B6D4', applepay: '#A78BFA',
+  standing_order: '#F97316',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────

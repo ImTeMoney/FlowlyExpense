@@ -4,7 +4,7 @@ import {
   Package, Plus, X,
   TrendingDown, TrendingUp,
   Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple,
-  ArrowUpRight, ArrowDownRight, Minus, GitFork,
+  ArrowUpRight, ArrowDownRight, Minus, GitFork, Repeat,
 } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -17,10 +17,12 @@ const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
   cash: Banknote, credit: CreditCard, debit: Wallet,
   check: FileCheck, transfer: Landmark, bit: Smartphone, applepay: Apple,
+  standing_order: Repeat,
 };
 const PM_COLOR: Record<string, string> = {
   cash: '#22C55E', credit: '#8B5CF6', debit: '#3B82F6',
   check: '#F59E0B', transfer: '#0EA5E9', bit: '#06B6D4', applepay: '#A78BFA',
+  standing_order: '#F97316',
 };
 
 export default function AnalyticsPage() {
