@@ -165,6 +165,7 @@ export interface Translations {
   importSuccess: string;
   importError: string;
   importInvalidFormat: string;
+  importTransactionsOnly: string;
 }
 
 const he: Translations = {
@@ -323,6 +324,7 @@ const he: Translations = {
   importSuccess: 'הנתונים יובאו בהצלחה',
   importError: 'לא ניתן לייבא את הקובץ',
   importInvalidFormat: 'קובץ ה-CSV אינו בפורמט תקין',
+  importTransactionsOnly: 'ייבוא עסקאות בלבד — לא כולל קטגוריות, הוצאות קבועות או הגדרות',
 };
 
 const en: Translations = {
@@ -481,6 +483,7 @@ const en: Translations = {
   importSuccess: 'Data imported successfully',
   importError: 'Failed to import file',
   importInvalidFormat: 'CSV file is not in valid format',
+  importTransactionsOnly: 'Transactions only — categories, recurring expenses and settings are not imported',
 };
 
 interface LanguageContextProps {

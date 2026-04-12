@@ -103,14 +103,14 @@ const SettingsPage: React.FC = () => {
     return result;
   }
 
-  function parseCSVImport(text: string): { rows: Transaction[]; errors: string[] } {
+  function parseCSVImport(text: string): { rows: Transaction[]; invalidCount: number; formatError: string | null } {
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (lines.length < 2) return { rows: [], errors: [t.importInvalidFormat] };
+    if (lines.length < 2) return { rows: [], invalidCount: 0, formatError: t.importInvalidFormat };
 
     const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
     const required = ['date', 'description', 'category', 'type', 'amount', 'payment method'];
     if (!required.every(r => header.includes(r)))
-      return { rows: [], errors: [t.importInvalidFormat] };
+      return { rows: [], invalidCount: 0, formatError: t.importInvalidFormat };
 
     const idx = {
       date: header.indexOf('date'),
@@ -122,20 +122,15 @@ const SettingsPage: React.FC = () => {
     };
 
     const rows: Transaction[] = [];
-    const errors: string[] = [];
+    let invalidCount = 0;
 
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i]);
       const date = cols[idx.date]?.trim() ?? '';
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        errors.push(`${lang === 'he' ? 'שורה' : 'Row'} ${i + 1}: ${lang === 'he' ? 'תאריך לא תקין' : 'invalid date'}`);
-        continue;
-      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { invalidCount++; continue; }
       const amt = parseFloat(cols[idx.amt]?.trim() ?? '');
-      if (isNaN(amt) || amt < 0) {
-        errors.push(`${lang === 'he' ? 'שורה' : 'Row'} ${i + 1}: ${lang === 'he' ? 'סכום לא תקין' : 'invalid amount'}`);
-        continue;
-      }
+      if (isNaN(amt) || amt < 0) { invalidCount++; continue; }
+
       const catName = cols[idx.cat]?.trim() ?? '';
       const cat = categories.find(c => c.name === catName);
       const categoryId = cat?.id ?? 'cat_other';
@@ -153,7 +148,11 @@ const SettingsPage: React.FC = () => {
         paymentMethod,
       });
     }
-    return { rows, errors };
+    return { rows, invalidCount, formatError: null };
+  }
+
+  function fingerprint(tx: { date: string; amount: number; description: string }) {
+    return `${tx.date}|${tx.amount}|${tx.description.trim().toLowerCase()}`;
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -163,28 +162,55 @@ const SettingsPage: React.FC = () => {
     const reader = new FileReader();
     reader.onload = ev => {
       const text = ev.target?.result as string;
-      const { rows, errors } = parseCSVImport(text);
-      if (errors.length > 0) {
-        setImportStatus({ type: 'error', msg: errors[0] });
+      const { rows, invalidCount, formatError } = parseCSVImport(text);
+
+      if (formatError) {
+        setImportStatus({ type: 'error', msg: formatError });
         return;
       }
-      if (rows.length === 0) {
+
+      // Deduplication: skip rows whose date+amount+description already exist
+      const existingPrints = new Set(transactions.map(fingerprint));
+      const newRows = rows.filter(r => !existingPrints.has(fingerprint(r)));
+      const duplicateCount = rows.length - newRows.length;
+
+      // Nothing to import at all
+      if (newRows.length === 0 && rows.length === 0) {
         setImportStatus({ type: 'error', msg: t.importInvalidFormat });
         return;
       }
-      // Stash parsed rows and show confirmation
-      setPendingRows(rows);
+
+      // Build confirmation body
+      const iHe = lang === 'he';
+      const summaryLines: React.ReactNode[] = [];
+      if (newRows.length > 0)
+        summaryLines.push(<div key="new">{iHe ? `יובאו ${newRows.length} רשומות` : `${newRows.length} transaction${newRows.length !== 1 ? 's' : ''} will be imported`}</div>);
+      if (duplicateCount > 0)
+        summaryLines.push(<div key="dup" style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>{iHe ? `דולגו ${duplicateCount} כפילויות` : `${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} will be skipped`}</div>);
+      if (invalidCount > 0)
+        summaryLines.push(<div key="inv" style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{iHe ? `${invalidCount} שורות לא תקינות לא יובאו` : `${invalidCount} invalid row${invalidCount !== 1 ? 's' : ''} will be skipped`}</div>);
+
+      setPendingRows(newRows);
       setConfirm({
         title: t.importConfirmTitle,
-        body: lang === 'he'
-          ? <>{rows.length} {rows.length === 1 ? 'רשומה תתווסף' : 'רשומות יתווספו'} לנתונים הקיימים.</>
-          : <>{rows.length} transaction{rows.length !== 1 ? 's' : ''} will be added to your existing data.</>,
+        body: <div style={{ lineHeight: 1.7 }}>{summaryLines}</div>,
         onConfirm: () => {
-          dispatch({ type: 'MERGE_TRANSACTIONS', payload: rows });
+          if (newRows.length > 0) dispatch({ type: 'MERGE_TRANSACTIONS', payload: newRows });
           setPendingRows(null);
           setConfirm(null);
-          setImportStatus({ type: 'success', msg: t.importSuccess });
-          setTimeout(() => setImportStatus(null), 3500);
+          // Result summary message
+          const parts: string[] = [];
+          if (iHe) {
+            if (newRows.length > 0) parts.push(`יובאו ${newRows.length} רשומות`);
+            if (duplicateCount > 0) parts.push(`דולגו ${duplicateCount} כפילויות`);
+            if (invalidCount > 0)   parts.push(`${invalidCount} שורות לא תקינות`);
+          } else {
+            if (newRows.length > 0) parts.push(`${newRows.length} imported`);
+            if (duplicateCount > 0) parts.push(`${duplicateCount} skipped (duplicates)`);
+            if (invalidCount > 0)   parts.push(`${invalidCount} invalid`);
+          }
+          setImportStatus({ type: 'success', msg: parts.join(' · ') });
+          setTimeout(() => setImportStatus(null), 5000);
         },
       });
     };
@@ -451,6 +477,7 @@ const SettingsPage: React.FC = () => {
           <Upload size={13} />
           {t.importCSV}
         </button>
+        <p className="settings-helper" style={{ marginTop: 4 }}>{t.importTransactionsOnly}</p>
 
         {importStatus && (
           <div
