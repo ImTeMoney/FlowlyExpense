@@ -122,8 +122,25 @@ const STORAGE_KEYS = {
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
     const item = localStorage.getItem(key);
-    return item ? (JSON.parse(item) as T) : defaultValue;
-  } catch {
+    if (!item) return defaultValue;
+    const parsed = JSON.parse(item) as T;
+    // Basic type-shape validation: arrays must be arrays, numbers must be numbers
+    if (Array.isArray(defaultValue) && !Array.isArray(parsed)) {
+      console.warn(`[storage] Key "${key}" expected array, got ${typeof parsed} — using default`);
+      localStorage.removeItem(key); // evict the corrupted value
+      return defaultValue;
+    }
+    if (typeof defaultValue === 'number' && typeof parsed !== 'number') {
+      console.warn(`[storage] Key "${key}" expected number, got ${typeof parsed} — using default`);
+      localStorage.removeItem(key);
+      return defaultValue;
+    }
+    return parsed;
+  } catch (e) {
+    // JSON.parse failed — the stored value is corrupt; evict it so it can't
+    // cause the same crash on the next boot
+    console.warn(`[storage] Key "${key}" could not be parsed — evicting`, e);
+    try { localStorage.removeItem(key); } catch { /* storage unavailable */ }
     return defaultValue;
   }
 }

@@ -13,6 +13,18 @@ const SettingsPage: React.FC = () => {
 
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
 
+  // Refresh guard — ref is synchronous so rapid taps can't bypass it
+  const refreshingRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  function handleRefresh() {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setIsRefreshing(true);
+    // Small delay: lets the disabled-button state render before the page unloads,
+    // and ensures any pending localStorage writes have flushed.
+    setTimeout(() => window.location.reload(), 200);
+  }
+
   // Budget
   const [budgetEdit, setBudgetEdit] = useState(String(monthlyBudget));
   function saveBudget() {
@@ -477,7 +489,7 @@ const SettingsPage: React.FC = () => {
           <Upload size={13} />
           {t.importCSV}
         </button>
-        <p className="settings-helper" style={{ marginTop: 4 }}>{t.importTransactionsOnly}</p>
+        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center' }}>{t.importTransactionsOnly}</p>
 
         {importStatus && (
           <div
@@ -489,11 +501,12 @@ const SettingsPage: React.FC = () => {
 
         <button
           className="export-btn"
-          onClick={() => window.location.reload()}
+          onClick={handleRefresh}
+          disabled={isRefreshing}
           style={{ marginTop: 6 }}
         >
-          <RefreshCw size={13} />
-          {t.refreshApp}
+          <RefreshCw size={13} className={isRefreshing ? 'spin' : ''} />
+          {isRefreshing ? (lang === 'he' ? 'טוען…' : 'Loading…') : t.refreshApp}
         </button>
       </div>
 
