@@ -6,6 +6,7 @@ import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
+import GrowPage from './pages/GrowPage';
 
 // ── Full-app Error Boundary ───────────────────────────────────────────────────
 // Catches any render error anywhere in the tree and shows a recovery screen
@@ -81,6 +82,7 @@ function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/grow" element={<GrowPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppLayout>

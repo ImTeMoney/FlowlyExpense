@@ -167,6 +167,22 @@ export interface Translations {
   importError: string;
   importInvalidFormat: string;
   importTransactionsOnly: string;
+  // Grow / Savings & Investing screen
+  growLabel: string;
+  growTitle: string;
+  savingsThisMonth: string;
+  noSavingsThisMonth: string;
+  simulatorTitle: string;
+  monthlyContrib: string;
+  timeHorizonLabel: string;
+  yearsLabel: string;
+  projectedLabel: string;
+  totalContribLabel: string;
+  cashOption: string;
+  savingsAccOption: string;
+  etfOption: string;
+  assumedReturnLabel: string;
+  growFromDashboard: string;
 }
 
 const he: Translations = {
@@ -327,6 +343,21 @@ const he: Translations = {
   importError: 'לא ניתן לייבא את הקובץ',
   importInvalidFormat: 'קובץ ה-CSV אינו בפורמט תקין',
   importTransactionsOnly: 'ייבוא עסקאות בלבד — לא כולל קטגוריות, הוצאות קבועות או הגדרות',
+  growLabel: 'צמיחה',
+  growTitle: 'חיסכון וצמיחה',
+  savingsThisMonth: 'החיסכון שלך החודש',
+  noSavingsThisMonth: 'לא נרשם חיסכון החודש',
+  simulatorTitle: 'מה אם תשקיע כל חודש?',
+  monthlyContrib: 'הפקדה חודשית',
+  timeHorizonLabel: 'טווח זמן',
+  yearsLabel: 'שנים',
+  projectedLabel: 'ערך צפוי',
+  totalContribLabel: 'סך הפקדות',
+  cashOption: 'מזומן',
+  savingsAccOption: 'פיקדון / חיסכון',
+  etfOption: 'מדד מניות',
+  assumedReturnLabel: 'תשואה שנתית',
+  growFromDashboard: 'ראה איך זה יכול לצמוח',
 };
 
 const en: Translations = {
@@ -487,6 +518,21 @@ const en: Translations = {
   importError: 'Failed to import file',
   importInvalidFormat: 'CSV file is not in valid format',
   importTransactionsOnly: 'Transactions only — categories, recurring expenses and settings are not imported',
+  growLabel: 'Grow',
+  growTitle: 'Savings & Growth',
+  savingsThisMonth: 'Your savings this month',
+  noSavingsThisMonth: 'No savings recorded this month',
+  simulatorTitle: 'What if you invested monthly?',
+  monthlyContrib: 'Monthly contribution',
+  timeHorizonLabel: 'Time horizon',
+  yearsLabel: 'years',
+  projectedLabel: 'Projected value',
+  totalContribLabel: 'Total contributed',
+  cashOption: 'Cash',
+  savingsAccOption: 'Savings account',
+  etfOption: 'Index ETF',
+  assumedReturnLabel: 'Est. annual return',
+  growFromDashboard: 'See how it could grow',
 };
 
 interface LanguageContextProps {
