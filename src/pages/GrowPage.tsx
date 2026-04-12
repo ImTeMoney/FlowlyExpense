@@ -1,12 +1,26 @@
 import { useState, useMemo, useEffect } from 'react';
-import { TrendingUp, PiggyBank, Banknote, Info, AlertTriangle } from 'lucide-react';
+import {
+  TrendingUp, PiggyBank, Banknote, Info, AlertTriangle,
+  BarChart2, Globe, Landmark, RefreshCw,
+} from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
+import { useMarketData } from '../hooks/useMarketData';
+import { TrackKey } from '../services/marketDataService';
 import { Sun, Moon } from 'lucide-react';
 
+// ── Icon map keyed by TrackDef.iconName ──────────────────────────────────────
+const TRACK_ICON_MAP = {
+  Banknote,
+  PiggyBank,
+  TrendingUp,
+  BarChart2,
+  Globe,
+  Landmark,
+} as const;
+
 // ── Compound interest helper ──────────────────────────────────────────────────
-// FV of an annuity-due: monthly contributions at a given annual rate over n years.
 function futureValue(monthlyPmt: number, annualRate: number, years: number): number {
   if (monthlyPmt <= 0) return 0;
   if (annualRate === 0) return monthlyPmt * years * 12;
@@ -17,11 +31,31 @@ function futureValue(monthlyPmt: number, annualRate: number, years: number): num
 
 const YEAR_OPTIONS = [5, 10, 20, 30];
 
-const SCENARIOS = [
-  { key: 'cash',    rate: 0,    labelKey: 'cashOption',     icon: Banknote,   color: '#64748B' },
-  { key: 'savings', rate: 0.04, labelKey: 'savingsAccOption', icon: PiggyBank, color: '#3B82F6' },
-  { key: 'etf',     rate: 0.07, labelKey: 'etfOption',      icon: TrendingUp, color: '#22C55E' },
-] as const;
+// Growth track options shown in the selector (user picks one for the third card)
+const GROWTH_KEYS: TrackKey[] = ['sp500', 'nasdaq', 'global', 'bonds'];
+
+// ── Freshness badge helper ─────────────────────────────────────────────────────
+function timeAgo(ts: number | null): string {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 2) return '< 1 min ago';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function timeAgoHe(ts: number | null): string {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 2) return 'לפני פחות מדקה';
+  if (mins < 60) return `לפני ${mins} דק׳`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `לפני ${hrs} שעות`;
+  return `לפני ${Math.floor(hrs / 24)} ימים`;
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -29,6 +63,9 @@ export default function GrowPage() {
   const { state, formatCurrencyDirect } = useExpense();
   const { t, lang } = useLang();
   const [theme, toggleTheme] = useTheme();
+  const { snapshot, isRefreshing, refresh } = useMarketData();
+
+  const iHe = lang === 'he';
 
   // Current-month savings (income − expenses)
   const now = new Date();
@@ -37,8 +74,8 @@ export default function GrowPage() {
     () => state.transactions.filter(tx => tx.date.startsWith(ms)),
     [state.transactions, ms],
   );
-  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s, tx) => s + tx.amount, 0);
-  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s, tx) => s + tx.amount, 0);
+  const income  = monthTxns.filter(tx =>  tx.isIncome).reduce((s, tx) => s + tx.amount, 0);
+  const spent   = monthTxns.filter(tx => !tx.isIncome).reduce((s, tx) => s + tx.amount, 0);
   const savings = income - spent;
 
   // Simulator state
@@ -55,17 +92,27 @@ export default function GrowPage() {
     }
   }, [savings, contribEdited]);
 
+  // Selected growth track (third scenario card)
+  const [growthKey, setGrowthKey] = useState<TrackKey>('sp500');
+
   const contrib = parseFloat(contribStr) || 0;
   const totalContributed = contrib * years * 12;
 
-  // Pre-compute all three scenario values
-  const results = useMemo(
-    () => SCENARIOS.map(s => ({ ...s, value: futureValue(contrib, s.rate, years) })),
-    [contrib, years],
-  );
-  const maxValue = Math.max(...results.map(r => r.value), 1);
+  // Build the 3 displayed tracks: cash + savings + selected growth track
+  const displayedTracks = useMemo(() => {
+    const trackMap = new Map(snapshot.tracks.map(tr => [tr.key, tr]));
+    const cash    = trackMap.get('cash')!;
+    const dep     = trackMap.get('savings')!;
+    const growth  = trackMap.get(growthKey)!;
+    return [cash, dep, growth];
+  }, [snapshot.tracks, growthKey]);
 
-  const iHe = lang === 'he';
+  // Pre-compute FV for each displayed track
+  const results = useMemo(
+    () => displayedTracks.map(tr => ({ ...tr, fv: futureValue(contrib, tr.rate, years) })),
+    [displayedTracks, contrib, years],
+  );
+  const maxValue = Math.max(...results.map(r => r.fv), 1);
 
   return (
     <div className="page" style={{ paddingBottom: 90 }}>
@@ -143,29 +190,55 @@ export default function GrowPage() {
           </div>
         </div>
 
+        {/* Growth track selector */}
+        <div className="grow-field">
+          <label className="grow-field-lbl">{t.trackSelectorLbl}</label>
+          <div className="grow-track-pills">
+            {GROWTH_KEYS.map(key => {
+              const track = snapshot.tracks.find(tr => tr.key === key);
+              const label = track ? (t as Record<string, string>)[track.labelKey] ?? key : key;
+              return (
+                <button
+                  key={key}
+                  className={`grow-track-btn${growthKey === key ? ' active' : ''}`}
+                  onClick={() => setGrowthKey(key)}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Scenario result cards */}
         {contrib > 0 ? (
           <div className="grow-scenarios">
             {results.map(sc => {
-              const Icon = sc.icon;
-              const pct  = Math.round((sc.value / maxValue) * 100);
-              const gained = sc.value - totalContributed;
+              const Icon = TRACK_ICON_MAP[sc.iconName];
+              const pct    = Math.round((sc.fv / maxValue) * 100);
+              const gained = sc.fv - totalContributed;
+              const rateDisplay = sc.rate === 0
+                ? (iHe ? 'ללא תשואה' : 'No return')
+                : `${(sc.rate * 100).toFixed(1)}% ${t.assumedReturnLabel}`;
               return (
                 <div key={sc.key} className="grow-sc-card">
                   <div className="grow-sc-header">
                     <div className="grow-sc-icon" style={{ background: `${sc.color}18` }}>
                       <Icon size={16} color={sc.color} />
                     </div>
-                    <div>
-                      <div className="grow-sc-name">{(t as any)[sc.labelKey]}</div>
-                      <div className="grow-sc-rate">
-                        {sc.rate === 0
-                          ? (iHe ? 'ללא תשואה' : 'No return')
-                          : `${(sc.rate * 100).toFixed(0)}% ${t.assumedReturnLabel}`}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="grow-sc-name">
+                        {(t as Record<string, string>)[sc.labelKey] ?? sc.key}
+                        {sc.isLive && (
+                          <span className="grow-sc-live-badge">
+                            {iHe ? 'חי' : 'LIVE'}
+                          </span>
+                        )}
                       </div>
+                      <div className="grow-sc-rate">{rateDisplay}</div>
                     </div>
                     <div className="grow-sc-val" style={{ color: sc.color }}>
-                      {formatCurrencyDirect(Math.round(sc.value))}
+                      {formatCurrencyDirect(Math.round(sc.fv))}
                     </div>
                   </div>
                   {/* Progress bar */}
@@ -186,10 +259,31 @@ export default function GrowPage() {
                 </div>
               );
             })}
+
             {/* Total contributed note */}
             <div className="grow-contrib-note">
               {t.totalContribLabel}: <strong>{formatCurrencyDirect(Math.round(totalContributed))}</strong>
               {' '}({contrib > 0 ? `${years * 12} ${iHe ? 'חודשים' : 'months'}` : ''})
+            </div>
+
+            {/* Data freshness badge */}
+            <div className="grow-data-badge">
+              <div className={`grow-data-badge-dot${snapshot.isLive ? '' : ' offline'}`} />
+              <span>
+                {snapshot.isLive ? t.marketLive : t.marketDefault}
+                {snapshot.fetchedAt && (
+                  <> · {t.marketUpdated} {iHe ? timeAgoHe(snapshot.fetchedAt) : timeAgo(snapshot.fetchedAt)}</>
+                )}
+              </span>
+              <button
+                className="grow-refresh-btn"
+                onClick={refresh}
+                disabled={isRefreshing}
+                aria-label={t.marketRefresh}
+              >
+                <RefreshCw size={10} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                {t.marketRefresh}
+              </button>
             </div>
           </div>
         ) : (
@@ -225,8 +319,19 @@ export default function GrowPage() {
           </summary>
           <p className="grow-learn-body">
             {iHe
-              ? 'מדד S&P 500 עוקב אחרי 500 החברות הגדולות בארה"ב. לאורך ההיסטוריה, המדד הניב תשואה שנתית ממוצעת של כ-7% לאחר אינפלציה. השקעה דרך קרן סל (ETF) מחקה מדד זה מאפשרת פיזור רחב בעלות נמוכה.'
-              : 'The S&P 500 tracks the 500 largest US companies. Historically it has returned roughly 7% annually after inflation. Investing via an index ETF that tracks it gives broad diversification at low cost.'}
+              ? 'מדד S&P 500 עוקב אחרי 500 החברות הגדולות בארה"ב. לאורך ההיסטוריה, המדד הניב תשואה שנתית ממוצעת של כ-7% לאחר אינפלציה. נאסד"ק 100 מכיל את 100 חברות הטכנולוגיה הגדולות ביותר ומניב תשואה ממוצעת גבוהה יותר אך עם תנודתיות גבוהה יותר. מסלול מניות עולמי מפזר השקעות בשווקים מרחבי העולם.'
+              : 'The S&P 500 tracks the 500 largest US companies with roughly 7% average annual return after inflation. The Nasdaq-100 holds the 100 largest tech companies and historically returns more but with higher volatility. A global equity track spreads investments across world markets for broader diversification.'}
+          </p>
+        </details>
+
+        <details className="grow-learn-item">
+          <summary className="grow-learn-summary">
+            {iHe ? 'פיקדון ואג"ח — תשואות חיות' : 'Deposits & bonds — live rates'}
+          </summary>
+          <p className="grow-learn-body">
+            {iHe
+              ? 'שיעורי הפיקדון והאג"ח מתעדכנים מ-US Treasury API (ממשלת ארה"ב) אחת ל-24 שעות. שיעור T-Bill משמש כאמדן לתשואת פיקדון בנקאי, ו-T-Note לאמדן תשואת אג"ח. כשלא קיים חיבור לאינטרנט, מוצגים ממוצעים היסטוריים.'
+              : 'Deposit and bond rates refresh from the US Treasury API every 24 hours. The T-Bill rate approximates a bank savings/deposit yield; the T-Note rate approximates a bond return. When offline, historical averages are shown instead.'}
           </p>
         </details>
       </div>
@@ -241,8 +346,8 @@ export default function GrowPage() {
             </div>
             <p className="grow-disclaimer-body">
               {iHe
-                ? 'הסימולציה מיועדת ללמידה בלבד ואינה ייעוץ השקעות. תשואות עבר אינן ערובה לעתיד. אחוזי ה-7% וה-4% הם ממוצעים היסטוריים. יש להתייעץ עם יועץ פיננסי מורשה.'
-                : 'For educational use only. Not investment advice. Past performance is no guarantee of future results. The 7% and 4% figures are historical averages. Consult a licensed financial advisor.'}
+                ? 'הסימולציה מיועדת ללמידה בלבד ואינה ייעוץ השקעות. תשואות עבר אינן ערובה לעתיד. אחוזי התשואה הם ממוצעים היסטוריים. יש להתייעץ עם יועץ פיננסי מורשה.'
+                : 'For educational use only. Not investment advice. Past performance is no guarantee of future results. Return figures are historical averages. Consult a licensed financial advisor.'}
             </p>
           </div>
         </div>

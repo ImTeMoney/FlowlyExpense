@@ -982,6 +982,58 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 18px 0 6px;
 }
 
+/* Track selector chips (selects which growth/equity track to show) */
+.grow-track-pills {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.grow-track-btn {
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-full);
+  cursor: pointer; color: var(--text-secondary);
+  font-size: 12px; font-weight: 500;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.grow-track-btn:hover:not(.active) { background: var(--gold-dim); color: var(--text); }
+.grow-track-btn.active {
+  background: var(--gold-dim); border-color: var(--gold);
+  color: var(--gold); font-weight: 700;
+}
+
+/* Live-rate badge on scenario card name */
+.grow-sc-live-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--success); background: var(--success-dim);
+  border-radius: var(--r-full); padding: 1px 6px;
+  vertical-align: middle; margin-inline-start: 4px;
+}
+
+/* Data freshness badge below simulator */
+.grow-data-badge {
+  display: flex; align-items: center; gap: 8px;
+  justify-content: center;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  font-size: 11px; color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.grow-data-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); flex-shrink: 0;
+}
+.grow-data-badge-dot.offline { background: var(--text-dim); }
+.grow-refresh-btn {
+  background: none; border: 1px solid var(--glass-border); border-radius: var(--r-full);
+  padding: 2px 9px; font-size: 11px; color: var(--text-muted);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  transition: color 0.12s, border-color 0.12s;
+}
+.grow-refresh-btn:hover { color: var(--text); border-color: var(--glass-hi); }
+.grow-refresh-btn:disabled { opacity: 0.45; cursor: default; }
+
 /* Learn more */
 .grow-learn-item {
   border-top: 1px solid var(--glass-border);

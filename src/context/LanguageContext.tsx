@@ -201,6 +201,16 @@ export interface Translations {
   growExplainer: string;
   // Grow disclaimer
   disclaimerTitle: string;
+  // Market data / Growth screen tracks
+  trackSP500: string;
+  trackNasdaq: string;
+  trackGlobal: string;
+  trackBonds: string;
+  trackSelectorLbl: string;
+  marketLive: string;
+  marketDefault: string;
+  marketUpdated: string;
+  marketRefresh: string;
 }
 
 const he: Translations = {
@@ -392,6 +402,16 @@ const he: Translations = {
   growFromDashboard: 'ראה איך זה יכול לצמוח',
   growExplainer: 'ראה איך הפקדה חודשית קבועה יכולה לצמוח לאורך זמן.',
   disclaimerTitle: 'לצרכים חינוכיים בלבד',
+  // Market data / Growth screen tracks
+  trackSP500: 'S&P 500',
+  trackNasdaq: 'נאסד"ק 100',
+  trackGlobal: 'מניות עולמי',
+  trackBonds: 'אג"ח',
+  trackSelectorLbl: 'מסלול',
+  marketLive: 'שיעורים חיים',
+  marketDefault: 'ממוצעים היסטוריים',
+  marketUpdated: 'עודכן',
+  marketRefresh: 'רענן',
 };
 
 const en: Translations = {
@@ -583,6 +603,16 @@ const en: Translations = {
   growFromDashboard: 'See how it could grow',
   growExplainer: 'See how a regular monthly contribution could grow over time.',
   disclaimerTitle: 'For educational purposes only',
+  // Market data / Growth screen tracks
+  trackSP500: 'S&P 500',
+  trackNasdaq: 'Nasdaq-100',
+  trackGlobal: 'Global Equity',
+  trackBonds: 'Bonds',
+  trackSelectorLbl: 'Growth track',
+  marketLive: 'Live rates',
+  marketDefault: 'Historical averages',
+  marketUpdated: 'Updated',
+  marketRefresh: 'Refresh',
 };
 
 interface LanguageContextProps {
