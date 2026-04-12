@@ -281,7 +281,138 @@ export default function AnalyticsPage() {
         }
       })()}
 
-      {/* Monthly comparison */}
+      {/* ── 1. Category breakdown — most actionable insight first ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <span className="title-text">{t.byCategory}</span>
+          {catTotals.length > 0 && <span>{catTotals.length} {t.activeCategories}</span>}
+        </div>
+        {catTotals.length === 0 ? (
+          <div className="a-sec-empty">
+            <div className="a-sec-empty-icon"><BarChart2 size={18} /></div>
+            <div className="a-sec-empty-msg">{t.noData}</div>
+            <div className="a-sec-empty-hint">{t.noDataHint}</div>
+          </div>
+        ) : (
+          <>
+            {catTotals.map(({ cat, total, prevTotal, hasRecurring, txCount }) => {
+              const Icon   = CAT_ICON[cat.id] ?? Package;
+              const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
+              const isHigher  = prevTotal > 0 && change > 30;
+              const isOneTime = txCount === 1 && !hasRecurring;
+              const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
+              return (
+                <div key={cat.id} className="cb-row">
+                  <div className="cb-icon" style={{ background: `${cat.color}18` }}>
+                    <Icon size={15} color={cat.color} />
+                  </div>
+                  <div className="cb-info">
+                    <div className="cb-name-row">
+                      <span className="cb-name">{cat.name}</span>
+                      <div className="cb-tags">
+                        {hasRecurring && <span className="cat-tag cat-tag-fixed">{t.tagFixed}</span>}
+                        {isHigher     && <span className="cat-tag cat-tag-high">{t.tagHigh}</span>}
+                        {isOneTime    && <span className="cat-tag cat-tag-onetime">{t.tagOneTime}</span>}
+                        {prevTotal > 0 && change !== 0 && (
+                          <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
+                            {change > 0 ? '+' : ''}{change}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="cb-track">
+                      <div className="cb-fill" style={{ width: `${(total/maxCat)*100}%`, background: cat.color }} />
+                    </div>
+                  </div>
+                  <div className="cb-right">
+                    <span className="cb-amt">{formatCurrency(total)}</span>
+                    <span className="cb-pct">{pctOfTotal}%</span>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Top-category insight line */}
+            {catTotals.length > 0 && totalCatSpent > 0 && (() => {
+              const top = catTotals[0];
+              const pct = Math.round((top.total / totalCatSpent) * 100);
+              if (pct < 30) return null; // only show if dominant
+              return (
+                <div className="a-insight-line">
+                  {lang === 'he'
+                    ? `${pct}% מההוצאות הן ${top.cat.name}`
+                    : `${pct}% of spending was ${top.cat.name}`}
+                </div>
+              );
+            })()}
+          </>
+        )}
+      </div>
+
+      {/* ── 2. Payment method breakdown ── */}
+      {pmTotals.length > 0 && (
+        <div className="a-sec">
+          <div className="a-sec-title">
+            <span className="title-text">{t.byPaymentMethod}</span>
+          </div>
+          {pmTotals.map(({ pm, total }) => {
+            const PmI = PM_ICON[pm] ?? Banknote;
+            return (
+              <div key={pm} className="cb-row">
+                <div className="cb-icon" style={{ background: `${PM_COLOR[pm] ?? '#8B5CF6'}18` }}>
+                  <PmI size={15} color={PM_COLOR[pm] ?? '#8B5CF6'} />
+                </div>
+                <div className="cb-info">
+                  <div className="cb-name">{pmLabel(pm)}</div>
+                  <div className="cb-track">
+                    <div
+                      className="cb-fill"
+                      style={{ width: `${(total/maxPm)*100}%`, background: PM_COLOR[pm] ?? '#8B5CF6' }}
+                    />
+                  </div>
+                </div>
+                <span className="cb-amt">{formatCurrency(total)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── 3. Weekly breakdown with insight ── */}
+      {weeklyTotals.length > 0 && (() => {
+        const peakWeek = weeklyTotals.reduce((a, b) => b.total > a.total ? b : a, weeklyTotals[0]);
+        const peakPct  = spent > 0 ? Math.round((peakWeek.total / spent) * 100) : 0;
+        const insightLine = peakWeek.total > 0
+          ? lang === 'he'
+            ? `רוב ההוצאות היו בימים ${peakWeek.label} — ${formatCurrency(peakWeek.total)} (${peakPct}%)`
+            : `Most spending in days ${peakWeek.label} — ${formatCurrency(peakWeek.total)} (${peakPct}%)`
+          : null;
+        return (
+          <div className="a-sec">
+            <div className="a-sec-title">
+              <span className="title-text">{t.weeklyBreakdown}</span>
+            </div>
+            <div className="weekly-chart">
+              {weeklyTotals.map((w, i) => (
+                <div key={i} className="weekly-bar-wrap">
+                  <div className="weekly-amt" style={{ color: w.total === 0 ? 'var(--text-dim)' : undefined }}>
+                    {w.total > 0 ? formatCurrency(w.total) : '—'}
+                  </div>
+                  <div className="weekly-bar-bg">
+                    <div
+                      className={`weekly-bar-fill${w.total === 0 ? ' zero' : ''}`}
+                      style={{ height: w.total > 0 ? `${(w.total / maxWeek) * 100}%` : undefined }}
+                    />
+                  </div>
+                  <div className="weekly-label">{w.label}</div>
+                </div>
+              ))}
+            </div>
+            {insightLine && <div className="a-insight-line">{insightLine}</div>}
+          </div>
+        );
+      })()}
+
+      {/* ── 4. Monthly comparison — supporting context ── */}
       <div className="a-sec">
         <div className="a-sec-title">
           <span className="title-text">{t.monthlyComparison}</span>
@@ -316,7 +447,6 @@ export default function AnalyticsPage() {
             <div className="compare-prev">{t.lastMonth}: {formatCurrency(prevIncome)}</div>
           </div>
         </div>
-        {/* Daily average — shown below grid as a supporting metric */}
         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 4px 0', borderTop: '1px solid var(--glass-border)' }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.dailyAvg}</span>
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
@@ -326,113 +456,19 @@ export default function AnalyticsPage() {
             </span>
           </span>
         </div>
-      </div>
-
-      {/* Category breakdown */}
-      <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text">{t.byCategory}</span>
-          <span>{catTotals.length} {t.activeCategories}</span>
-        </div>
-        {catTotals.length === 0 ? (
-          <div className="a-sec-empty">
-            <div className="a-sec-empty-icon"><BarChart2 size={18} /></div>
-            <div className="a-sec-empty-msg">{t.noData}</div>
-            <div className="a-sec-empty-hint">{t.noDataHint}</div>
+        {/* Spend vs last month insight */}
+        {prevSpent > 0 && spentChange !== 0 && (
+          <div className="a-insight-line" style={{ color: spentChange < 0 ? 'var(--success)' : 'var(--text-dim)' }}>
+            {spentChange < 0
+              ? lang === 'he'
+                ? `הוצאת ${formatCurrency(prevSpent - spent)} פחות מחודש שעבר`
+                : `You spent ${formatCurrency(prevSpent - spent)} less than last month`
+              : lang === 'he'
+                ? `הוצאת ${formatCurrency(spent - prevSpent)} יותר מחודש שעבר`
+                : `You spent ${formatCurrency(spent - prevSpent)} more than last month`}
           </div>
-        ) : (
-          catTotals.map(({ cat, total, prevTotal, hasRecurring, txCount }) => {
-            const Icon   = CAT_ICON[cat.id] ?? Package;
-            const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
-            const isHigher  = prevTotal > 0 && change > 30;
-            const isOneTime = txCount === 1 && !hasRecurring;
-            const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
-            return (
-              <div key={cat.id} className="cb-row">
-                <div className="cb-icon" style={{ background: `${cat.color}18` }}>
-                  <Icon size={15} color={cat.color} />
-                </div>
-                <div className="cb-info">
-                  <div className="cb-name-row">
-                    <span className="cb-name">{cat.name}</span>
-                    <div className="cb-tags">
-                      {hasRecurring && <span className="cat-tag cat-tag-fixed">{t.tagFixed}</span>}
-                      {isHigher     && <span className="cat-tag cat-tag-high">{t.tagHigh}</span>}
-                      {isOneTime    && <span className="cat-tag cat-tag-onetime">{t.tagOneTime}</span>}
-                      {prevTotal > 0 && change !== 0 && (
-                        <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
-                          {change > 0 ? '+' : ''}{change}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="cb-track">
-                    <div className="cb-fill" style={{ width: `${(total/maxCat)*100}%`, background: cat.color }} />
-                  </div>
-                </div>
-                <div className="cb-right">
-                  <span className="cb-amt">{formatCurrency(total)}</span>
-                  <span className="cb-pct">{pctOfTotal}%</span>
-                </div>
-              </div>
-            );
-          })
         )}
       </div>
-
-      {/* Payment method breakdown */}
-      {pmTotals.length > 0 && (
-        <div className="a-sec">
-          <div className="a-sec-title">
-            <span className="title-text">{t.byPaymentMethod}</span>
-          </div>
-          {pmTotals.map(({ pm, total }) => {
-            const PmI = PM_ICON[pm] ?? Banknote;
-            return (
-              <div key={pm} className="cb-row">
-                <div className="cb-icon" style={{ background: `${PM_COLOR[pm] ?? '#8B5CF6'}18` }}>
-                  <PmI size={15} color={PM_COLOR[pm] ?? '#8B5CF6'} />
-                </div>
-                <div className="cb-info">
-                  <div className="cb-name">{pmLabel(pm)}</div>
-                  <div className="cb-track">
-                    <div
-                      className="cb-fill"
-                      style={{ width: `${(total/maxPm)*100}%`, background: PM_COLOR[pm] ?? '#8B5CF6' }}
-                    />
-                  </div>
-                </div>
-                <span className="cb-amt">{formatCurrency(total)}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Weekly breakdown — always show all weeks for context */}
-      {weeklyTotals.length > 0 && (
-        <div className="a-sec">
-          <div className="a-sec-title">
-            <span className="title-text">{t.weeklyBreakdown}</span>
-          </div>
-          <div className="weekly-chart">
-            {weeklyTotals.map((w, i) => (
-              <div key={i} className="weekly-bar-wrap">
-                <div className="weekly-amt" style={{ color: w.total === 0 ? 'var(--text-dim)' : undefined }}>
-                  {w.total > 0 ? formatCurrency(w.total) : '—'}
-                </div>
-                <div className="weekly-bar-bg">
-                  <div
-                    className={`weekly-bar-fill${w.total === 0 ? ' zero' : ''}`}
-                    style={{ height: w.total > 0 ? `${(w.total / maxWeek) * 100}%` : undefined }}
-                  />
-                </div>
-                <div className="weekly-label">{w.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Recurring expenses */}
       <div className="a-sec">

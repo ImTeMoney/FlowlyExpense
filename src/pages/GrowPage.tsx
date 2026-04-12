@@ -82,22 +82,22 @@ export default function GrowPage() {
         </div>
       </div>
 
-      {/* ── Monthly savings card ── */}
-      <div className="grow-hero-card">
-        <div className="grow-hero-lbl">{t.savingsThisMonth}</div>
+      {/* ── Actual savings context row ── */}
+      <div className="grow-context-row">
+        <div className="grow-context-lbl">{t.savingsThisMonth}</div>
         {savings > 0 ? (
-          <>
-            <div className="grow-hero-val" style={{ color: 'var(--success)' }}>
+          <div className="grow-context-val">
+            <span style={{ color: 'var(--success)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
               {formatCurrencyDirect(savings)}
-            </div>
-            <div className="grow-hero-sub">
+            </span>
+            <span className="grow-context-sub">
               {iHe
                 ? `הכנסות ${formatCurrencyDirect(income)} · הוצאות ${formatCurrencyDirect(spent)}`
                 : `Income ${formatCurrencyDirect(income)} · Expenses ${formatCurrencyDirect(spent)}`}
-            </div>
-          </>
+            </span>
+          </div>
         ) : (
-          <div className="grow-hero-nosavings">{t.noSavingsThisMonth}</div>
+          <span className="grow-context-none">{t.noSavingsThisMonth}</span>
         )}
       </div>
 
@@ -106,6 +106,7 @@ export default function GrowPage() {
         <div className="a-sec-title">
           <span className="title-text">{t.simulatorTitle}</span>
         </div>
+        <p className="grow-explainer">{t.growExplainer}</p>
 
         {/* Monthly contribution input */}
         <div className="grow-field">

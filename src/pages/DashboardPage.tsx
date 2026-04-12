@@ -297,35 +297,6 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Planned recurring banner — only shown when there are recurring items */}
-      {(plannedExpense > 0 || plannedIncome > 0) && (
-        <div className="planned-banner">
-          <span className="planned-title">{t.projectedThisMonth}</span>
-          <div className="planned-items">
-            {plannedIncome > 0 && (
-              <span className="planned-income">
-                <TrendingUp size={11} />
-                {formatCurrency(plannedIncome)}
-              </span>
-            )}
-            {plannedExpense > 0 && (
-              <span className="planned-expense">
-                <TrendingDown size={11} />
-                {formatCurrency(plannedExpense)}
-              </span>
-            )}
-            {plannedIncome > 0 && plannedExpense > 0 && (() => {
-              const net = plannedIncome - plannedExpense;
-              return (
-                <span className={`planned-net ${net >= 0 ? 'positive' : 'negative'}`}>
-                  {net >= 0 ? '+' : ''}{formatCurrency(net)}
-                </span>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
       {/* Transaction feed */}
       <div className="txn-section">
         {grouped.size === 0 ? (

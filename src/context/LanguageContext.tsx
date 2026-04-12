@@ -197,6 +197,8 @@ export interface Translations {
   etfOption: string;
   assumedReturnLabel: string;
   growFromDashboard: string;
+  // Grow explainer tagline (simulator intro)
+  growExplainer: string;
   // Grow disclaimer
   disclaimerTitle: string;
 }
@@ -285,16 +287,16 @@ const he: Translations = {
   weeklyBreakdown: 'לפי שבועות',
   addIncome: 'הוסף הכנסה',
   // Money mode selector
-  moneyModeTitle: 'איך אתה מנהל את הכסף שלך?',
+  moneyModeTitle: 'מצב מעקב',
   modeTrackSavings: 'מעקב חיסכון',
-  modeTrackSavingsDesc: 'עוקב אחרי הכנסות, הוצאות וחיסכון',
+  modeTrackSavingsDesc: 'עוקב אחרי הכנסות, הוצאות וחיסכון.',
   modeTrackBudget: 'מעקב תקציב',
-  modeTrackBudgetDesc: 'מנהל לפי תקציב חודשי בלבד',
+  modeTrackBudgetDesc: 'עוקב אחרי הוצאות ביחס לתקציב חודשי.',
   // Financial goals section
   financialGoals: 'יעדים פיננסיים',
   savingsGoalLabel: 'יעד חיסכון',
-  savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. כדי לראות חיסכון מדויק, הקפד לרשום גם הכנסות.',
-  budgetHelperText: 'עוקב אחרי ההוצאות שלך ביחס לתקציב החודשי. אין צורך לרשום הכנסות.',
+  savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. יש לרשום גם הכנסות לחישוב מדויק.',
+  budgetHelperText: 'עוקב אחרי ההוצאות מול התקציב. אין צורך לרשום הכנסות.',
   mainCurrencyLabel: 'מטבע ראשי',
   // Categories section
   categoriesTitle: 'קטגוריות',
@@ -375,7 +377,7 @@ const he: Translations = {
   projectedNet: 'נטו צפוי',
   growLabel: 'צמיחה',
   growTitle: 'חיסכון וצמיחה',
-  savingsThisMonth: 'החיסכון שלך החודש',
+  savingsThisMonth: 'חיסכון בפועל החודש',
   noSavingsThisMonth: 'לא נרשם חיסכון החודש',
   simulatorTitle: 'מה אם תשקיע כל חודש?',
   monthlyContrib: 'הפקדה חודשית',
@@ -388,6 +390,7 @@ const he: Translations = {
   etfOption: 'מדד מניות',
   assumedReturnLabel: 'תשואה שנתית',
   growFromDashboard: 'ראה איך זה יכול לצמוח',
+  growExplainer: 'ראה איך הפקדה חודשית קבועה יכולה לצמוח לאורך זמן.',
   disclaimerTitle: 'לצרכים חינוכיים בלבד',
 };
 
@@ -475,16 +478,16 @@ const en: Translations = {
   weeklyBreakdown: 'By Weeks',
   addIncome: 'Add Income',
   // Money mode selector
-  moneyModeTitle: 'How do you manage your money?',
+  moneyModeTitle: 'Tracking Mode',
   modeTrackSavings: 'Savings Tracking',
-  modeTrackSavingsDesc: 'Track income, expenses, and savings',
+  modeTrackSavingsDesc: 'Tracks income, expenses and savings.',
   modeTrackBudget: 'Budget Tracking',
-  modeTrackBudgetDesc: 'Manage with a monthly budget only',
+  modeTrackBudgetDesc: 'Tracks expenses against a monthly budget.',
   // Financial goals section
   financialGoals: 'Financial Goals',
   savingsGoalLabel: 'Savings Goal',
-  savingsHelperText: 'Savings are calculated as income minus expenses. To see accurate savings, record income too.',
-  budgetHelperText: 'Tracks your expenses against your monthly budget. No need to record income.',
+  savingsHelperText: 'Savings = income minus expenses. Record both for an accurate picture.',
+  budgetHelperText: 'Tracks spending against a monthly cap. No income recording needed.',
   mainCurrencyLabel: 'Main Currency',
   // Categories section
   categoriesTitle: 'Categories',
@@ -565,7 +568,7 @@ const en: Translations = {
   projectedNet: 'Net projection',
   growLabel: 'Grow',
   growTitle: 'Savings & Growth',
-  savingsThisMonth: 'Your savings this month',
+  savingsThisMonth: 'Actual savings this month',
   noSavingsThisMonth: 'No savings recorded this month',
   simulatorTitle: 'What if you invested monthly?',
   monthlyContrib: 'Monthly contribution',
@@ -578,6 +581,7 @@ const en: Translations = {
   etfOption: 'Index ETF',
   assumedReturnLabel: 'Est. annual return',
   growFromDashboard: 'See how it could grow',
+  growExplainer: 'See how a regular monthly contribution could grow over time.',
   disclaimerTitle: 'For educational purposes only',
 };
 
