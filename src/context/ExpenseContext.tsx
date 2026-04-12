@@ -291,7 +291,13 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // Auto-post recurring expenses on mount
+  // Auto-post recurring expenses whenever the recurring list changes.
+  // Using `recurringExpenses` as a dependency (instead of []) means newly added
+  // recurring items are posted immediately — not only on the next app boot.
+  //
+  // Loop safety: after posting, setRecurringExpenses sets lastPostedMonth for
+  // each posted item.  The next effect run finds toPost === [] and returns early,
+  // so the effect stabilises after exactly two runs per new item.
   useEffect(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -323,7 +329,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         !r.totalInstallments || (r.postedCount ?? 0) < r.totalInstallments
       );
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [recurringExpenses]); // re-run whenever the list changes so new items post immediately
 
   const dispatch = useCallback((action: Action) => {
     switch (action.type) {

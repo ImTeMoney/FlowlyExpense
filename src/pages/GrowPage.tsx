@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, PiggyBank, Banknote, Info } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
@@ -43,9 +43,18 @@ export default function GrowPage() {
 
   // Simulator state
   const [years,  setYears]  = useState(10);
+  const [contribEdited, setContribEdited] = useState(false);
   const [contribStr, setContribStr] = useState(() =>
     savings > 0 ? String(Math.round(savings)) : '',
   );
+
+  // Keep simulator input in sync with savings unless the user has manually overridden it
+  useEffect(() => {
+    if (!contribEdited) {
+      setContribStr(savings > 0 ? String(Math.round(savings)) : '');
+    }
+  }, [savings, contribEdited]);
+
   const contrib = parseFloat(contribStr) || 0;
   const totalContributed = contrib * years * 12;
 
@@ -110,7 +119,7 @@ export default function GrowPage() {
               className="grow-amount-input"
               placeholder="0"
               value={contribStr}
-              onChange={e => setContribStr(e.target.value)}
+              onChange={e => { setContribStr(e.target.value); setContribEdited(true); }}
               inputMode="decimal"
               min="0"
             />
