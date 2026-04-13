@@ -699,11 +699,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }
 
   function todayFullLabel(): string {
-    const d = new Date();
-    const locale = lang === 'he' ? 'he-IL' : 'en-US';
-    const weekday = d.toLocaleDateString(locale, { weekday: 'long' });
-    const date    = d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
-    return `${weekday} · ${date}`;
+    return new Date().toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
   }
 
   function catName(catId: string, storedName: string): string {
