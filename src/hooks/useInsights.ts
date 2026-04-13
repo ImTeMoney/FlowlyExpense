@@ -131,11 +131,11 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
         subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
         urgency  = 'warning';
       } else if (hasGoal && savings >= savingsGoal) {
-        headline = iHe ? 'הגעת ליעד החיסכון החודש!' : 'You\'ve hit your savings goal this month!';
+        headline = iHe ? 'קצב החיסכון שלך נראה טוב' : 'Your saving pace looks great';
         subline  = iHe ? `חסכת ${formatCurrency(savings)} מתוך יעד ${formatCurrency(savingsGoal)}` : `Saved ${formatCurrency(savings)} of ${formatCurrency(savingsGoal)} goal`;
         urgency  = 'good';
       } else if (savings > 0) {
-        headline = iHe ? 'אתה חוסך כסף החודש' : 'You\'re saving money this month';
+        headline = iHe ? 'אתה בדרך טובה החודש' : 'You\'re on a good track this month';
         subline  = iHe ? `חיסכון: ${formatCurrency(savings)} · עוד ${daysLeft} ימים` : `Saving ${formatCurrency(savings)} · ${daysLeft} days left`;
         urgency  = 'good';
       } else {
