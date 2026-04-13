@@ -82,7 +82,7 @@ function groupByDate(txns: Transaction[]) {
 // ── Component ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
-  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel } = useLang();
+  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, catName } = useLang();
   const { categories, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
@@ -156,7 +156,7 @@ export default function DashboardPage() {
     const num = parseFloat(amount);
     if (!num || num <= 0 || !catId) return;
     const cat = categories.find(c => c.id === catId);
-    const baseDesc = desc.trim() || (cat?.name ?? '');
+    const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name) : '');
 
     // Resolve amount in main currency
     let finalAmount = num;
@@ -339,7 +339,7 @@ export default function DashboardPage() {
                       <div className="txn-info">
                         <div className="txn-name">{tx.description}</div>
                         <div className="txn-meta">
-                          <span className="txn-cat">{tx.isIncome ? t.income : (cat?.name ?? '')}</span>
+                          <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '')}</span>
                           {tx.installments && (
                             <span className="inst-badge">
                               <GitFork size={10} />

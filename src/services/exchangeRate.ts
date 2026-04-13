@@ -19,6 +19,13 @@ export const CURRENCY_NAME: Record<string, string> = {
   GBP: 'פאונד',
 };
 
+export const CURRENCY_NAME_EN: Record<string, string> = {
+  ILS: 'Israeli Shekel',
+  USD: 'US Dollar',
+  EUR: 'Euro',
+  GBP: 'British Pound',
+};
+
 const CDN = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api';
 
 type RatesMap = Record<string, number>;

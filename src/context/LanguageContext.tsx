@@ -631,6 +631,8 @@ interface LanguageContextProps {
   formatDateGroup: (dateStr: string) => string;
   currentMonthLabel: () => string;
   monthLabel: (y: number, m: number) => string;
+  /** Returns translated name for built-in categories; falls back to stored name for custom ones. */
+  catName: (catId: string, storedName: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
@@ -694,8 +696,18 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
+  function catName(catId: string, storedName: string): string {
+    // Built-in category ids match translation keys directly (e.g. cat_groceries)
+    // Custom category ids contain "custom" — always use the stored name as-is
+    if (!catId.includes('custom')) {
+      const translated = (t as Record<string, unknown>)[catId];
+      if (typeof translated === 'string') return translated;
+    }
+    return storedName;
+  }
+
   return (
-    <LanguageContext.Provider value={{ lang, t, toggleLang, dir, formatCurrency, formatDateGroup, currentMonthLabel, monthLabel }}>
+    <LanguageContext.Provider value={{ lang, t, toggleLang, dir, formatCurrency, formatDateGroup, currentMonthLabel, monthLabel, catName }}>
       {children}
     </LanguageContext.Provider>
   );

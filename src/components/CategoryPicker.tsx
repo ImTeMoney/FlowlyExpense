@@ -3,6 +3,7 @@ import {
   UtensilsCrossed, Plane, Package,
 } from 'lucide-react';
 import type { Category } from '../context/ExpenseContext';
+import { useLang } from '../context/LanguageContext';
 
 type IconFC = React.FC<{ size?: number; color?: string }>;
 
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function CategoryPicker({ categories, value, onChange }: Props) {
+  const { catName } = useLang();
   return (
     <div className="cat-picker-grid">
       {categories.map(cat => {
@@ -44,7 +46,7 @@ export default function CategoryPicker({ categories, value, onChange }: Props) {
             } : undefined}
           >
             <Icon size={20} color={selected ? cat.color : 'var(--text-muted)'} />
-            <span className="cat-chip-name">{cat.name}</span>
+            <span className="cat-chip-name">{catName(cat.id, cat.name)}</span>
           </button>
         );
       })}
