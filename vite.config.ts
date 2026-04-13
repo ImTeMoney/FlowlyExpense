@@ -15,6 +15,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
+      workbox: {
+        clientsClaim: true,
+      },
       manifest: {
         name: 'Finio',
         short_name: 'Finio',
