@@ -1,17 +1,46 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { useMoneyMode } from '../hooks/useMoneyMode';
+import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
+
+// ── Insight icon map ─────────────────────────────────────────────
+const INSIGHT_ICON: Record<InsightIcon, React.FC<{ size?: number; color?: string }>> = {
+  zap:   Zap,
+  piggy: PiggyBank,
+  check: CheckCircle,
+  alert: Zap,
+};
+const INSIGHT_COLOR: Record<InsightIcon, string> = {
+  zap:   '#F59E0B',
+  piggy: '#22C55E',
+  check: '#64748B',
+  alert: '#EF4444',
+};
+
+// ── Urgency helpers ───────────────────────────────────────────────
+const URGENCY_DOT: Record<Urgency, string> = {
+  good:    '#22C55E',
+  caution: '#F59E0B',
+  warning: '#EF4444',
+  neutral: '#64748B',
+};
+const URGENCY_BAR: Record<Urgency, string> = {
+  good:    '#22C55E',
+  caution: '#F59E0B',
+  warning: '#EF4444',
+  neutral: '#64748B',
+};
 
 // ── Payment method icons ────────────────────────────────────────
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
@@ -49,31 +78,6 @@ function groupByDate(txns: Transaction[]) {
   return map;
 }
 
-// ── Progress Ring ────────────────────────────────────────────
-// Pure display: receives pre-computed pct and color from useMoneyMode.
-function ProgressRing({ pct, color }: { pct: number; color: string }) {
-  const r = 58, cx = 75, cy = 75;
-  const circumference = 2 * Math.PI * r;
-  const dash = circumference * Math.min(pct, 1);
-  return (
-    <svg viewBox="0 0 150 150" width="150" height="150" aria-hidden="true">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
-      {pct > 0 && (
-        <circle
-          cx={cx} cy={cy} r={r} fill="none"
-          stroke={color} strokeWidth="10"
-          strokeDasharray={`${dash} ${circumference - dash}`}
-          strokeDashoffset={circumference / 4}
-          strokeLinecap="round"
-          style={{
-            transition: 'stroke-dasharray 0.8s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s',
-            filter: `drop-shadow(0 0 8px ${color}72)`,
-          }}
-        />
-      )}
-    </svg>
-  );
-}
 
 // ── Component ─────────────────────────────────────────────────
 export default function DashboardPage() {
@@ -81,7 +85,8 @@ export default function DashboardPage() {
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel } = useLang();
   const { categories, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
-  const kpi = useMoneyMode();
+  const { statusCard, insights } = useInsights();
+  const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
   const [isIncome, setIsIncome]   = useState(false);
@@ -262,40 +267,43 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Progress Ring — driven entirely by useMoneyMode */}
-      <div className="spend-ring-wrap">
-        <div className="spend-ring-container small">
-          <ProgressRing pct={kpi.progress} color={kpi.color} />
-          <div className="spend-ring-center">
-            {kpi.hasGoal ? (
-              <>
-                <span className="ring-label">{kpi.ringLabel}</span>
-                <span className="ring-amount">{formatCurrency(kpi.ringValue)}</span>
-                <span className="ring-of">{t.of} {formatCurrency(kpi.ringGoal)}</span>
-              </>
-            ) : (
-              <>
-                <span className="ring-label">{kpi.ringLabel}</span>
-                <span className="ring-amount">{formatCurrency(kpi.ringValue)}</span>
-                <span className="ring-of ring-no-goal">{kpi.statusMsg}</span>
-              </>
-            )}
+      {/* Smart status card */}
+      <div className={`smart-status-card ${statusCard.urgency}`}>
+        <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
+        <div className="smart-status-headline">{statusCard.headline}</div>
+        <div className="smart-status-subline">{statusCard.subline}</div>
+        {statusCard.progress > 0 && (
+          <div className="smart-status-bar">
+            <div
+              className="smart-status-bar-fill"
+              style={{ width: `${Math.min(statusCard.progress * 100, 100)}%`, background: URGENCY_BAR[statusCard.urgency] }}
+            />
           </div>
-        </div>
-        {kpi.hasGoal && kpi.statusMsg && (
-          <div className="ring-status" style={{ color: kpi.statusColor }}>{kpi.statusMsg}</div>
         )}
       </div>
 
-      {/* Stats row — mode-aware chips from hook */}
-      <div className="stats-row">
-        {kpi.statsChips.map(chip => (
-          <div key={chip.label} className="stat-chip">
-            <span className="stat-chip-lbl">{chip.label}</span>
-            <span className={`stat-chip-val ${chip.colorClass}`}>{chip.value}</span>
+      {/* Insight cards */}
+      {insights.map(ins => {
+        const Icon = INSIGHT_ICON[ins.icon];
+        const col  = INSIGHT_COLOR[ins.icon];
+        return (
+          <div key={ins.id} className={`insight-card ${ins.type}`}>
+            <div className="insight-card-icon" style={{ background: `${col}18` }}>
+              <Icon size={16} color={col} />
+            </div>
+            <div className="insight-card-body">
+              <div className="insight-line1">{ins.line1}</div>
+              <div className="insight-line2">{ins.line2}</div>
+              <div className="insight-line3">{ins.line3}</div>
+              {ins.ctaLabel && ins.ctaRoute && (
+                <button className="insight-cta" onClick={() => navigate(ins.ctaRoute!)}>
+                  {ins.ctaLabel}
+                </button>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
 
       {/* Transaction feed */}
       <div className="txn-section">

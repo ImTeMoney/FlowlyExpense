@@ -50,6 +50,7 @@ export interface Translations {
   // Nav
   homeLabel: string;
   analyticsLabel: string;
+  historyLabel: string;
   // Misc
   deleted: string;
   added: string;
@@ -258,6 +259,7 @@ const he: Translations = {
   exportCSV: 'ייצוא CSV',
   homeLabel: 'הוצאות',
   analyticsLabel: 'ניתוח',
+  historyLabel: 'היסטוריה',
   deleted: 'נמחק',
   added: 'נוסף בהצלחה ✓',
   descOptional: 'תיאור (אופציונלי)',
@@ -460,6 +462,7 @@ const en: Translations = {
   exportCSV: 'Export CSV',
   homeLabel: 'Expenses',
   analyticsLabel: 'Analytics',
+  historyLabel: 'History',
   deleted: 'Deleted',
   added: 'Added successfully ✓',
   descOptional: 'Description (optional)',
