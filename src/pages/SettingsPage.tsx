@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transaction } from '../context/ExpenseContext';
-import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchangeRate';
+import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2 } from 'lucide-react';
@@ -9,7 +9,7 @@ import ConfirmModal from '../components/ConfirmModal';
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
-  const { t, toggleLang, lang, monthLabel } = useLang();
+  const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
 
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
@@ -430,7 +430,7 @@ const SettingsPage: React.FC = () => {
                 onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
               >
                 {CURRENCY_SYMBOL[c]} {c}
-                <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {CURRENCY_NAME[c]}</span>
+                <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {lang === 'he' ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c]}</span>
               </button>
             ))}
           </div>
@@ -501,12 +501,12 @@ const SettingsPage: React.FC = () => {
             ) : (
               /* Tap whole row to enter edit mode */
               <button
-                onClick={() => startEdit(cat.id, cat.name, cat.color)}
+                onClick={() => startEdit(cat.id, catName(cat.id, cat.name), cat.color)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', textAlign: 'start' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-                  <span className="set-lbl">{cat.name}</span>
+                  <span className="set-lbl">{catName(cat.id, cat.name)}</span>
                 </div>
                 <ChevronRight size={14} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
               </button>

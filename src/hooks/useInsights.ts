@@ -38,7 +38,7 @@ function toStr(d: Date) {
 
 export function useInsights(): { statusCard: StatusCard; insights: InsightCard[] } {
   const { state, formatCurrency } = useExpense();
-  const { lang } = useLang();
+  const { lang, catName } = useLang();
   const { transactions, monthlyBudget, savingsGoal, moneyMode, categories } = state;
   const iHe = lang === 'he';
 
@@ -197,12 +197,13 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       }
 
       if (topCatId) {
-        const catName = categories.find(c => c.id === topCatId)?.name ?? topCatId;
+        const cat = categories.find(c => c.id === topCatId);
+        const resolvedCatName = catName(topCatId, cat?.name ?? topCatId);
         insights.push({
           id:    'spike_cat',
           type:  'spike_cat',
           icon:  'zap',
-          line1: iHe ? `${catName} — יותר מהחודש שעבר` : `${catName} up vs last month`,
+          line1: iHe ? `${resolvedCatName} — יותר מהחודש שעבר` : `${resolvedCatName} up vs last month`,
           line2: iHe
             ? `כ־${formatCurrency(Math.round(topDelta))} יותר מהחודש שעבר`
             : `About ${formatCurrency(Math.round(topDelta))} more than last month`,
@@ -245,5 +246,5 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     }
 
     return { statusCard, insights };
-  }, [transactions, monthlyBudget, savingsGoal, moneyMode, categories, formatCurrency, iHe]);
+  }, [transactions, monthlyBudget, savingsGoal, moneyMode, categories, formatCurrency, iHe, catName]);
 }
