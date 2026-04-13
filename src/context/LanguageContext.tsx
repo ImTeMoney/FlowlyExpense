@@ -680,7 +680,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     if (dateStr === yesterdayStr()) return t.yesterdayLabel;
     const [y, m, day] = dateStr.split('-');
     return new Date(+y, +m - 1, +day).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', {
-      weekday: 'long', day: 'numeric', month: 'short',
+      day: 'numeric', month: 'long', year: 'numeric',
     });
   }
 
