@@ -82,7 +82,7 @@ function groupByDate(txns: Transaction[]) {
 // ── Component ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
-  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, catName } = useLang();
+  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, todayFullLabel, catName } = useLang();
   const { categories, recurringExpenses, transactions, mainCurrency } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
@@ -255,6 +255,7 @@ export default function DashboardPage() {
           <div>
             <div className="header-brand">Finio</div>
             <div className="header-month">{currentMonthLabel()}</div>
+            <div className="header-today">{todayFullLabel()}</div>
           </div>
           <div className="header-actions">
             <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
