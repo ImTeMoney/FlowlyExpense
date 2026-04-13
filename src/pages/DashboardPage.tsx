@@ -254,8 +254,7 @@ export default function DashboardPage() {
         <div className="header-row">
           <div>
             <div className="header-brand">Finio</div>
-            <div className="header-month">{currentMonthLabel()}</div>
-            <div className="header-today">{todayFullLabel()}</div>
+            <div className="header-month">{todayFullLabel()}</div>
           </div>
           <div className="header-actions">
             <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
