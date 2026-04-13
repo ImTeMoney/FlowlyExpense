@@ -1960,6 +1960,14 @@ select.sm-in option { background: var(--modal-bg); }
   border: 1px solid var(--glass-border);
   border-radius: var(--r-sm);
 }
+.settings-version {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 8px 0 2px;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
 
 /* =====================================================
    WEEKLY BREAKDOWN CHART

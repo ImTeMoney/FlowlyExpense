@@ -211,6 +211,8 @@ export interface Translations {
   marketDefault: string;
   marketUpdated: string;
   marketRefresh: string;
+  // App update feedback
+  appUpToDate: string;
 }
 
 const he: Translations = {
@@ -412,6 +414,7 @@ const he: Translations = {
   marketDefault: 'ממוצעים היסטוריים',
   marketUpdated: 'עודכן',
   marketRefresh: 'רענן',
+  appUpToDate: 'האפליקציה מעודכנת ✓',
 };
 
 const en: Translations = {
@@ -613,6 +616,7 @@ const en: Translations = {
   marketDefault: 'Historical averages',
   marketUpdated: 'Updated',
   marketRefresh: 'Refresh',
+  appUpToDate: 'App is up to date ✓',
 };
 
 interface LanguageContextProps {
