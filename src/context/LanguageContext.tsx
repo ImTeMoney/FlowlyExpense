@@ -631,6 +631,8 @@ interface LanguageContextProps {
   formatDateGroup: (dateStr: string) => string;
   currentMonthLabel: () => string;
   monthLabel: (y: number, m: number) => string;
+  /** Full date label for today, e.g. "יום שישי · 13 באפריל 2026" */
+  todayFullLabel: () => string;
   /** Returns translated name for built-in categories; falls back to stored name for custom ones. */
   catName: (catId: string, storedName: string) => string;
 }
@@ -696,6 +698,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
+  function todayFullLabel(): string {
+    const d = new Date();
+    const locale = lang === 'he' ? 'he-IL' : 'en-US';
+    const weekday = d.toLocaleDateString(locale, { weekday: 'long' });
+    const date    = d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+    return `${weekday} · ${date}`;
+  }
+
   function catName(catId: string, storedName: string): string {
     // Built-in category ids match translation keys directly (e.g. cat_groceries)
     // Custom category ids contain "custom" — always use the stored name as-is
@@ -707,7 +717,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <LanguageContext.Provider value={{ lang, t, toggleLang, dir, formatCurrency, formatDateGroup, currentMonthLabel, monthLabel, catName }}>
+    <LanguageContext.Provider value={{ lang, t, toggleLang, dir, formatCurrency, formatDateGroup, currentMonthLabel, monthLabel, todayFullLabel, catName }}>
       {children}
     </LanguageContext.Provider>
   );
