@@ -294,7 +294,6 @@ export default function DashboardPage() {
             <div className="insight-card-body">
               <div className="insight-line1">{ins.line1}</div>
               <div className="insight-line2">{ins.line2}</div>
-              <div className="insight-line3">{ins.line3}</div>
               {ins.ctaLabel && ins.ctaRoute && (
                 <button className="insight-cta" onClick={() => navigate(ins.ctaRoute!)}>
                   {ins.ctaLabel}

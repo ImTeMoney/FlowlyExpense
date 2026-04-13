@@ -4,7 +4,7 @@ import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transactio
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, ChevronRight, Target, BarChart2 } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const SettingsPage: React.FC = () => {
@@ -26,6 +26,7 @@ const SettingsPage: React.FC = () => {
   // Refresh / update check
   const refreshingRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [updateCheck, setUpdateCheck] = useState<'idle' | 'ok'>('idle');
 
   async function handleRefresh() {
     if (refreshingRef.current) return;
@@ -81,6 +82,8 @@ const SettingsPage: React.FC = () => {
         setIsRefreshing(false);
         refreshingRef.current = false;
         showToast(t.appUpToDate);
+        setUpdateCheck('ok');
+        setTimeout(() => setUpdateCheck('idle'), 2500);
       }
     } catch {
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
@@ -314,6 +317,25 @@ const SettingsPage: React.FC = () => {
         <div className="header-row">
           <div className="header-brand">{t.settings}</div>
           <div className="header-actions">
+            <button
+              className="icon-btn"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              aria-label={lang === 'he' ? 'בדוק עדכונים' : 'Check for updates'}
+              title={
+                isRefreshing
+                  ? (lang === 'he' ? 'בודק…' : 'Checking…')
+                  : updateCheck === 'ok'
+                  ? (lang === 'he' ? 'האפליקציה מעודכנת' : 'App is up to date')
+                  : (lang === 'he' ? 'בדוק עדכונים' : 'Check for updates')
+              }
+              style={updateCheck === 'ok' ? { color: '#22C55E' } : undefined}
+            >
+              {updateCheck === 'ok'
+                ? <CheckCircle size={16} />
+                : <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
+              }
+            </button>
             <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
               {lang === 'he' ? 'EN' : 'עב'}
             </button>
