@@ -24,10 +24,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <button
           className={`nav-tab ${location.pathname === '/analytics' ? 'active' : ''}`}
           onClick={() => navigate('/analytics')}
-          aria-label={t.analyticsLabel}
+          aria-label={t.historyLabel}
         >
           <BarChart2 />
-          {t.analyticsLabel}
+          {t.historyLabel}
         </button>
         <button
           className={`nav-tab ${location.pathname === '/grow' ? 'active' : ''}`}

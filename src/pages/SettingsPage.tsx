@@ -23,16 +23,69 @@ const SettingsPage: React.FC = () => {
     setToastTimer(setTimeout(() => setToast(''), 2200));
   }
 
-  // Refresh guard — ref is synchronous so rapid taps can't bypass it
+  // Refresh / update check
   const refreshingRef = useRef(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  function handleRefresh() {
+
+  async function handleRefresh() {
     if (refreshingRef.current) return;
     refreshingRef.current = true;
     setIsRefreshing(true);
-    // Small delay: lets the disabled-button state render before the page unloads,
-    // and ensures any pending localStorage writes have flushed.
-    setTimeout(() => window.location.reload(), 200);
+
+    // Reload the page — localStorage (user data) is never touched by this flow.
+    let didReload = false;
+    const doReload = () => { if (!didReload) { didReload = true; window.location.reload(); } };
+
+    if (!('serviceWorker' in navigator)) {
+      // No SW support — plain reload is the best we can do
+      setTimeout(doReload, 200);
+      return;
+    }
+
+    // When the new service worker takes control, reload to get updated assets
+    const onControllerChange = () => doReload();
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+
+      if (!reg) {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+        setTimeout(doReload, 200);
+        return;
+      }
+
+      // Re-fetch and compare the SW script against the deployed version.
+      // If it changed, the browser downloads and installs the new SW.
+      // vite-plugin-pwa (autoUpdate mode) generates a SW that calls
+      // skipWaiting() automatically on install, which fires 'controllerchange'.
+      await reg.update();
+
+      // Edge-case: waiting SW that didn't auto-skip — nudge it
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      if (reg.installing || reg.waiting) {
+        // A new version is installing — wait for it to activate (up to 8 s).
+        // 'controllerchange' fires first in the normal path and reloads immediately.
+        await new Promise<void>(resolve => setTimeout(resolve, 8000));
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+        doReload(); // Fallback if controllerchange never fired
+        return;
+      }
+
+      // No new version found — app is already on the latest build
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      if (!didReload) {
+        setIsRefreshing(false);
+        refreshingRef.current = false;
+        showToast(t.appUpToDate);
+      }
+    } catch {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      if (!didReload) setTimeout(doReload, 200);
+    }
   }
 
   // Budget
@@ -518,8 +571,9 @@ const SettingsPage: React.FC = () => {
           style={{ marginTop: 6 }}
         >
           <RefreshCw size={13} className={isRefreshing ? 'spin' : ''} />
-          {isRefreshing ? (lang === 'he' ? 'טוען…' : 'Loading…') : t.refreshApp}
+          {isRefreshing ? (lang === 'he' ? 'בודק עדכונים…' : 'Checking for updates…') : t.refreshApp}
         </button>
+        <p className="settings-version">{t.version} v{__APP_VERSION__}</p>
       </div>
 
       {/* Delete confirmation */}
