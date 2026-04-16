@@ -1,11 +1,11 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -13,6 +13,7 @@ import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
+import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
 
 // ── Insight icon map ─────────────────────────────────────────────
 const INSIGHT_ICON: Record<InsightIcon, React.FC<{ size?: number; color?: string }>> = {
@@ -87,6 +88,7 @@ export default function DashboardPage() {
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [showModal, setShowModal] = useState(false);
   const [isIncome, setIsIncome]   = useState(false);
@@ -105,6 +107,9 @@ export default function DashboardPage() {
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
+  // Paste parser
+  const [pasteText, setPasteText]     = useState('');
+  const [showPaste, setShowPaste]     = useState(false);
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
@@ -134,6 +139,60 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, [txCurrency, mainCurrency, amount, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── URL param prefill — opens modal automatically when deep-linked ───────────
+  // e.g. /?amount=42.90&merchant=Aroma&method=applepay&date=2026-04-13
+  useEffect(() => {
+    const pAmount   = searchParams.get('amount')   ?? '';
+    const pMerchant = searchParams.get('merchant') ?? searchParams.get('desc') ?? '';
+    const pNote     = searchParams.get('note')     ?? '';
+    const pMethod   = searchParams.get('method')   ?? '';
+    const pCat      = searchParams.get('category') ?? '';
+    const pDate     = searchParams.get('date')     ?? '';
+
+    const hasParams = pAmount || pMerchant || pMethod || pCat;
+    if (!hasParams) return;
+
+    if (pAmount)   setAmount(pAmount);
+
+    // Combine merchant + note into description
+    const descParts = [pMerchant, pNote].filter(Boolean);
+    if (descParts.length > 0) setDesc(descParts.join(' — '));
+
+    if (pDate && /^\d{4}-\d{2}-\d{2}$/.test(pDate)) setDate(pDate);
+
+    if (pMethod) {
+      const methodMap: Record<string, PaymentMethod> = {
+        applepay: 'applepay', apple: 'applepay',
+        googlepay: 'transfer', google: 'transfer',
+        card: 'credit', credit: 'credit',
+        cash: 'cash', bit: 'bit',
+        debit: 'debit', transfer: 'transfer',
+        check: 'check', standing_order: 'standing_order',
+      };
+      const mapped = methodMap[pMethod.toLowerCase()];
+      if (mapped) setPayMethod(mapped);
+    }
+
+    if (pCat) {
+      const found = categories.find(c =>
+        c.id === pCat ||
+        c.id === `cat_${pCat}` ||
+        c.name.toLowerCase() === pCat.toLowerCase()
+      );
+      if (found) setCatId(found.id);
+    }
+
+    setShowModal(true);
+    // Clean URL so back-navigation doesn't re-trigger
+    navigate('/', { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Draft autosave while modal is open ───────────────────────────────────────
+  useEffect(() => {
+    if (!showModal) return;
+    writeDraft({ amount, desc, date, payMethod, catId });
+  }, [amount, desc, date, payMethod, catId, showModal]);
+
   const showToast = useCallback((msg: string) => {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
@@ -141,14 +200,19 @@ export default function DashboardPage() {
   }, [toastTimer]);
 
   function openModal() {
+    const draft = readDraft();
     setIsIncome(false);
-    setAmount(''); setDesc(''); setDate(todayStr());
-    setCatId(categories[0]?.id ?? '');
-    setPayMethod('credit');
+    setAmount(draft?.amount ?? '');
+    setDesc(draft?.desc ?? '');
+    setDate(draft?.date ?? todayStr());
+    setCatId(draft?.catId ?? categories[0]?.id ?? '');
+    setPayMethod((draft?.payMethod as PaymentMethod | undefined) ?? 'credit');
     setTxCurrency(mainCurrency);
     setRatePreview('');
     setSplitEnabled(false);
     setNumInstallments(3);
+    setPasteText('');
+    setShowPaste(false);
     setShowModal(true);
   }
 
@@ -199,6 +263,7 @@ export default function DashboardPage() {
       }});
     }
     setShowModal(false);
+    clearDraft();
     showToast(t.added);
   }
 
