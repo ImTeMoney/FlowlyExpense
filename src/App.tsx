@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ExpenseProvider } from './context/ExpenseContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import GrowPage from './pages/GrowPage';
+import Onboarding, { hasSeenOnboarding, markOnboardingDone } from './components/Onboarding';
 
 // ── Full-app Error Boundary ───────────────────────────────────────────────────
 // Catches any render error anywhere in the tree and shows a recovery screen
@@ -72,11 +73,25 @@ class ErrorBoundary extends React.Component<
 // ── App ───────────────────────────────────────────────────────────────────────
 
 function App() {
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
+
+  useEffect(() => {
+    const handler = () => setShowOnboarding(true);
+    window.addEventListener('finio-show-onboarding', handler);
+    return () => window.removeEventListener('finio-show-onboarding', handler);
+  }, []);
+
+  function handleOnboardingDone() {
+    markOnboardingDone();
+    setShowOnboarding(false);
+  }
+
   return (
     <ErrorBoundary>
       <LanguageProvider>
         <ExpenseProvider>
           <Router>
+            {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
             <AppLayout>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />

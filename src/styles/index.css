@@ -2470,3 +2470,177 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }
+
+/* =====================================================
+   ONBOARDING OVERLAY
+   ===================================================== */
+.ob-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+  overflow: hidden;
+}
+
+.ob-skip {
+  position: absolute;
+  top: 20px;
+  inset-inline-end: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 8px 4px;
+}
+
+.ob-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: 56px;
+  animation: ob-fade-in 0.3s ease;
+  max-width: 340px;
+  width: 100%;
+}
+
+@keyframes ob-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ob-icon-wrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  flex-shrink: 0;
+}
+.ob-icon-logo  { background: rgba(139,92,246,0.15); }
+.ob-icon-chart { background: rgba(139,92,246,0.15); }
+.ob-icon-modes { background: rgba(255,255,255,0.06); gap: 10px; }
+.ob-icon-start { background: rgba(139,92,246,0.15); }
+
+.ob-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+  line-height: 1.25;
+}
+
+.ob-body {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+  line-height: 1.55;
+}
+
+.ob-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ob-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.ob-mode-card {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: start;
+}
+
+.ob-mode-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.ob-mode-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.ob-bottom {
+  width: 100%;
+  max-width: 340px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.ob-dots {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.ob-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--glass-border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, width 0.2s;
+  flex-shrink: 0;
+}
+.ob-dot.active {
+  background: var(--purple);
+  width: 20px;
+  border-radius: 4px;
+}
+
+.ob-btn-primary {
+  width: 100%;
+  padding: 15px 0;
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+.ob-btn-primary:active { opacity: 0.85; }
+
+.ob-dont-show {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+}

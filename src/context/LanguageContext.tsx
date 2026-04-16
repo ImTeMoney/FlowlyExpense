@@ -214,6 +214,8 @@ export interface Translations {
   marketRefresh: string;
   // App update feedback
   appUpToDate: string;
+  // Onboarding
+  showOnboardingAgain: string;
 }
 
 const he: Translations = {
@@ -417,6 +419,7 @@ const he: Translations = {
   marketUpdated: 'עודכן',
   marketRefresh: 'רענן',
   appUpToDate: 'האפליקציה מעודכנת ✓',
+  showOnboardingAgain: 'הצג הדרכה מחדש',
 };
 
 const en: Translations = {
@@ -620,6 +623,7 @@ const en: Translations = {
   marketUpdated: 'Updated',
   marketRefresh: 'Refresh',
   appUpToDate: 'App is up to date ✓',
+  showOnboardingAgain: 'Show onboarding again',
 };
 
 interface LanguageContextProps {
