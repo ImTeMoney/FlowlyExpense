@@ -1,19 +1,22 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip,
 } from 'lucide-react';
-import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
+import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
 import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
+import ReceiptAttachment, { ReceiptViewerById } from '../components/ReceiptAttachment';
+import { deleteReceipt } from '../services/receiptStorage';
+import { OcrResult } from '../services/receiptOcrService';
 
 // ── Insight icon map ─────────────────────────────────────────────
 const INSIGHT_ICON: Record<InsightIcon, React.FC<{ size?: number; color?: string }>> = {
@@ -110,6 +113,14 @@ export default function DashboardPage() {
   // Paste parser
   const [pasteText, setPasteText]     = useState('');
   const [showPaste, setShowPaste]     = useState(false);
+  // Receipt attachment (modal)
+  const [receiptId,   setReceiptId]   = useState<string | undefined>(undefined);
+  const [receiptMeta, setReceiptMeta] = useState<ReceiptMeta | undefined>(undefined);
+  // Track receipts staged inside the modal but not yet bound to a saved tx,
+  // so we can clean them up if the user cancels.
+  const stagedReceiptIdRef = useRef<string | null>(null);
+  // Standalone viewer triggered from the transaction list
+  const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
@@ -213,7 +224,37 @@ export default function DashboardPage() {
     setNumInstallments(3);
     setPasteText('');
     setShowPaste(false);
+    setReceiptId(undefined);
+    setReceiptMeta(undefined);
+    stagedReceiptIdRef.current = null;
     setShowModal(true);
+  }
+
+  // Cancel-close: drops any staged receipt blob so it doesn't orphan in IDB.
+  function closeModal() {
+    if (stagedReceiptIdRef.current) {
+      deleteReceipt(stagedReceiptIdRef.current);
+      stagedReceiptIdRef.current = null;
+    }
+    setShowModal(false);
+  }
+
+  function handleReceiptChange(next: { receiptId?: string; receipt?: ReceiptMeta }) {
+    stagedReceiptIdRef.current = next.receiptId ?? null;
+    setReceiptId(next.receiptId);
+    setReceiptMeta(next.receipt);
+  }
+
+  function handleOcrPrefill(data: OcrResult) {
+    if (data.totalAmount && (!amount || parseFloat(amount) === 0)) {
+      setAmount(String(data.totalAmount));
+    }
+    if (data.merchantName && !desc.trim()) {
+      setDesc(data.merchantName);
+    }
+    if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+      setDate(data.date);
+    }
   }
 
   async function handleAdd() {
@@ -236,6 +277,12 @@ export default function DashboardPage() {
       }
     }
 
+    // Receipts attach only to the first row of an installment group (it represents
+    // the original purchase). For non-split transactions, simply attach as-is.
+    const receiptPayload = receiptId
+      ? { receiptId, receipt: receiptMeta }
+      : {};
+
     if (!isIncome && splitEnabled && numInstallments > 1) {
       const groupId = `grp_${Date.now()}`;
       const perInstallment = Math.round((finalAmount / numInstallments) * 100) / 100;
@@ -252,6 +299,7 @@ export default function DashboardPage() {
           isIncome: false, paymentMethod: payMethod,
           installments: { current: i + 1, total: numInstallments, groupId },
           ...(i === 0 ? txCurrencyMeta : {}), // only first installment stores original
+          ...(i === 0 ? receiptPayload : {}),  // ditto for the receipt
         }});
       }
     } else {
@@ -260,19 +308,28 @@ export default function DashboardPage() {
         categoryId: catId, date, description: baseDesc,
         isIncome, paymentMethod: payMethod,
         ...txCurrencyMeta,
+        ...receiptPayload,
       }});
     }
+    // Receipt is now bound to the saved tx; clear the staged ref so the
+    // close handler doesn't delete it.
+    stagedReceiptIdRef.current = null;
     setShowModal(false);
     clearDraft();
     showToast(t.added);
   }
 
   function handleDelete(id: string) {
+    const tx = transactions.find(t => t.id === id);
+    if (tx?.receiptId) deleteReceipt(tx.receiptId);
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
     showToast(t.deleted);
   }
 
   function handleDeleteGroup(groupId: string) {
+    transactions
+      .filter(t => t.installments?.groupId === groupId && t.receiptId)
+      .forEach(t => deleteReceipt(t.receiptId!));
     dispatch({ type: 'DELETE_INSTALLMENT_GROUP', payload: groupId });
     showToast(t.deleted);
   }
@@ -417,6 +474,17 @@ export default function DashboardPage() {
                               {pmLabel(tx.paymentMethod)}
                             </span>
                           )}
+                          {tx.receiptId && (
+                            <button
+                              type="button"
+                              className="txn-receipt-badge"
+                              onClick={() => setViewingReceiptId(tx.receiptId!)}
+                              aria-label={t.viewReceipt}
+                              title={t.viewReceipt}
+                            >
+                              <Paperclip size={10} />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
@@ -519,13 +587,13 @@ export default function DashboardPage() {
       {showModal && createPortal(
         <div
           className="modal-overlay"
-          onClick={e => e.target === e.currentTarget && setShowModal(false)}
+          onClick={e => e.target === e.currentTarget && closeModal()}
         >
           <div className="modal-sheet">
             <div className="modal-handle" />
             <div className="modal-title">
               <span>{isIncome ? t.addIncome : t.addExpense}</span>
-              <button className="modal-close" onClick={() => setShowModal(false)} aria-label="Close">
+              <button className="modal-close" onClick={closeModal} aria-label="Close">
                 <X size={14} />
               </button>
             </div>
@@ -623,6 +691,17 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Receipt attachment */}
+            {!isIncome && (
+              <ReceiptAttachment
+                receiptId={receiptId}
+                receiptMeta={receiptMeta}
+                onChange={handleReceiptChange}
+                onOcrPrefill={handleOcrPrefill}
+                onError={showToast}
+              />
+            )}
+
             <div className="field-group">
               {/* Category picker (only for expenses) */}
               {!isIncome && (
@@ -685,6 +764,13 @@ export default function DashboardPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {viewingReceiptId && (
+        <ReceiptViewerById
+          receiptId={viewingReceiptId}
+          onClose={() => setViewingReceiptId(null)}
+        />
       )}
 
       {toast && createPortal(<div className="toast">{toast}</div>, document.body)}

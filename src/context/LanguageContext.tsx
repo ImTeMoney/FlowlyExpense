@@ -216,6 +216,18 @@ export interface Translations {
   appUpToDate: string;
   // Onboarding
   showOnboardingAgain: string;
+  // Receipt attachment
+  receiptLabel: string;
+  attachReceipt: string;
+  replaceReceipt: string;
+  removeReceipt: string;
+  viewReceipt: string;
+  takePhoto: string;
+  chooseFromGallery: string;
+  choosePdf: string;
+  receiptTooLarge: string;
+  receiptUnsupported: string;
+  ocrAutoDetected: string;
 }
 
 const he: Translations = {
@@ -420,6 +432,18 @@ const he: Translations = {
   marketRefresh: 'רענן',
   appUpToDate: 'האפליקציה מעודכנת ✓',
   showOnboardingAgain: 'הצג הדרכה מחדש',
+  // Receipt attachment
+  receiptLabel:        'קבלה',
+  attachReceipt:       'צרף קבלה',
+  replaceReceipt:      'החלף',
+  removeReceipt:       'הסר',
+  viewReceipt:         'הצג קבלה',
+  takePhoto:           'מצלמה',
+  chooseFromGallery:   'גלריה',
+  choosePdf:           'PDF',
+  receiptTooLarge:     'הקובץ גדול מדי (מקסימום 8 מ״ב)',
+  receiptUnsupported:  'סוג קובץ לא נתמך',
+  ocrAutoDetected:     'הנתונים זוהו אוטומטית, מומלץ לבדוק לפני שמירה',
 };
 
 const en: Translations = {
@@ -624,6 +648,18 @@ const en: Translations = {
   marketRefresh: 'Refresh',
   appUpToDate: 'App is up to date ✓',
   showOnboardingAgain: 'Show onboarding again',
+  // Receipt attachment
+  receiptLabel:        'Receipt',
+  attachReceipt:       'Attach receipt',
+  replaceReceipt:      'Replace',
+  removeReceipt:       'Remove',
+  viewReceipt:         'View receipt',
+  takePhoto:           'Camera',
+  chooseFromGallery:   'Gallery',
+  choosePdf:           'PDF',
+  receiptTooLarge:     'File too large (max 8 MB)',
+  receiptUnsupported:  'Unsupported file type',
+  ocrAutoDetected:     'Data detected automatically — please verify before saving.',
 };
 
 interface LanguageContextProps {
