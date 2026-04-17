@@ -229,6 +229,8 @@ export interface Translations {
   receiptUnsupported: string;
   ocrAutoDetected: string;
   ocrFailed: string;
+  ocrNoData: string;
+  ocrNoKey: string;
 }
 
 const he: Translations = {
@@ -446,6 +448,8 @@ const he: Translations = {
   receiptUnsupported:  'סוג קובץ לא נתמך',
   ocrAutoDetected:     'הנתונים זוהו אוטומטית, מומלץ לבדוק לפני שמירה',
   ocrFailed:           'זיהוי אוטומטי נכשל — ניתן למלא ידנית',
+  ocrNoData:           'לא זוהו נתונים — ניתן למלא ידנית',
+  ocrNoKey:            'זיהוי אוטומטי לא מוגדר — מלא ידנית',
 };
 
 const en: Translations = {
@@ -663,6 +667,8 @@ const en: Translations = {
   receiptUnsupported:  'Unsupported file type',
   ocrAutoDetected:     'Data detected automatically — please verify before saving.',
   ocrFailed:           'Auto-detection failed — fill in manually.',
+  ocrNoData:           'No data detected — fill in manually.',
+  ocrNoKey:            'Auto-detection not configured — fill in manually.',
 };
 
 interface LanguageContextProps {

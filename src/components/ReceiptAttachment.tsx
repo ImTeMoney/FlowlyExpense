@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, Image as ImageIcon, FileText, X, Eye, RefreshCw, Trash2, Paperclip } from 'lucide-react';
+import {
+  Camera, Image as ImageIcon, FileText, X, Eye, RefreshCw, Trash2,
+  Paperclip, Loader, CheckCircle, AlertCircle, Info,
+} from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import {
   saveReceipt, deleteReceipt, getReceipt, getReceiptObjectURL,
@@ -20,38 +23,46 @@ export interface ReceiptChange {
   receipt?:   ReceiptMeta;
 }
 
+// All states OCR can be in after a file is attached.
+type OcrStatus =
+  | 'idle'     // no file attached yet
+  | 'no-key'   // file attached, no API key configured
+  | 'running'  // API call in flight
+  | 'done'     // API returned data → fields prefilled
+  | 'no-data'  // API returned null (unreadable receipt)
+  | 'error';   // API threw (network / auth / rate-limit)
+
 interface Props {
   receiptId?: string;
   receiptMeta?: ReceiptMeta;
   onChange: (next: ReceiptChange) => void;
-  /** Called when OCR returns prefill data; the modal decides which fields to set. */
   onOcrPrefill?: (data: OcrResult) => void;
-  /** Notify host of a non-blocking error (size/type) so it can toast. */
   onError?: (msg: string) => void;
 }
 
 function formatSize(bytes: number): string {
-  if (bytes < 1024)            return `${bytes} B`;
-  if (bytes < 1024 * 1024)     return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024)          return `${bytes} B`;
+  if (bytes < 1024 * 1024)   return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, onOcrPrefill, onError }: Props) {
+export default function ReceiptAttachment({
+  receiptId, receiptMeta, onChange, onOcrPrefill, onError,
+}: Props) {
   const { t, lang } = useLang();
 
   const cameraInput  = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
   const pdfInput     = useRef<HTMLInputElement>(null);
 
-  const [previewUrl, setPreviewUrl]   = useState<string | null>(null);
-  const [busy,       setBusy]         = useState(false);
-  const [ocrRunning, setOcrRunning]   = useState(false);
-  const [ocrPrefilled, setOcrPrefilled] = useState(false);
-  const [viewing, setViewing] = useState(false);
+  const [previewUrl,  setPreviewUrl]  = useState<string | null>(null);
+  const [busy,        setBusy]        = useState(false);
+  const [ocrStatus,   setOcrStatus]   = useState<OcrStatus>('idle');
+  const [viewing,     setViewing]     = useState(false);
 
-  // Build / revoke object URL whenever the attached id changes
+  // Reset OCR status when the attached receipt is cleared from outside
   useEffect(() => {
-    if (!receiptId) { setPreviewUrl(null); return; }
+    if (!receiptId) { setPreviewUrl(null); setOcrStatus('idle'); return; }
     let url: string | null = null;
     let cancelled = false;
     getReceiptObjectURL(receiptId).then(u => {
@@ -66,21 +77,31 @@ export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, on
   }, [receiptId]);
 
   async function handleFile(file: File) {
-    // Validate
+    console.log('[Receipt] File selected:', file.name, file.type, formatSize(file.size));
+
     if (!isAcceptedReceiptType(file.type)) {
+      console.warn('[Receipt] Unsupported type:', file.type);
       onError?.(t.receiptUnsupported);
       return;
     }
     if (file.size > MAX_RECEIPT_SIZE) {
+      console.warn('[Receipt] File too large:', file.size);
       onError?.(t.receiptTooLarge);
       return;
     }
+
     setBusy(true);
+    setOcrStatus('idle');
+
     try {
-      // If we are replacing, drop the previous blob so it doesn't leak.
-      if (receiptId) await deleteReceipt(receiptId);
+      if (receiptId) {
+        console.log('[Receipt] Replacing existing receipt:', receiptId);
+        await deleteReceipt(receiptId);
+      }
 
       const rec = await saveReceipt(file, file.name);
+      console.log('[Receipt] Saved to IndexedDB, id:', rec.id);
+
       onChange({
         receiptId: rec.id,
         receipt: {
@@ -90,26 +111,36 @@ export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, on
           capturedAt: rec.createdAt,
         },
       });
-      setOcrPrefilled(false);
 
-      // Best-effort OCR — never blocks saving; errors surfaced as toasts only.
-      if (isOcrAvailable()) {
-        setOcrRunning(true);
-        try {
-          const data = await extractReceiptData(file);
-          if (data && onOcrPrefill) {
-            onOcrPrefill(data);
-            setOcrPrefilled(true);
-          }
-          // null return = receipt unreadable / no fields found → stay silent
-        } catch {
-          // thrown = API/network error → inform user so they know OCR didn't run
-          onError?.(t.ocrFailed);
-        } finally {
-          setOcrRunning(false);
-        }
+      // ── OCR ───────────────────────────────────────────────────────────────
+      if (!isOcrAvailable()) {
+        console.log('[OCR] Skipped — VITE_ANTHROPIC_API_KEY not set. ' +
+          'Create .env.local with VITE_ANTHROPIC_API_KEY=sk-ant-... and rebuild.');
+        setOcrStatus('no-key');
+        return;
       }
-    } catch {
+
+      console.log('[OCR] Starting extraction…');
+      setOcrStatus('running');
+
+      try {
+        const data = await extractReceiptData(file);
+
+        if (data) {
+          console.log('[OCR] Success:', JSON.stringify(data));
+          if (onOcrPrefill) onOcrPrefill(data);
+          setOcrStatus('done');
+        } else {
+          console.log('[OCR] No data extracted (unreadable or blank receipt)');
+          setOcrStatus('no-data');
+        }
+      } catch (err) {
+        console.error('[OCR] API error:', err);
+        onError?.(t.ocrFailed);
+        setOcrStatus('error');
+      }
+    } catch (err) {
+      console.error('[Receipt] Failed to save to IndexedDB:', err);
       onError?.(t.receiptUnsupported);
     } finally {
       setBusy(false);
@@ -118,23 +149,64 @@ export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, on
 
   function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-picking the same file
+    e.target.value = '';
     if (file) handleFile(file);
   }
 
   async function handleRemove() {
     if (receiptId) await deleteReceipt(receiptId);
     onChange({ receiptId: undefined, receipt: undefined });
-    setOcrPrefilled(false);
+    setOcrStatus('idle');
   }
 
   const isPdf = receiptMeta?.mimeType === 'application/pdf';
+
+  // ── OCR status note ──────────────────────────────────────────────────────────
+  function OcrNote() {
+    if (ocrStatus === 'idle') return null;
+
+    const isRtl = lang === 'he';
+    const dir = isRtl ? 'rtl' : 'ltr';
+
+    if (ocrStatus === 'running') return (
+      <div className="receipt-ocr-note receipt-ocr-running" dir={dir}>
+        <Loader size={12} className="spin" />
+        {isRtl ? 'מזהה נתונים מהקבלה…' : 'Scanning receipt…'}
+      </div>
+    );
+    if (ocrStatus === 'done') return (
+      <div className="receipt-ocr-note receipt-ocr-done" dir={dir}>
+        <CheckCircle size={12} />
+        {t.ocrAutoDetected}
+      </div>
+    );
+    if (ocrStatus === 'no-data') return (
+      <div className="receipt-ocr-note receipt-ocr-nodata" dir={dir}>
+        <Info size={12} />
+        {t.ocrNoData}
+      </div>
+    );
+    if (ocrStatus === 'error') return (
+      <div className="receipt-ocr-note receipt-ocr-error" dir={dir}>
+        <AlertCircle size={12} />
+        {t.ocrFailed}
+      </div>
+    );
+    if (ocrStatus === 'no-key') return (
+      <div className="receipt-ocr-note receipt-ocr-nokey" dir={dir}>
+        <Info size={12} />
+        {t.ocrNoKey}
+      </div>
+    );
+    return null;
+  }
 
   return (
     <div className="receipt-section">
       <div className="receipt-label">
         <Paperclip size={11} />
         {t.receiptLabel}
+        {ocrStatus === 'running' && <Loader size={10} className="spin" style={{ marginInlineStart: 4 }} />}
       </div>
 
       {!receiptId ? (
@@ -163,34 +235,34 @@ export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, on
               <img className="receipt-thumb" src={previewUrl} alt="" />
             )}
             <div className="receipt-info">
-              <div className="receipt-info-name">{receiptMeta?.filename ?? (isPdf ? 'receipt.pdf' : 'receipt')}</div>
+              <div className="receipt-info-name">
+                {receiptMeta?.filename ?? (isPdf ? 'receipt.pdf' : 'receipt')}
+              </div>
               <div className="receipt-info-meta">
                 {receiptMeta ? formatSize(receiptMeta.size) : ''}
                 {isPdf ? ' · PDF' : ''}
               </div>
             </div>
             <div className="receipt-actions">
-              <button type="button" className="receipt-act-btn" onClick={() => setViewing(true)} aria-label={t.viewReceipt} title={t.viewReceipt}>
+              <button type="button" className="receipt-act-btn"
+                onClick={() => setViewing(true)} aria-label={t.viewReceipt} title={t.viewReceipt}>
                 <Eye size={13} />
               </button>
-              <button type="button" className="receipt-act-btn" onClick={() => galleryInput.current?.click()} aria-label={t.replaceReceipt} title={t.replaceReceipt}>
+              <button type="button" className="receipt-act-btn"
+                onClick={() => galleryInput.current?.click()} aria-label={t.replaceReceipt} title={t.replaceReceipt}>
                 <RefreshCw size={13} />
               </button>
-              <button type="button" className="receipt-act-btn receipt-act-danger" onClick={handleRemove} aria-label={t.removeReceipt} title={t.removeReceipt}>
+              <button type="button" className="receipt-act-btn receipt-act-danger"
+                onClick={handleRemove} aria-label={t.removeReceipt} title={t.removeReceipt}>
                 <Trash2 size={13} />
               </button>
             </div>
           </div>
 
-          {(ocrRunning || ocrPrefilled) && (
-            <div className="receipt-ocr-note" dir={lang === 'he' ? 'rtl' : 'ltr'}>
-              {ocrRunning ? (lang === 'he' ? 'מזהה נתונים…' : 'Detecting data…') : t.ocrAutoDetected}
-            </div>
-          )}
+          <OcrNote />
         </>
       )}
 
-      {/* Hidden file inputs — three to give the user a clear pick of source */}
       <input ref={cameraInput}  type="file" accept="image/*" capture="environment"
         style={{ display: 'none' }} onChange={onInputChange} />
       <input ref={galleryInput} type="file" accept="image/*"
@@ -216,10 +288,9 @@ export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, on
 }
 
 // ── Standalone viewer for the transactions list ──────────────────────────────
-// Lightweight: takes a receiptId, fetches the blob, renders full-screen.
 
 export function ReceiptViewerById({ receiptId, onClose }: { receiptId: string; onClose: () => void }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const [url,  setUrl]  = useState<string | null>(null);
   const [mime, setMime] = useState<string>('');
 
   useEffect(() => {
