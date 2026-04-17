@@ -9,7 +9,7 @@ import {
   saveReceipt, deleteReceipt, getReceipt, getReceiptObjectURL,
   isAcceptedReceiptType, MAX_RECEIPT_SIZE,
 } from '../services/receiptStorage';
-import { extractReceiptData, isOcrAvailable, OcrResult } from '../services/receiptOcrService';
+import { extractReceiptData, OcrResult } from '../services/receiptOcrService';
 
 export type ReceiptMeta = {
   mimeType:   string;
@@ -23,14 +23,7 @@ export interface ReceiptChange {
   receipt?:   ReceiptMeta;
 }
 
-// All states OCR can be in after a file is attached.
-type OcrStatus =
-  | 'idle'     // no file attached yet
-  | 'no-key'   // file attached, no API key configured
-  | 'running'  // API call in flight
-  | 'done'     // API returned data → fields prefilled
-  | 'no-data'  // API returned null (unreadable receipt)
-  | 'error';   // API threw (network / auth / rate-limit)
+type OcrStatus = 'idle' | 'running' | 'done' | 'no-data' | 'error';
 
 interface Props {
   receiptId?: string;
@@ -113,13 +106,6 @@ export default function ReceiptAttachment({
       });
 
       // ── OCR ───────────────────────────────────────────────────────────────
-      if (!isOcrAvailable()) {
-        console.log('[OCR] Skipped — VITE_ANTHROPIC_API_KEY not set. ' +
-          'Create .env.local with VITE_ANTHROPIC_API_KEY=sk-ant-... and rebuild.');
-        setOcrStatus('no-key');
-        return;
-      }
-
       console.log('[OCR] Starting extraction…');
       setOcrStatus('running');
 
@@ -190,12 +176,6 @@ export default function ReceiptAttachment({
       <div className="receipt-ocr-note receipt-ocr-error" dir={dir}>
         <AlertCircle size={12} />
         {t.ocrFailed}
-      </div>
-    );
-    if (ocrStatus === 'no-key') return (
-      <div className="receipt-ocr-note receipt-ocr-nokey" dir={dir}>
-        <Info size={12} />
-        {t.ocrNoKey}
       </div>
     );
     return null;
