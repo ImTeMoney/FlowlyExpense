@@ -10,6 +10,12 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
   'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay', 'standing_order',
 ];
 
+/** One leg of a split payment — method + amount for that leg. */
+export interface PaymentSplit {
+  paymentMethod: PaymentMethod;
+  amount: number;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -23,6 +29,14 @@ export interface InstallmentInfo {
   groupId: string;
 }
 
+/** Lightweight receipt metadata mirrored on the Transaction for fast list rendering. */
+export interface ReceiptMeta {
+  mimeType:   string;
+  filename?:  string;
+  size:       number;
+  capturedAt: number;
+}
+
 export interface Transaction {
   id: string;
   amount: number;             // always stored in mainCurrency
@@ -31,10 +45,16 @@ export interface Transaction {
   description: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
+  /** Split payment legs. When present, supersedes paymentMethod for analytics. */
+  paymentSplits?: PaymentSplit[];
   installments?: InstallmentInfo;
   currency?: string;          // original currency (if different from main)
   originalAmount?: number;    // amount in original currency
   exchangeRate?: number;      // rate used: 1 original = rate main
+  /** IndexedDB id pointing to the attached receipt blob (image or PDF) */
+  receiptId?: string;
+  /** Metadata mirror of the attachment so the list can render without an IDB hit */
+  receipt?: ReceiptMeta;
 }
 
 export interface RecurringExpense {
@@ -48,6 +68,16 @@ export interface RecurringExpense {
   paymentMethod?: PaymentMethod;
   totalInstallments?: number;   // if set → limited recurring, auto-deletes when done
   postedCount?: number;         // how many months have been posted so far
+}
+
+/**
+ * Normalises old single-paymentMethod transactions and new paymentSplits into
+ * a uniform array. Analytics and any display code should use this.
+ */
+export function resolvePaymentSplits(tx: Transaction): PaymentSplit[] {
+  if (tx.paymentSplits && tx.paymentSplits.length > 0) return tx.paymentSplits;
+  const pm = tx.paymentMethod ?? 'cash';
+  return [{ paymentMethod: pm, amount: tx.amount }];
 }
 
 export interface DashboardFilter {
@@ -83,7 +113,8 @@ type Action =
   | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> }
   | { type: 'SET_MAIN_CURRENCY';         payload: string }
   | { type: 'SET_MONEY_MODE';            payload: MoneyMode }
-  | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] };  // append imported rows
+  | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] }   // append imported rows
+  | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -408,6 +439,19 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'MERGE_TRANSACTIONS':
         // Append imported rows; keep existing transactions intact
         setTransactions(prev => [...action.payload, ...prev]);
+        break;
+
+      case 'UPDATE_TRANSACTION_RECEIPT':
+        setTransactions(prev => prev.map(tx => {
+          if (tx.id !== action.payload.id) return tx;
+          if (action.payload.receiptId) {
+            return { ...tx, receiptId: action.payload.receiptId, receipt: action.payload.receipt };
+          }
+          const next = { ...tx };
+          delete next.receiptId;
+          delete next.receipt;
+          return next;
+        }));
         break;
     }
   }, []);

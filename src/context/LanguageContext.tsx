@@ -76,6 +76,12 @@ export interface Translations {
   pm_bit: string;
   pm_applepay: string;
   pm_standing_order: string;
+  // Split payment
+  splitPayment: string;
+  addSplitRow: string;
+  splitAllocated: string;
+  splitRemaining: string;
+  splitMustEqualTotal: string;
   // New analytics
   monthlyComparison: string;
   byPaymentMethod: string;
@@ -214,6 +220,23 @@ export interface Translations {
   marketRefresh: string;
   // App update feedback
   appUpToDate: string;
+  // Onboarding
+  showOnboardingAgain: string;
+  // Receipt attachment
+  receiptLabel: string;
+  attachReceipt: string;
+  replaceReceipt: string;
+  removeReceipt: string;
+  viewReceipt: string;
+  takePhoto: string;
+  chooseFromGallery: string;
+  choosePdf: string;
+  receiptTooLarge: string;
+  receiptUnsupported: string;
+  ocrAutoDetected: string;
+  ocrFailed: string;
+  ocrNoData: string;
+  ocrNoKey: string;
 }
 
 const he: Translations = {
@@ -284,6 +307,11 @@ const he: Translations = {
   pm_bit: 'ביט',
   pm_applepay: 'Apple Pay',
   pm_standing_order: 'הוראת קבע',
+  splitPayment: 'תשלום מפוצל',
+  addSplitRow: 'הוסף שיטה',
+  splitAllocated: 'מחולק',
+  splitRemaining: 'נותר',
+  splitMustEqualTotal: 'סכום הפיצולים חייב להיות שווה לסכום הכולל',
   // New analytics
   monthlyComparison: 'השוואה חודשית',
   byPaymentMethod: 'לפי אמצעי תשלום',
@@ -417,6 +445,22 @@ const he: Translations = {
   marketUpdated: 'עודכן',
   marketRefresh: 'רענן',
   appUpToDate: 'האפליקציה מעודכנת ✓',
+  showOnboardingAgain: 'הצג הדרכה מחדש',
+  // Receipt attachment
+  receiptLabel:        'קבלה',
+  attachReceipt:       'צרף קבלה',
+  replaceReceipt:      'החלף',
+  removeReceipt:       'הסר',
+  viewReceipt:         'הצג קבלה',
+  takePhoto:           'מצלמה',
+  chooseFromGallery:   'גלריה',
+  choosePdf:           'PDF',
+  receiptTooLarge:     'הקובץ גדול מדי (מקסימום 8 מ״ב)',
+  receiptUnsupported:  'סוג קובץ לא נתמך',
+  ocrAutoDetected:     'הנתונים זוהו אוטומטית, מומלץ לבדוק לפני שמירה',
+  ocrFailed:           'זיהוי אוטומטי נכשל — ניתן למלא ידנית',
+  ocrNoData:           'לא זוהו נתונים — ניתן למלא ידנית',
+  ocrNoKey:            'זיהוי אוטומטי לא מוגדר — מלא ידנית',
 };
 
 const en: Translations = {
@@ -487,6 +531,11 @@ const en: Translations = {
   pm_bit: 'Bit',
   pm_applepay: 'Apple Pay',
   pm_standing_order: 'Standing Order',
+  splitPayment: 'Split payment',
+  addSplitRow: 'Add method',
+  splitAllocated: 'Allocated',
+  splitRemaining: 'Remaining',
+  splitMustEqualTotal: 'Split amounts must equal the total',
   // New analytics
   monthlyComparison: 'Monthly Comparison',
   byPaymentMethod: 'By Payment Method',
@@ -620,6 +669,22 @@ const en: Translations = {
   marketUpdated: 'Updated',
   marketRefresh: 'Refresh',
   appUpToDate: 'App is up to date ✓',
+  showOnboardingAgain: 'Show onboarding again',
+  // Receipt attachment
+  receiptLabel:        'Receipt',
+  attachReceipt:       'Attach receipt',
+  replaceReceipt:      'Replace',
+  removeReceipt:       'Remove',
+  viewReceipt:         'View receipt',
+  takePhoto:           'Camera',
+  chooseFromGallery:   'Gallery',
+  choosePdf:           'PDF',
+  receiptTooLarge:     'File too large (max 8 MB)',
+  receiptUnsupported:  'Unsupported file type',
+  ocrAutoDetected:     'Data detected automatically — please verify before saving.',
+  ocrFailed:           'Auto-detection failed — fill in manually.',
+  ocrNoData:           'No data detected — fill in manually.',
+  ocrNoKey:            'Auto-detection not configured — fill in manually.',
 };
 
 interface LanguageContextProps {

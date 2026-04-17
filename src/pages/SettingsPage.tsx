@@ -4,7 +4,7 @@ import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transactio
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2 } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const SettingsPage: React.FC = () => {
@@ -115,7 +115,9 @@ const SettingsPage: React.FC = () => {
     const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method']];
     monthTxns.forEach(tx => {
       const cat    = categories.find(c => c.id === tx.categoryId)?.name ?? '';
-      const pmName = tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
+      const pmName = tx.paymentSplits && tx.paymentSplits.length > 0
+        ? tx.paymentSplits.map(s => `${(t as any)[`pm_${s.paymentMethod}`] ?? s.paymentMethod}:${s.amount}`).join('+')
+        : tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
       rows.push([tx.date, tx.description, cat, tx.isIncome ? 'Income' : 'Expense', String(tx.amount), pmName]);
     });
     const csv = rows.map(r => r.join(',')).join('\n');
@@ -594,6 +596,14 @@ const SettingsPage: React.FC = () => {
         >
           <RefreshCw size={13} className={isRefreshing ? 'spin' : ''} />
           {isRefreshing ? (lang === 'he' ? 'בודק עדכונים…' : 'Checking for updates…') : t.refreshApp}
+        </button>
+        <button
+          className="export-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('finio-show-onboarding'))}
+          style={{ marginTop: 6 }}
+        >
+          <BookOpen size={13} />
+          {t.showOnboardingAgain}
         </button>
         <p className="settings-version">{t.version} v{__APP_VERSION__}</p>
       </div>

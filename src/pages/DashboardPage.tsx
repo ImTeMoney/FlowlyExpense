@@ -1,18 +1,22 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip,
 } from 'lucide-react';
-import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
+import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
+import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
+import ReceiptAttachment, { ReceiptViewerById } from '../components/ReceiptAttachment';
+import { deleteReceipt } from '../services/receiptStorage';
+import { OcrResult } from '../services/receiptOcrService';
 
 // ── Insight icon map ─────────────────────────────────────────────
 const INSIGHT_ICON: Record<InsightIcon, React.FC<{ size?: number; color?: string }>> = {
@@ -87,6 +91,7 @@ export default function DashboardPage() {
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [showModal, setShowModal] = useState(false);
   const [isIncome, setIsIncome]   = useState(false);
@@ -95,6 +100,11 @@ export default function DashboardPage() {
   const [desc, setDesc]           = useState('');
   const [date, setDate]           = useState(todayStr());
   const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
+  const [pmSplitEnabled, setPmSplitEnabled] = useState(false);
+  const [pmSplits, setPmSplits] = useState<Array<{ pm: PaymentMethod; amount: string }>>([
+    { pm: 'credit', amount: '' },
+    { pm: 'cash',   amount: '' },
+  ]);
   const [txCurrency, setTxCurrency]           = useState(mainCurrency);
   const [ratePreview, setRatePreview]         = useState<string>('');
   const [rateLoading, setRateLoading]         = useState(false);
@@ -105,6 +115,17 @@ export default function DashboardPage() {
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
+  // Paste parser
+  const [pasteText, setPasteText]     = useState('');
+  const [showPaste, setShowPaste]     = useState(false);
+  // Receipt attachment (modal)
+  const [receiptId,   setReceiptId]   = useState<string | undefined>(undefined);
+  const [receiptMeta, setReceiptMeta] = useState<ReceiptMeta | undefined>(undefined);
+  // Track receipts staged inside the modal but not yet bound to a saved tx,
+  // so we can clean them up if the user cancels.
+  const stagedReceiptIdRef = useRef<string | null>(null);
+  // Standalone viewer triggered from the transaction list
+  const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
@@ -134,6 +155,60 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, [txCurrency, mainCurrency, amount, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── URL param prefill — opens modal automatically when deep-linked ───────────
+  // e.g. /?amount=42.90&merchant=Aroma&method=applepay&date=2026-04-13
+  useEffect(() => {
+    const pAmount   = searchParams.get('amount')   ?? '';
+    const pMerchant = searchParams.get('merchant') ?? searchParams.get('desc') ?? '';
+    const pNote     = searchParams.get('note')     ?? '';
+    const pMethod   = searchParams.get('method')   ?? '';
+    const pCat      = searchParams.get('category') ?? '';
+    const pDate     = searchParams.get('date')     ?? '';
+
+    const hasParams = pAmount || pMerchant || pMethod || pCat;
+    if (!hasParams) return;
+
+    if (pAmount)   setAmount(pAmount);
+
+    // Combine merchant + note into description
+    const descParts = [pMerchant, pNote].filter(Boolean);
+    if (descParts.length > 0) setDesc(descParts.join(' — '));
+
+    if (pDate && /^\d{4}-\d{2}-\d{2}$/.test(pDate)) setDate(pDate);
+
+    if (pMethod) {
+      const methodMap: Record<string, PaymentMethod> = {
+        applepay: 'applepay', apple: 'applepay',
+        googlepay: 'transfer', google: 'transfer',
+        card: 'credit', credit: 'credit',
+        cash: 'cash', bit: 'bit',
+        debit: 'debit', transfer: 'transfer',
+        check: 'check', standing_order: 'standing_order',
+      };
+      const mapped = methodMap[pMethod.toLowerCase()];
+      if (mapped) setPayMethod(mapped);
+    }
+
+    if (pCat) {
+      const found = categories.find(c =>
+        c.id === pCat ||
+        c.id === `cat_${pCat}` ||
+        c.name.toLowerCase() === pCat.toLowerCase()
+      );
+      if (found) setCatId(found.id);
+    }
+
+    setShowModal(true);
+    // Clean URL so back-navigation doesn't re-trigger
+    navigate('/', { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Draft autosave while modal is open ───────────────────────────────────────
+  useEffect(() => {
+    if (!showModal) return;
+    writeDraft({ amount, desc, date, payMethod, catId });
+  }, [amount, desc, date, payMethod, catId, showModal]);
+
   const showToast = useCallback((msg: string) => {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
@@ -141,15 +216,52 @@ export default function DashboardPage() {
   }, [toastTimer]);
 
   function openModal() {
+    const draft = readDraft();
     setIsIncome(false);
-    setAmount(''); setDesc(''); setDate(todayStr());
-    setCatId(categories[0]?.id ?? '');
-    setPayMethod('credit');
+    setAmount(draft?.amount ?? '');
+    setDesc(draft?.desc ?? '');
+    setDate(draft?.date ?? todayStr());
+    setCatId(draft?.catId ?? categories[0]?.id ?? '');
+    setPayMethod((draft?.payMethod as PaymentMethod | undefined) ?? 'credit');
+    setPmSplitEnabled(false);
+    setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
     setTxCurrency(mainCurrency);
     setRatePreview('');
     setSplitEnabled(false);
     setNumInstallments(3);
+    setPasteText('');
+    setShowPaste(false);
+    setReceiptId(undefined);
+    setReceiptMeta(undefined);
+    stagedReceiptIdRef.current = null;
     setShowModal(true);
+  }
+
+  // Cancel-close: drops any staged receipt blob so it doesn't orphan in IDB.
+  function closeModal() {
+    if (stagedReceiptIdRef.current) {
+      deleteReceipt(stagedReceiptIdRef.current);
+      stagedReceiptIdRef.current = null;
+    }
+    setShowModal(false);
+  }
+
+  function handleReceiptChange(next: { receiptId?: string; receipt?: ReceiptMeta }) {
+    stagedReceiptIdRef.current = next.receiptId ?? null;
+    setReceiptId(next.receiptId);
+    setReceiptMeta(next.receipt);
+  }
+
+  function handleOcrPrefill(data: OcrResult) {
+    if (data.totalAmount && (!amount || parseFloat(amount) === 0)) {
+      setAmount(String(data.totalAmount));
+    }
+    if (data.merchantName && !desc.trim()) {
+      setDesc(data.merchantName);
+    }
+    if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+      setDate(data.date);
+    }
   }
 
   async function handleAdd() {
@@ -172,6 +284,32 @@ export default function DashboardPage() {
       }
     }
 
+    // Receipts attach only to the first row of an installment group (it represents
+    // the original purchase). For non-split transactions, simply attach as-is.
+    const receiptPayload = receiptId
+      ? { receiptId, receipt: receiptMeta }
+      : {};
+
+    // Build split payment payload (only for single non-installment expenses).
+    // When installments are active, payment splits are ignored — each installment
+    // inherits the primary payMethod.
+    let pmPayload: { paymentMethod?: PaymentMethod; paymentSplits?: PaymentSplit[] } =
+      { paymentMethod: payMethod };
+
+    if (!isIncome && pmSplitEnabled && !(splitEnabled && numInstallments > 1)) {
+      const splitAmounts = pmSplits.map(s => parseFloat(s.amount) || 0);
+      const splitTotal   = Math.round(splitAmounts.reduce((a, b) => a + b, 0) * 100) / 100;
+      const roundedFinal = Math.round(finalAmount * 100) / 100;
+      if (Math.abs(splitTotal - roundedFinal) > 0.01) {
+        showToast(t.splitMustEqualTotal);
+        return;
+      }
+      const splits: PaymentSplit[] = pmSplits
+        .map((s, i) => ({ paymentMethod: s.pm, amount: splitAmounts[i] }))
+        .filter(s => s.amount > 0);
+      pmPayload = { paymentSplits: splits };
+    }
+
     if (!isIncome && splitEnabled && numInstallments > 1) {
       const groupId = `grp_${Date.now()}`;
       const perInstallment = Math.round((finalAmount / numInstallments) * 100) / 100;
@@ -188,26 +326,38 @@ export default function DashboardPage() {
           isIncome: false, paymentMethod: payMethod,
           installments: { current: i + 1, total: numInstallments, groupId },
           ...(i === 0 ? txCurrencyMeta : {}), // only first installment stores original
+          ...(i === 0 ? receiptPayload : {}),  // ditto for the receipt
         }});
       }
     } else {
       dispatch({ type: 'ADD_TRANSACTION', payload: {
         id: `tx_${Date.now()}`, amount: finalAmount,
         categoryId: catId, date, description: baseDesc,
-        isIncome, paymentMethod: payMethod,
+        isIncome,
+        ...pmPayload,
         ...txCurrencyMeta,
+        ...receiptPayload,
       }});
     }
+    // Receipt is now bound to the saved tx; clear the staged ref so the
+    // close handler doesn't delete it.
+    stagedReceiptIdRef.current = null;
     setShowModal(false);
+    clearDraft();
     showToast(t.added);
   }
 
   function handleDelete(id: string) {
+    const tx = transactions.find(t => t.id === id);
+    if (tx?.receiptId) deleteReceipt(tx.receiptId);
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
     showToast(t.deleted);
   }
 
   function handleDeleteGroup(groupId: string) {
+    transactions
+      .filter(t => t.installments?.groupId === groupId && t.receiptId)
+      .forEach(t => deleteReceipt(t.receiptId!));
     dispatch({ type: 'DELETE_INSTALLMENT_GROUP', payload: groupId });
     showToast(t.deleted);
   }
@@ -324,6 +474,7 @@ export default function DashboardPage() {
                 {txns.map(tx => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
                   const Icon   = tx.isIncome ? TrendingUp : (CAT_ICON[tx.categoryId] ?? Package);
+                  const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
                   const PmIcon = tx.paymentMethod ? PM_ICON[tx.paymentMethod] : null;
                   return (
                     <div key={tx.id} className="txn-item">
@@ -346,11 +497,35 @@ export default function DashboardPage() {
                               {tx.installments.current}/{tx.installments.total}
                             </span>
                           )}
-                          {tx.paymentMethod && PmIcon && (
+                          {hasSplits ? (
+                            <span className="txn-pm txn-pm-splits">
+                              {tx.paymentSplits!.map((s, i) => {
+                                const SIcon = PM_ICON[s.paymentMethod] ?? ArrowLeftRight;
+                                return (
+                                  <span key={i} className="txn-pm-split-chip">
+                                    <SIcon size={11} color={PM_COLOR[s.paymentMethod] ?? '#8B5CF6'} />
+                                    {pmLabel(s.paymentMethod)}
+                                    <span className="txn-pm-split-amt">{formatCurrency(s.amount)}</span>
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          ) : tx.paymentMethod && PmIcon && (
                             <span className="txn-pm">
                               <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
                               {pmLabel(tx.paymentMethod)}
                             </span>
+                          )}
+                          {tx.receiptId && (
+                            <button
+                              type="button"
+                              className="txn-receipt-badge"
+                              onClick={() => setViewingReceiptId(tx.receiptId!)}
+                              aria-label={t.viewReceipt}
+                              title={t.viewReceipt}
+                            >
+                              <Paperclip size={10} />
+                            </button>
                           )}
                         </div>
                       </div>
@@ -454,13 +629,13 @@ export default function DashboardPage() {
       {showModal && createPortal(
         <div
           className="modal-overlay"
-          onClick={e => e.target === e.currentTarget && setShowModal(false)}
+          onClick={e => e.target === e.currentTarget && closeModal()}
         >
           <div className="modal-sheet">
             <div className="modal-handle" />
             <div className="modal-title">
               <span>{isIncome ? t.addIncome : t.addExpense}</span>
-              <button className="modal-close" onClick={() => setShowModal(false)} aria-label="Close">
+              <button className="modal-close" onClick={closeModal} aria-label="Close">
                 <X size={14} />
               </button>
             </div>
@@ -558,6 +733,17 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Receipt attachment */}
+            {!isIncome && (
+              <ReceiptAttachment
+                receiptId={receiptId}
+                receiptMeta={receiptMeta}
+                onChange={handleReceiptChange}
+                onOcrPrefill={handleOcrPrefill}
+                onError={showToast}
+              />
+            )}
+
             <div className="field-group">
               {/* Category picker (only for expenses) */}
               {!isIncome && (
@@ -570,27 +756,108 @@ export default function DashboardPage() {
 
               {/* Payment method picker */}
               <div className="pm-section">
-                <div className="pm-label">{t.paymentMethod}</div>
-                <div className="pm-picker">
-                  {PAYMENT_METHODS.map(pm => {
-                    const PIcon = PM_ICON[pm] ?? ArrowLeftRight;
-                    const selected = payMethod === pm;
-                    return (
-                      <button
-                        key={pm}
-                        className={`pm-chip${selected ? ' selected' : ''}`}
-                        onClick={() => setPayMethod(pm)}
-                        style={selected ? {
-                          borderColor: PM_COLOR[pm],
-                          background: `${PM_COLOR[pm]}1A`,
-                        } : undefined}
-                      >
-                        <PIcon size={16} color={selected ? PM_COLOR[pm] : 'var(--text-muted)'} />
-                        <span>{(t as any)[`pm_${pm}`]}</span>
-                      </button>
-                    );
-                  })}
+                <div className="pm-label-row">
+                  <span className="pm-label">{t.paymentMethod}</span>
+                  {!isIncome && (
+                    <button
+                      type="button"
+                      className={`pm-split-toggle${pmSplitEnabled ? ' active' : ''}`}
+                      onClick={() => {
+                        const next = !pmSplitEnabled;
+                        setPmSplitEnabled(next);
+                        if (next) {
+                          setPmSplits([{ pm: payMethod, amount: '' }, { pm: 'cash', amount: '' }]);
+                        }
+                      }}
+                    >
+                      {t.splitPayment}
+                    </button>
+                  )}
                 </div>
+
+                {pmSplitEnabled && !isIncome ? (
+                  <div className="pm-split-rows">
+                    {pmSplits.map((row, idx) => (
+                      <div key={idx} className="pm-split-row">
+                        <select
+                          className="pm-split-select"
+                          value={row.pm}
+                          onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                            i === idx ? { ...r, pm: e.target.value as PaymentMethod } : r
+                          ))}
+                        >
+                          {PAYMENT_METHODS.map(pm => (
+                            <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          className="pm-split-amount"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          value={row.amount}
+                          onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                            i === idx ? { ...r, amount: e.target.value } : r
+                          ))}
+                        />
+                        {pmSplits.length > 2 && (
+                          <button
+                            type="button"
+                            className="pm-split-remove"
+                            onClick={() => setPmSplits(prev => prev.filter((_, i) => i !== idx))}
+                            aria-label="Remove"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      className="pm-split-add"
+                      onClick={() => setPmSplits(prev => [...prev, { pm: 'cash', amount: '' }])}
+                    >
+                      + {t.addSplitRow}
+                    </button>
+
+                    {(() => {
+                      const total    = parseFloat(amount) || 0;
+                      const alloc    = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+                      const remain   = Math.round((total - alloc) * 100) / 100;
+                      const balanced = total > 0 && Math.abs(remain) < 0.01;
+                      return total > 0 ? (
+                        <div className={`pm-split-summary${balanced ? ' balanced' : ''}`}>
+                          <span>{t.splitAllocated}: {formatCurrency(alloc)}</span>
+                          {!balanced && <span className="pm-split-remain"> · {t.splitRemaining}: {formatCurrency(remain)}</span>}
+                          {balanced && <span className="pm-split-ok"> ✓</span>}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                ) : (
+                  <div className="pm-picker">
+                    {PAYMENT_METHODS.map(pm => {
+                      const PIcon = PM_ICON[pm] ?? ArrowLeftRight;
+                      const selected = payMethod === pm;
+                      return (
+                        <button
+                          key={pm}
+                          className={`pm-chip${selected ? ' selected' : ''}`}
+                          onClick={() => setPayMethod(pm)}
+                          style={selected ? {
+                            borderColor: PM_COLOR[pm],
+                            background: `${PM_COLOR[pm]}1A`,
+                          } : undefined}
+                        >
+                          <PIcon size={16} color={selected ? PM_COLOR[pm] : 'var(--text-muted)'} />
+                          <span>{(t as any)[`pm_${pm}`]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <input
@@ -620,6 +887,13 @@ export default function DashboardPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {viewingReceiptId && (
+        <ReceiptViewerById
+          receiptId={viewingReceiptId}
+          onClose={() => setViewingReceiptId(null)}
+        />
       )}
 
       {toast && createPortal(<div className="toast">{toast}</div>, document.body)}
