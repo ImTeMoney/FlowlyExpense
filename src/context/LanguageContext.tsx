@@ -228,6 +228,7 @@ export interface Translations {
   receiptTooLarge: string;
   receiptUnsupported: string;
   ocrAutoDetected: string;
+  ocrFailed: string;
 }
 
 const he: Translations = {
@@ -444,6 +445,7 @@ const he: Translations = {
   receiptTooLarge:     'הקובץ גדול מדי (מקסימום 8 מ״ב)',
   receiptUnsupported:  'סוג קובץ לא נתמך',
   ocrAutoDetected:     'הנתונים זוהו אוטומטית, מומלץ לבדוק לפני שמירה',
+  ocrFailed:           'זיהוי אוטומטי נכשל — ניתן למלא ידנית',
 };
 
 const en: Translations = {
@@ -660,6 +662,7 @@ const en: Translations = {
   receiptTooLarge:     'File too large (max 8 MB)',
   receiptUnsupported:  'Unsupported file type',
   ocrAutoDetected:     'Data detected automatically — please verify before saving.',
+  ocrFailed:           'Auto-detection failed — fill in manually.',
 };
 
 interface LanguageContextProps {

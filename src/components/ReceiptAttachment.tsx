@@ -92,17 +92,22 @@ export default function ReceiptAttachment({ receiptId, receiptMeta, onChange, on
       });
       setOcrPrefilled(false);
 
-      // Best-effort OCR — never blocks the user
-      if (isOcrAvailable() && onOcrPrefill) {
+      // Best-effort OCR — never blocks saving; errors surfaced as toasts only.
+      if (isOcrAvailable()) {
         setOcrRunning(true);
         try {
           const data = await extractReceiptData(file);
-          if (data) {
+          if (data && onOcrPrefill) {
             onOcrPrefill(data);
             setOcrPrefilled(true);
           }
-        } catch { /* OCR failures are silent — user can still type fields */ }
-        finally { setOcrRunning(false); }
+          // null return = receipt unreadable / no fields found → stay silent
+        } catch {
+          // thrown = API/network error → inform user so they know OCR didn't run
+          onError?.(t.ocrFailed);
+        } finally {
+          setOcrRunning(false);
+        }
       }
     } catch {
       onError?.(t.receiptUnsupported);
