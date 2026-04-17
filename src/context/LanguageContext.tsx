@@ -76,6 +76,12 @@ export interface Translations {
   pm_bit: string;
   pm_applepay: string;
   pm_standing_order: string;
+  // Split payment
+  splitPayment: string;
+  addSplitRow: string;
+  splitAllocated: string;
+  splitRemaining: string;
+  splitMustEqualTotal: string;
   // New analytics
   monthlyComparison: string;
   byPaymentMethod: string;
@@ -301,6 +307,11 @@ const he: Translations = {
   pm_bit: 'ביט',
   pm_applepay: 'Apple Pay',
   pm_standing_order: 'הוראת קבע',
+  splitPayment: 'תשלום מפוצל',
+  addSplitRow: 'הוסף שיטה',
+  splitAllocated: 'מחולק',
+  splitRemaining: 'נותר',
+  splitMustEqualTotal: 'סכום הפיצולים חייב להיות שווה לסכום הכולל',
   // New analytics
   monthlyComparison: 'השוואה חודשית',
   byPaymentMethod: 'לפי אמצעי תשלום',
@@ -520,6 +531,11 @@ const en: Translations = {
   pm_bit: 'Bit',
   pm_applepay: 'Apple Pay',
   pm_standing_order: 'Standing Order',
+  splitPayment: 'Split payment',
+  addSplitRow: 'Add method',
+  splitAllocated: 'Allocated',
+  splitRemaining: 'Remaining',
+  splitMustEqualTotal: 'Split amounts must equal the total',
   // New analytics
   monthlyComparison: 'Monthly Comparison',
   byPaymentMethod: 'By Payment Method',

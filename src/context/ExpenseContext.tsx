@@ -10,6 +10,12 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
   'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay', 'standing_order',
 ];
 
+/** One leg of a split payment — method + amount for that leg. */
+export interface PaymentSplit {
+  paymentMethod: PaymentMethod;
+  amount: number;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -39,6 +45,8 @@ export interface Transaction {
   description: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
+  /** Split payment legs. When present, supersedes paymentMethod for analytics. */
+  paymentSplits?: PaymentSplit[];
   installments?: InstallmentInfo;
   currency?: string;          // original currency (if different from main)
   originalAmount?: number;    // amount in original currency
@@ -60,6 +68,16 @@ export interface RecurringExpense {
   paymentMethod?: PaymentMethod;
   totalInstallments?: number;   // if set → limited recurring, auto-deletes when done
   postedCount?: number;         // how many months have been posted so far
+}
+
+/**
+ * Normalises old single-paymentMethod transactions and new paymentSplits into
+ * a uniform array. Analytics and any display code should use this.
+ */
+export function resolvePaymentSplits(tx: Transaction): PaymentSplit[] {
+  if (tx.paymentSplits && tx.paymentSplits.length > 0) return tx.paymentSplits;
+  const pm = tx.paymentMethod ?? 'cash';
+  return [{ paymentMethod: pm, amount: tx.amount }];
 }
 
 export interface DashboardFilter {

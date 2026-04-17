@@ -115,7 +115,9 @@ const SettingsPage: React.FC = () => {
     const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method']];
     monthTxns.forEach(tx => {
       const cat    = categories.find(c => c.id === tx.categoryId)?.name ?? '';
-      const pmName = tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
+      const pmName = tx.paymentSplits && tx.paymentSplits.length > 0
+        ? tx.paymentSplits.map(s => `${(t as any)[`pm_${s.paymentMethod}`] ?? s.paymentMethod}:${s.amount}`).join('+')
+        : tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
       rows.push([tx.date, tx.description, cat, tx.isIncome ? 'Income' : 'Expense', String(tx.amount), pmName]);
     });
     const csv = rows.map(r => r.join(',')).join('\n');

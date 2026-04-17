@@ -6,7 +6,7 @@ import {
   Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple,
   ArrowUpRight, ArrowDownRight, Minus, GitFork, Repeat, BarChart2, RefreshCcw,
 } from 'lucide-react';
-import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
+import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, resolvePaymentSplits } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
 import { CURRENCY_SYMBOL } from '../services/exchangeRate';
@@ -90,12 +90,14 @@ export default function AnalyticsPage() {
   const maxCat = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
 
-  // Payment method breakdown
+  // Payment method breakdown — uses resolvePaymentSplits to handle both old
+  // single-PM transactions and new split-payment transactions uniformly.
   const pmTotals = useMemo(() => {
     const map = new Map<string, number>();
     monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
-      const pm = tx.paymentMethod || 'cash';
-      map.set(pm, (map.get(pm) || 0) + tx.amount);
+      resolvePaymentSplits(tx).forEach(({ paymentMethod, amount }) => {
+        map.set(paymentMethod, (map.get(paymentMethod) || 0) + amount);
+      });
     });
     return Array.from(map.entries())
       .map(([pm, total]) => ({ pm, total }))

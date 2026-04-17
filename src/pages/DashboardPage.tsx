@@ -7,7 +7,7 @@ import {
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
   Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip,
 } from 'lucide-react';
-import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, ReceiptMeta } from '../context/ExpenseContext';
+import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -100,6 +100,11 @@ export default function DashboardPage() {
   const [desc, setDesc]           = useState('');
   const [date, setDate]           = useState(todayStr());
   const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
+  const [pmSplitEnabled, setPmSplitEnabled] = useState(false);
+  const [pmSplits, setPmSplits] = useState<Array<{ pm: PaymentMethod; amount: string }>>([
+    { pm: 'credit', amount: '' },
+    { pm: 'cash',   amount: '' },
+  ]);
   const [txCurrency, setTxCurrency]           = useState(mainCurrency);
   const [ratePreview, setRatePreview]         = useState<string>('');
   const [rateLoading, setRateLoading]         = useState(false);
@@ -218,6 +223,8 @@ export default function DashboardPage() {
     setDate(draft?.date ?? todayStr());
     setCatId(draft?.catId ?? categories[0]?.id ?? '');
     setPayMethod((draft?.payMethod as PaymentMethod | undefined) ?? 'credit');
+    setPmSplitEnabled(false);
+    setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
     setTxCurrency(mainCurrency);
     setRatePreview('');
     setSplitEnabled(false);
@@ -283,6 +290,26 @@ export default function DashboardPage() {
       ? { receiptId, receipt: receiptMeta }
       : {};
 
+    // Build split payment payload (only for single non-installment expenses).
+    // When installments are active, payment splits are ignored — each installment
+    // inherits the primary payMethod.
+    let pmPayload: { paymentMethod?: PaymentMethod; paymentSplits?: PaymentSplit[] } =
+      { paymentMethod: payMethod };
+
+    if (!isIncome && pmSplitEnabled && !(splitEnabled && numInstallments > 1)) {
+      const splitAmounts = pmSplits.map(s => parseFloat(s.amount) || 0);
+      const splitTotal   = Math.round(splitAmounts.reduce((a, b) => a + b, 0) * 100) / 100;
+      const roundedFinal = Math.round(finalAmount * 100) / 100;
+      if (Math.abs(splitTotal - roundedFinal) > 0.01) {
+        showToast(t.splitMustEqualTotal);
+        return;
+      }
+      const splits: PaymentSplit[] = pmSplits
+        .map((s, i) => ({ paymentMethod: s.pm, amount: splitAmounts[i] }))
+        .filter(s => s.amount > 0);
+      pmPayload = { paymentSplits: splits };
+    }
+
     if (!isIncome && splitEnabled && numInstallments > 1) {
       const groupId = `grp_${Date.now()}`;
       const perInstallment = Math.round((finalAmount / numInstallments) * 100) / 100;
@@ -306,7 +333,8 @@ export default function DashboardPage() {
       dispatch({ type: 'ADD_TRANSACTION', payload: {
         id: `tx_${Date.now()}`, amount: finalAmount,
         categoryId: catId, date, description: baseDesc,
-        isIncome, paymentMethod: payMethod,
+        isIncome,
+        ...pmPayload,
         ...txCurrencyMeta,
         ...receiptPayload,
       }});
@@ -446,6 +474,7 @@ export default function DashboardPage() {
                 {txns.map(tx => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
                   const Icon   = tx.isIncome ? TrendingUp : (CAT_ICON[tx.categoryId] ?? Package);
+                  const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
                   const PmIcon = tx.paymentMethod ? PM_ICON[tx.paymentMethod] : null;
                   return (
                     <div key={tx.id} className="txn-item">
@@ -468,7 +497,20 @@ export default function DashboardPage() {
                               {tx.installments.current}/{tx.installments.total}
                             </span>
                           )}
-                          {tx.paymentMethod && PmIcon && (
+                          {hasSplits ? (
+                            <span className="txn-pm txn-pm-splits">
+                              {tx.paymentSplits!.map((s, i) => {
+                                const SIcon = PM_ICON[s.paymentMethod] ?? ArrowLeftRight;
+                                return (
+                                  <span key={i} className="txn-pm-split-chip">
+                                    <SIcon size={11} color={PM_COLOR[s.paymentMethod] ?? '#8B5CF6'} />
+                                    {pmLabel(s.paymentMethod)}
+                                    <span className="txn-pm-split-amt">{formatCurrency(s.amount)}</span>
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          ) : tx.paymentMethod && PmIcon && (
                             <span className="txn-pm">
                               <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
                               {pmLabel(tx.paymentMethod)}
@@ -714,27 +756,108 @@ export default function DashboardPage() {
 
               {/* Payment method picker */}
               <div className="pm-section">
-                <div className="pm-label">{t.paymentMethod}</div>
-                <div className="pm-picker">
-                  {PAYMENT_METHODS.map(pm => {
-                    const PIcon = PM_ICON[pm] ?? ArrowLeftRight;
-                    const selected = payMethod === pm;
-                    return (
-                      <button
-                        key={pm}
-                        className={`pm-chip${selected ? ' selected' : ''}`}
-                        onClick={() => setPayMethod(pm)}
-                        style={selected ? {
-                          borderColor: PM_COLOR[pm],
-                          background: `${PM_COLOR[pm]}1A`,
-                        } : undefined}
-                      >
-                        <PIcon size={16} color={selected ? PM_COLOR[pm] : 'var(--text-muted)'} />
-                        <span>{(t as any)[`pm_${pm}`]}</span>
-                      </button>
-                    );
-                  })}
+                <div className="pm-label-row">
+                  <span className="pm-label">{t.paymentMethod}</span>
+                  {!isIncome && (
+                    <button
+                      type="button"
+                      className={`pm-split-toggle${pmSplitEnabled ? ' active' : ''}`}
+                      onClick={() => {
+                        const next = !pmSplitEnabled;
+                        setPmSplitEnabled(next);
+                        if (next) {
+                          setPmSplits([{ pm: payMethod, amount: '' }, { pm: 'cash', amount: '' }]);
+                        }
+                      }}
+                    >
+                      {t.splitPayment}
+                    </button>
+                  )}
                 </div>
+
+                {pmSplitEnabled && !isIncome ? (
+                  <div className="pm-split-rows">
+                    {pmSplits.map((row, idx) => (
+                      <div key={idx} className="pm-split-row">
+                        <select
+                          className="pm-split-select"
+                          value={row.pm}
+                          onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                            i === idx ? { ...r, pm: e.target.value as PaymentMethod } : r
+                          ))}
+                        >
+                          {PAYMENT_METHODS.map(pm => (
+                            <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          className="pm-split-amount"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          value={row.amount}
+                          onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                            i === idx ? { ...r, amount: e.target.value } : r
+                          ))}
+                        />
+                        {pmSplits.length > 2 && (
+                          <button
+                            type="button"
+                            className="pm-split-remove"
+                            onClick={() => setPmSplits(prev => prev.filter((_, i) => i !== idx))}
+                            aria-label="Remove"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      className="pm-split-add"
+                      onClick={() => setPmSplits(prev => [...prev, { pm: 'cash', amount: '' }])}
+                    >
+                      + {t.addSplitRow}
+                    </button>
+
+                    {(() => {
+                      const total    = parseFloat(amount) || 0;
+                      const alloc    = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+                      const remain   = Math.round((total - alloc) * 100) / 100;
+                      const balanced = total > 0 && Math.abs(remain) < 0.01;
+                      return total > 0 ? (
+                        <div className={`pm-split-summary${balanced ? ' balanced' : ''}`}>
+                          <span>{t.splitAllocated}: {formatCurrency(alloc)}</span>
+                          {!balanced && <span className="pm-split-remain"> · {t.splitRemaining}: {formatCurrency(remain)}</span>}
+                          {balanced && <span className="pm-split-ok"> ✓</span>}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                ) : (
+                  <div className="pm-picker">
+                    {PAYMENT_METHODS.map(pm => {
+                      const PIcon = PM_ICON[pm] ?? ArrowLeftRight;
+                      const selected = payMethod === pm;
+                      return (
+                        <button
+                          key={pm}
+                          className={`pm-chip${selected ? ' selected' : ''}`}
+                          onClick={() => setPayMethod(pm)}
+                          style={selected ? {
+                            borderColor: PM_COLOR[pm],
+                            background: `${PM_COLOR[pm]}1A`,
+                          } : undefined}
+                        >
+                          <PIcon size={16} color={selected ? PM_COLOR[pm] : 'var(--text-muted)'} />
+                          <span>{(t as any)[`pm_${pm}`]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <input

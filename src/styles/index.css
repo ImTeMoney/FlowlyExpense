@@ -1472,13 +1472,68 @@ select.sm-in option { background: var(--modal-bg); }
    PAYMENT METHOD PICKER
    ===================================================== */
 .pm-section { margin-bottom: 2px; }
+.pm-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
 .pm-label {
   font-size: 10px; font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  margin-bottom: 5px;
 }
+.pm-split-toggle {
+  font-size: 10px; font-weight: 600;
+  color: var(--text-muted);
+  background: none; border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 2px 8px;
+  cursor: pointer; transition: all 0.15s;
+}
+.pm-split-toggle:hover { border-color: var(--glass-hi); color: var(--text); }
+.pm-split-toggle.active {
+  border-color: #8B5CF6; color: #8B5CF6;
+  background: #8B5CF61A;
+}
+.pm-split-rows { display: flex; flex-direction: column; gap: 6px; }
+.pm-split-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.pm-split-select {
+  flex: 1;
+  background: var(--bg-input); border: 1.5px solid var(--glass-border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-size: 12px; font-weight: 600; padding: 7px 8px;
+  cursor: pointer;
+}
+.pm-split-amount {
+  width: 80px; min-width: 0;
+  background: var(--bg-input); border: 1.5px solid var(--glass-border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-size: 13px; font-weight: 600; padding: 7px 8px;
+  text-align: end;
+}
+.pm-split-remove {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); padding: 4px; border-radius: 4px;
+  display: flex; align-items: center;
+}
+.pm-split-remove:hover { color: #EF4444; }
+.pm-split-add {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  background: none; border: 1px dashed var(--glass-border);
+  border-radius: var(--r-sm); padding: 6px; cursor: pointer;
+  text-align: center; transition: all 0.15s;
+}
+.pm-split-add:hover { border-color: var(--glass-hi); color: var(--text); }
+.pm-split-summary {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  padding: 4px 2px;
+}
+.pm-split-summary.balanced { color: #22C55E; }
+.pm-split-remain { color: #F59E0B; }
+.pm-split-ok { margin-inline-start: 4px; }
 .pm-picker {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -1526,6 +1581,17 @@ select.sm-in option { background: var(--modal-bg); }
   font-weight: 500;
 }
 .txn-pm svg { width: 11px; height: 11px; flex-shrink: 0; }
+.txn-pm-splits { flex-wrap: wrap; gap: 4px; }
+.txn-pm-split-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.txn-pm-split-chip + .txn-pm-split-chip::before {
+  content: '·'; margin-inline-end: 2px; color: var(--text-dim);
+}
+.txn-pm-split-amt {
+  font-size: 10px; font-weight: 600; opacity: 0.75;
+  margin-inline-start: 1px;
+}
 
 /* =====================================================
    PLANNED BANNER
