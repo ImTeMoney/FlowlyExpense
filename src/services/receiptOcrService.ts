@@ -127,23 +127,40 @@ async function callBackend(file: Blob): Promise<OcrResult | null> {
 // set in .env.local. This path must NEVER be reachable in production builds
 // because production builds should never have VITE_ANTHROPIC_API_KEY set.
 
-const OCR_PROMPT = `You are reading a receipt or invoice (image or PDF).
-Extract the data and respond with ONLY this JSON — no other text, no markdown:
+const OCR_PROMPT = `You are a receipt OCR system. Extract data from the receipt image or PDF.
+
+CRITICAL: respond with ONLY a valid JSON object. No markdown, no code fences, no explanation.
+Your entire response must start with { and end with }.
+
+Required JSON structure:
 {
-  "merchantName": "store or restaurant name, or null",
-  "totalAmount": <final total paid as a number, or null>,
-  "currency": "ILS|USD|EUR|GBP|other ISO 4217 code, or null",
-  "date": "YYYY-MM-DD, or null",
-  "taxAmount": <VAT/tax line as a number, or null>,
-  "rawText": "most important readable text from the receipt",
-  "confidence": <0.0 unreadable — 1.0 clear>
+  "merchantName": "business name as printed, or null",
+  "totalAmount": <number — the final amount paid, or null>,
+  "currency": "ISO 4217 code or null",
+  "date": "YYYY-MM-DD or null",
+  "taxAmount": <number — VAT/tax amount, or null>,
+  "rawText": "the 3–5 most important lines of text from the receipt",
+  "confidence": <float 0.0–1.0>
 }
-Rules:
-- totalAmount is the FINAL amount paid (after VAT/tip), never the subtotal.
-- ₪ / שקל / NIS / ILS → currency "ILS".
-- Hebrew date "13 באפריל 2026" → "2026-04-13".
-- If two candidate totals, pick the larger (total inc. tax).
-- null for any field you cannot determine reliably.`;
+
+HEBREW RECEIPT RULES:
+- Total amount: look for סה"כ / סך הכל / לתשלום / סכום לתשלום / סה"כ לתשלום / סה"כ חשבון
+  → totalAmount must be a JSON number, e.g. 95 or 95.50 — never a string
+- Currency: ₪ / ש"ח / שקל / שח / NIS / ILS → return "ILS"
+- Date: Israeli format DD/MM/YYYY or DD.MM.YYYY → convert to YYYY-MM-DD
+  Example: 16/04/2026 → "2026-04-16"
+- Hebrew month names: ינואר=01 פברואר=02 מרץ=03 אפריל=04 מאי=05 יוני=06
+  יולי=07 אוגוסט=08 ספטמבר=09 אוקטובר=10 נובמבר=11 דצמבר=12
+- Merchant name: top of receipt — look for שם עסק / בית עסק / חשבונית מס / קבלה
+- VAT: מע"מ / מס ערך מוסף → taxAmount (JSON number)
+- If multiple totals: pick the LARGEST (total including VAT)
+
+GENERAL RULES:
+- totalAmount and taxAmount MUST be JSON numbers (e.g. 95.5), never strings
+- confidence: how readable is the receipt? (0.0 = unreadable, 1.0 = crystal clear)
+- rawText: always include — copy the total line, date line, and merchant name as seen
+- Use JSON null for any field you cannot determine — not the string "null"
+- Always include rawText and confidence even if other fields are null`;
 
 async function callAnthropicDirect(file: Blob, apiKey: string): Promise<OcrResult | null> {
   const isPdf = file.type === 'application/pdf';
@@ -266,26 +283,75 @@ function toBase64(blob: Blob): Promise<string> {
   });
 }
 
-// ── Response parser (shared between direct + backend paths) ───────────────────
+// ── Helpers (shared) ──────────────────────────────────────────────────────────
+
+function coerceNumber(v: unknown): number | null {
+  if (typeof v === 'number') return isFinite(v) && v > 0 ? v : null;
+  if (typeof v === 'string') {
+    const cleaned = v.replace(/[₪$€£\s,]/g, '').replace(/[^\d.-]/g, '');
+    const n = parseFloat(cleaned);
+    return isFinite(n) && n > 0 ? n : null;
+  }
+  return null;
+}
+
+function normalizeDate(v: string): string | null {
+  const s = v.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const dmy = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+  const ymd = s.match(/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})$/);
+  if (ymd) return `${ymd[1]}-${ymd[2].padStart(2, '0')}-${ymd[3].padStart(2, '0')}`;
+  return null;
+}
+
+// ── Response parser (dev direct path) ────────────────────────────────────────
 
 function parseOcrJson(text: string): OcrResult | null {
+  console.log('[OCR] Raw response:', text.slice(0, 600));
+
   const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
+  if (!match) {
+    console.error('[OCR] Parse failed: no JSON object found');
+    return null;
+  }
 
   let raw: Record<string, unknown>;
   try { raw = JSON.parse(match[0]) as Record<string, unknown>; }
-  catch { return null; }
+  catch (e) { console.error('[OCR] Parse failed: invalid JSON', e); return null; }
 
   const r: OcrResult = {};
-  if (typeof raw.merchantName === 'string' && raw.merchantName !== 'null') {
-    const n = raw.merchantName.trim(); if (n) r.merchantName = n;
-  }
-  if (typeof raw.totalAmount === 'number' && raw.totalAmount > 0) r.totalAmount = raw.totalAmount;
-  if (typeof raw.currency    === 'string' && raw.currency !== 'null' && /^[A-Z]{2,4}$/.test(raw.currency)) r.currency = raw.currency;
-  if (typeof raw.date        === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) r.date = raw.date;
-  if (typeof raw.taxAmount   === 'number' && raw.taxAmount > 0) r.taxAmount = raw.taxAmount;
-  if (typeof raw.rawText     === 'string') r.rawText = raw.rawText.slice(0, 500);
-  if (typeof raw.confidence  === 'number') r.confidence = Math.max(0, Math.min(1, raw.confidence));
 
-  return Object.keys(r).length > 0 ? r : null;
+  if (typeof raw.merchantName === 'string' && raw.merchantName !== 'null' && raw.merchantName.trim()) {
+    r.merchantName = raw.merchantName.trim();
+  }
+
+  const amount = coerceNumber(raw.totalAmount);
+  if (amount !== null) r.totalAmount = amount;
+
+  if (typeof raw.currency === 'string' && raw.currency !== 'null' && /^[A-Z]{2,4}$/.test(raw.currency.trim())) {
+    r.currency = raw.currency.trim();
+  }
+
+  if (typeof raw.date === 'string' && raw.date !== 'null') {
+    const iso = normalizeDate(raw.date);
+    if (iso) r.date = iso;
+    else console.warn('[OCR] Unrecognised date format:', raw.date);
+  }
+
+  const tax = coerceNumber(raw.taxAmount);
+  if (tax !== null) r.taxAmount = tax;
+
+  if (typeof raw.rawText === 'string' && raw.rawText) r.rawText = raw.rawText.slice(0, 500);
+  if (typeof raw.confidence === 'number' && isFinite(raw.confidence)) {
+    r.confidence = Math.max(0, Math.min(1, raw.confidence));
+  }
+
+  const hasUseful = r.merchantName || r.totalAmount || r.date || r.currency;
+  if (!hasUseful) {
+    console.warn('[OCR] No usable fields. Raw parsed:', JSON.stringify(raw).slice(0, 300));
+    return null;
+  }
+
+  return r;
 }
