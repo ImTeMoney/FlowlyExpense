@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BarChart2, Settings, Sprout } from 'lucide-react';
+import { LayoutDashboard, BarChart2, User, TrendingUp } from 'lucide-react';
 import { useLang } from '../../context/LanguageContext';
 import '../../styles/index.css';
 
@@ -24,26 +24,26 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <button
           className={`nav-tab ${location.pathname === '/analytics' ? 'active' : ''}`}
           onClick={() => navigate('/analytics')}
-          aria-label={t.historyLabel}
+          aria-label={t.analyticsLabel}
         >
           <BarChart2 />
-          {t.historyLabel}
+          {t.analyticsLabel}
         </button>
         <button
           className={`nav-tab ${location.pathname === '/grow' ? 'active' : ''}`}
           onClick={() => navigate('/grow')}
           aria-label={t.growLabel}
         >
-          <Sprout />
+          <TrendingUp />
           {t.growLabel}
         </button>
         <button
           className={`nav-tab ${location.pathname === '/settings' ? 'active' : ''}`}
           onClick={() => navigate('/settings')}
-          aria-label={t.settings}
+          aria-label={t.profile}
         >
-          <Settings />
-          {t.settings}
+          <User />
+          {t.profile}
         </button>
       </nav>
     </div>

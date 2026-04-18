@@ -317,7 +317,7 @@ const SettingsPage: React.FC = () => {
       {/* Header */}
       <div className="aether-header">
         <div className="header-row">
-          <div className="header-brand">{t.settings}</div>
+          <div className="header-brand">{t.profile}</div>
           <div className="header-actions">
             <button
               className="icon-btn"
