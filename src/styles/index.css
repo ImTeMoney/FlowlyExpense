@@ -510,6 +510,16 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .fab:active { transform: scale(0.95); }
 .fab svg { width: 26px; height: 26px; }
 
+/* FAB hint ring — pulsing after onboarding */
+@keyframes fab-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(139,92,246,0.7), 0 0 0 0   rgba(139,92,246,0.35); }
+  70%  { box-shadow: 0 0 0 14px rgba(139,92,246,0),   0 0 0 28px rgba(139,92,246,0); }
+  100% { box-shadow: 0 0 0 0   rgba(139,92,246,0),   0 0 0 0   rgba(139,92,246,0); }
+}
+.fab--hint {
+  animation: fab-ring 1.3s ease-out infinite;
+}
+
 /* =====================================================
    ADD EXPENSE MODAL (bottom sheet)
    ===================================================== */
@@ -2758,7 +2768,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 50%;
   background: var(--glass-border);
   border: none;
-  cursor: pointer;
   padding: 0;
   transition: background 0.2s, width 0.2s;
   flex-shrink: 0;
@@ -2786,6 +2795,86 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   transition: opacity 0.15s;
 }
 .ob-btn-primary:active { opacity: 0.85; }
+.ob-btn-primary:disabled { opacity: 0.35; cursor: default; }
+
+/* Launch screen — green CTA */
+.ob-btn-launch {
+  background: #16A34A;
+  box-shadow: 0 0 20px rgba(22,163,74,0.35);
+}
+
+/* Goal input screen */
+.ob-screen-goal { justify-content: center; gap: 24px; }
+.ob-title-sm { font-size: 20px; }
+.ob-goal-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 0 20px;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.ob-goal-wrap:focus-within {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px var(--purple-dim);
+}
+.ob-goal-currency {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.ob-goal-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 18px 0;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.ob-goal-input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 28px; }
+.ob-goal-input::-webkit-outer-spin-button,
+.ob-goal-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.ob-goal-input[type=number] { -moz-appearance: textfield; }
+.ob-goal-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* Launch screen FAB icon */
+@keyframes ob-launch-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
+  50%       { box-shadow: 0 0 0 18px rgba(139,92,246,0); }
+}
+.ob-launch-fab {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ob-launch-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 28px var(--purple-glow);
+  margin-bottom: 8px;
+}
+
+/* Mode card chevron */
+.ob-mode-chevron {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+.ob-mode-btn:hover .ob-mode-chevron { color: var(--text-muted); }
 
 .ob-dont-show {
   background: none;

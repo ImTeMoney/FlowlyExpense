@@ -127,6 +127,14 @@ export default function DashboardPage() {
   // Standalone viewer triggered from the transaction list
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
 
+  // FAB hint ring — shown once after onboarding completes
+  const [fabHint, setFabHint] = useState(() => !!localStorage.getItem('finio_fab_hint'));
+  useEffect(() => {
+    if (!fabHint) return;
+    const t = setTimeout(() => { setFabHint(false); localStorage.removeItem('finio_fab_hint'); }, 5000);
+    return () => clearTimeout(t);
+  }, [fabHint]);
+
   // Welcome banner — shown once until dismissed
   const [showWelcome, setShowWelcome] = useState(() => {
     return !localStorage.getItem('finio_welcome_seen') && transactions.length === 0;
@@ -631,7 +639,11 @@ export default function DashboardPage() {
       {/* FAB — rendered via portal so position:fixed is relative to the
            viewport, not the .page element (which has an animation transform) */}
       {createPortal(
-        <button className="fab" onClick={openModal} aria-label={t.addExpense}>
+        <button
+          className={`fab${fabHint ? ' fab--hint' : ''}`}
+          onClick={() => { setFabHint(false); localStorage.removeItem('finio_fab_hint'); openModal(); }}
+          aria-label={t.addExpense}
+        >
           <Plus size={26} />
         </button>,
         document.body
