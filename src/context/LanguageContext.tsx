@@ -110,6 +110,7 @@ export interface Translations {
   // Financial goals section
   financialGoals: string;
   savingsGoalLabel: string;
+  budgetGoalLabel: string;
   savingsHelperText: string;
   budgetHelperText: string;
   mainCurrencyLabel: string;
@@ -342,9 +343,10 @@ const he: Translations = {
   modeTrackBudgetDesc: 'עוקב אחרי הוצאות ביחס לתקציב חודשי.',
   // Financial goals section
   financialGoals: 'יעד חודשי',
-  savingsGoalLabel: 'יעד חיסכון',
-  savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. יש לרשום גם הכנסות לחישוב מדויק.',
-  budgetHelperText: 'עוקב אחרי ההוצאות מול התקציב. אין צורך לרשום הכנסות.',
+  savingsGoalLabel: 'כמה אני רוצה לחסוך בחודש?',
+  budgetGoalLabel: 'כמה אני מוכן להוציא בחודש?',
+  savingsHelperText: 'הסכום שתרצה לשים בצד כל חודש. Finio יחשב אם הגעת ליעד.',
+  budgetHelperText: 'הסכום המקסימלי שמותר לך להוציא. Finio יתריע כשתתקרב לגבול.',
   mainCurrencyLabel: 'מטבע',
   // Categories section
   categoriesTitle: 'קטגוריות',
@@ -569,9 +571,10 @@ const en: Translations = {
   modeTrackBudgetDesc: 'Tracks expenses against a monthly budget.',
   // Financial goals section
   financialGoals: 'Monthly Goal',
-  savingsGoalLabel: 'Savings Goal',
-  savingsHelperText: 'Savings = income minus expenses. Record both for an accurate picture.',
-  budgetHelperText: 'Tracks spending against a monthly cap. No income recording needed.',
+  savingsGoalLabel: 'How much do I want to save per month?',
+  budgetGoalLabel: 'How much am I willing to spend per month?',
+  savingsHelperText: 'The amount you want to set aside each month. Finio will track if you hit your goal.',
+  budgetHelperText: 'The maximum you allow yourself to spend. Finio will warn you as you approach the limit.',
   mainCurrencyLabel: 'Currency',
   // Categories section
   categoriesTitle: 'Categories',

@@ -2162,6 +2162,65 @@ select.sm-in option { background: var(--modal-bg); }
   border: 1px solid var(--glass-border);
   border-radius: var(--r-sm);
 }
+
+/* Goal / budget input card */
+.goal-input-card {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.goal-input-card:focus-within { border-color: var(--purple); }
+.goal-input-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.goal-input-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.goal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 0 14px;
+  transition: border-color 0.15s;
+}
+.goal-input-row:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-dim); }
+.goal-currency {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.goal-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 14px 0;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.goal-input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 22px; }
+.goal-input::-webkit-outer-spin-button,
+.goal-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.goal-input[type=number] { -moz-appearance: textfield; }
 .settings-version {
   text-align: center;
   font-size: 11px;

@@ -381,16 +381,18 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {moneyMode === 'savings_based' ? (
-          <>
-            {/* Savings goal — PRIMARY */}
-            <div className="set-row">
-              <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <PiggyBank size={13} color="#22C55E" />
-                {t.savingsGoalLabel} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
-              </span>
+          <div className="goal-input-card">
+            <div className="goal-input-label">
+              <PiggyBank size={14} color="#22C55E" />
+              <span>{t.savingsGoalLabel}</span>
+            </div>
+            <p className="goal-input-hint">{t.savingsHelperText}</p>
+            <div className="goal-input-row">
+              <span className="goal-currency">{CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}</span>
               <input
-                type="number" className="set-input"
-                placeholder="0"
+                type="number"
+                className="goal-input"
+                placeholder="5,000"
                 value={goalEdit}
                 onChange={e => setGoalEdit(e.target.value)}
                 onBlur={saveGoal}
@@ -398,16 +400,20 @@ const SettingsPage: React.FC = () => {
                 inputMode="numeric"
               />
             </div>
-
-            <p className="settings-helper">{t.savingsHelperText}</p>
-          </>
+          </div>
         ) : (
-          <>
-            {/* Budget — PRIMARY */}
-            <div className="set-row">
-              <span className="set-lbl">{t.monthlyBudget} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})</span>
+          <div className="goal-input-card">
+            <div className="goal-input-label">
+              <BarChart2 size={14} color="#F59E0B" />
+              <span>{t.budgetGoalLabel}</span>
+            </div>
+            <p className="goal-input-hint">{t.budgetHelperText}</p>
+            <div className="goal-input-row">
+              <span className="goal-currency">{CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}</span>
               <input
-                type="number" className="set-input"
+                type="number"
+                className="goal-input"
+                placeholder="10,000"
                 value={budgetEdit}
                 onChange={e => setBudgetEdit(e.target.value)}
                 onBlur={saveBudget}
@@ -415,9 +421,7 @@ const SettingsPage: React.FC = () => {
                 inputMode="numeric"
               />
             </div>
-
-            <p className="settings-helper">{t.budgetHelperText}</p>
-          </>
+          </div>
         )}
 
         {/* Main Currency */}
