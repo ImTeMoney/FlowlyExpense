@@ -127,6 +127,15 @@ export default function DashboardPage() {
   // Standalone viewer triggered from the transaction list
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
 
+  // Welcome banner — shown once until dismissed
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !localStorage.getItem('finio_welcome_seen') && transactions.length === 0;
+  });
+  function dismissWelcome() {
+    localStorage.setItem('finio_welcome_seen', '1');
+    setShowWelcome(false);
+  }
+
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
   // Planned recurring totals for the current month
@@ -417,6 +426,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Welcome banner — first-time users only */}
+      {showWelcome && (
+        <div className="welcome-banner">
+          <div className="welcome-banner-body">
+            <p className="welcome-banner-text">{t.welcomeBanner}</p>
+            <button className="welcome-banner-cta" onClick={() => { dismissWelcome(); openModal(); }}>
+              {t.noExpensesCta}
+            </button>
+          </div>
+          <button className="welcome-banner-close" onClick={dismissWelcome} aria-label={t.cancel}>✕</button>
+        </div>
+      )}
+
       {/* Smart status card */}
       <div className={`smart-status-card ${statusCard.urgency}`}>
         <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
@@ -460,7 +482,7 @@ export default function DashboardPage() {
           <div className="empty-state">
             <div className="empty-icon"><TrendingDown size={22} /></div>
             <p>{t.noExpenses}</p>
-            <p className="empty-hint">{t.noExpensesHint}</p>
+            <button className="empty-cta-btn" onClick={openModal}>{t.noExpensesCta}</button>
           </div>
         ) : (
           Array.from(grouped.entries()).map(([dateKey, txns]) => {

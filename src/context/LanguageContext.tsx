@@ -20,6 +20,9 @@ export interface Translations {
   add: string;
   noExpenses: string;
   noExpensesHint: string;
+  noExpensesCta: string;
+  welcomeBanner: string;
+  goToSettings: string;
   of: string;
   // Categories
   cat_groceries: string;
@@ -253,8 +256,11 @@ const he: Translations = {
   description: 'תיאור',
   date: 'תאריך',
   add: '+ הוסף',
-  noExpenses: 'אין הוצאות החודש',
+  noExpenses: 'אין עדיין הוצאות — נתחיל?',
   noExpensesHint: 'לחץ + כדי להוסיף הוצאה ראשונה',
+  noExpensesCta: 'הוסף הוצאה ראשונה',
+  welcomeBanner: 'ברוך הבא ל-Finio! הוסף את ההוצאה הראשונה שלך כדי להתחיל.',
+  goToSettings: 'עבור להגדרות',
   of: 'מתוך',
   cat_groceries: 'קניות (סופר)',
   cat_rent: 'שכר דירה',
@@ -329,17 +335,17 @@ const he: Translations = {
   weeklyBreakdown: 'לפי שבועות',
   addIncome: 'הוסף הכנסה',
   // Money mode selector
-  moneyModeTitle: 'מצב מעקב',
+  moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
   modeTrackSavingsDesc: 'עוקב אחרי הכנסות, הוצאות וחיסכון.',
   modeTrackBudget: 'מעקב תקציב',
   modeTrackBudgetDesc: 'עוקב אחרי הוצאות ביחס לתקציב חודשי.',
   // Financial goals section
-  financialGoals: 'יעדים פיננסיים',
+  financialGoals: 'יעד חודשי',
   savingsGoalLabel: 'יעד חיסכון',
   savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. יש לרשום גם הכנסות לחישוב מדויק.',
   budgetHelperText: 'עוקב אחרי ההוצאות מול התקציב. אין צורך לרשום הכנסות.',
-  mainCurrencyLabel: 'מטבע ראשי',
+  mainCurrencyLabel: 'מטבע',
   // Categories section
   categoriesTitle: 'קטגוריות',
   newCategoryPlaceholder: 'שם קטגוריה חדשה',
@@ -417,7 +423,7 @@ const he: Translations = {
   projectedExpense: 'הוצאות קבועות',
   projectedIncome: 'הכנסות קבועות',
   projectedNet: 'נטו צפוי',
-  growLabel: 'צמיחה',
+  growLabel: 'השקעות',
   growTitle: 'חיסכון וצמיחה',
   savingsThisMonth: 'חיסכון בפועל החודש',
   noSavingsThisMonth: 'לא נרשם חיסכון החודש',
@@ -477,8 +483,11 @@ const en: Translations = {
   description: 'Description',
   date: 'Date',
   add: '+ Add',
-  noExpenses: 'No expenses this month',
+  noExpenses: 'No expenses yet — shall we start?',
   noExpensesHint: 'Tap + to add your first expense',
+  noExpensesCta: 'Add your first expense',
+  welcomeBanner: 'Welcome to Finio! Add your first expense to get started.',
+  goToSettings: 'Go to Settings',
   of: 'of',
   cat_groceries: 'Groceries',
   cat_rent: 'Rent / Mortgage',
@@ -553,17 +562,17 @@ const en: Translations = {
   weeklyBreakdown: 'By Weeks',
   addIncome: 'Add Income',
   // Money mode selector
-  moneyModeTitle: 'Tracking Mode',
+  moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',
   modeTrackSavingsDesc: 'Tracks income, expenses and savings.',
   modeTrackBudget: 'Budget Tracking',
   modeTrackBudgetDesc: 'Tracks expenses against a monthly budget.',
   // Financial goals section
-  financialGoals: 'Financial Goals',
+  financialGoals: 'Monthly Goal',
   savingsGoalLabel: 'Savings Goal',
   savingsHelperText: 'Savings = income minus expenses. Record both for an accurate picture.',
   budgetHelperText: 'Tracks spending against a monthly cap. No income recording needed.',
-  mainCurrencyLabel: 'Main Currency',
+  mainCurrencyLabel: 'Currency',
   // Categories section
   categoriesTitle: 'Categories',
   newCategoryPlaceholder: 'New category name',
@@ -641,7 +650,7 @@ const en: Translations = {
   projectedExpense: 'Fixed expenses',
   projectedIncome: 'Fixed income',
   projectedNet: 'Net projection',
-  growLabel: 'Grow',
+  growLabel: 'Invest',
   growTitle: 'Savings & Growth',
   savingsThisMonth: 'Actual savings this month',
   noSavingsThisMonth: 'No savings recorded this month',
