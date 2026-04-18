@@ -2674,7 +2674,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-modes {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   margin-bottom: 12px;
 }
@@ -2683,14 +2683,45 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 16px;
   text-align: start;
 }
+
+.ob-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.ob-mode-btn:hover {
+  border-color: var(--glass-hi);
+  background: rgba(255,255,255,0.07);
+}
+.ob-mode-btn:active { transform: scale(0.98); }
+.ob-mode-selected {
+  border-color: var(--purple) !important;
+  background: var(--purple-dim) !important;
+}
+
+.ob-mode-icon-wrap {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ob-mode-text { flex: 1; }
 
 .ob-mode-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text);
   margin-bottom: 4px;
 }
 
@@ -2698,6 +2729,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.ob-bottom-dots-only {
+  gap: 0;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
 }
 
 .ob-bottom {

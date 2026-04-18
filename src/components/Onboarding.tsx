@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
-import { PiggyBank, BarChart2, Target, Plus, ChevronRight, X } from 'lucide-react';
+import { useExpense } from '../context/ExpenseContext';
+import { PiggyBank, BarChart2, Target, Plus, ChevronRight, X, TrendingUp, Wallet } from 'lucide-react';
+import type { MoneyMode } from '../context/ExpenseContext';
 
-// ── Storage helpers (used by App.tsx and SettingsPage.tsx) ────────────────────
+// ── Storage helpers ───────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'finio_onboarding_done';
 
@@ -16,7 +18,7 @@ export function resetOnboarding(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-// ── Copy (self-contained for easy localisation) ───────────────────────────────
+// ── Copy ──────────────────────────────────────────────────────────────────────
 
 const COPY = {
   he: {
@@ -41,12 +43,22 @@ const COPY = {
       },
       {
         icon: 'modes' as const,
-        title: 'שני מצבי מעקב',
+        title: 'איך תרצה לנהל את הכסף?',
         body:  null,
-        sub:   'ניתן לשנות בכל עת בהגדרות.',
+        sub:   'ניתן לשנות בכל עת בפרופיל.',
         modes: [
-          { title: 'מעקב חיסכון', desc: 'עוקב אחר הכנסות, הוצאות וחיסכון חודשי.' },
-          { title: 'מעקב תקציב', desc: 'עוקב אחר הוצאות ביחס לתקציב חודשי קבוע.' },
+          {
+            id:    'savings_based' as MoneyMode,
+            icon:  'savings' as const,
+            title: 'אני רוצה לחסוך יותר',
+            desc:  'עוקב אחר הכנסות, הוצאות וכמה חסכת החודש.',
+          },
+          {
+            id:    'budget_based' as MoneyMode,
+            icon:  'budget' as const,
+            title: 'יש לי תקציב חודשי קבוע',
+            desc:  'עוקב אחר ההוצאות ביחס לתקציב שתגדיר.',
+          },
         ],
       },
       {
@@ -80,12 +92,22 @@ const COPY = {
       },
       {
         icon: 'modes' as const,
-        title: 'Two tracking modes',
+        title: 'How do you want to manage your money?',
         body:  null,
-        sub:   'You can change this any time in Settings.',
+        sub:   'You can change this any time in Profile.',
         modes: [
-          { title: 'Savings Tracking', desc: 'Tracks income, expenses and monthly savings.' },
-          { title: 'Budget Tracking',  desc: 'Tracks spending against a fixed monthly budget.' },
+          {
+            id:    'savings_based' as MoneyMode,
+            icon:  'savings' as const,
+            title: 'I want to save more',
+            desc:  'Tracks income, expenses and how much you saved this month.',
+          },
+          {
+            id:    'budget_based' as MoneyMode,
+            icon:  'budget' as const,
+            title: 'I have a fixed monthly budget',
+            desc:  'Tracks spending against a budget you set.',
+          },
         ],
       },
       {
@@ -126,6 +148,11 @@ function ScreenIcon({ icon }: { icon: 'logo' | 'chart' | 'modes' | 'start' }) {
   );
 }
 
+function ModeIcon({ icon }: { icon: 'savings' | 'budget' }) {
+  if (icon === 'savings') return <TrendingUp size={20} color="#22C55E" />;
+  return <Wallet size={20} color="#F59E0B" />;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -134,19 +161,29 @@ interface Props {
 
 export default function Onboarding({ onDone }: Props) {
   const { lang } = useLang();
+  const { dispatch } = useExpense();
   const copy = COPY[lang === 'en' ? 'en' : 'he'];
   const [step, setStep] = useState(0);
+  const [selectedMode, setSelectedMode] = useState<MoneyMode | null>(null);
   const total = copy.screens.length;
   const screen = copy.screens[step];
   const isLast = step === total - 1;
+  const isModesScreen = screen.modes !== null;
 
   function next() {
     if (isLast) { onDone(); } else { setStep(s => s + 1); }
   }
 
+  function pickMode(modeId: MoneyMode) {
+    setSelectedMode(modeId);
+    dispatch({ type: 'SET_MONEY_MODE', payload: modeId });
+    // Short delay so the selected card highlight is visible before advancing
+    setTimeout(() => setStep(s => s + 1), 180);
+  }
+
   return (
     <div className="ob-overlay" dir={lang === 'en' ? 'ltr' : 'rtl'}>
-      {/* Skip / close — top right */}
+      {/* Skip / close */}
       {!isLast && (
         <button className="ob-skip" onClick={onDone} aria-label={copy.skip}>
           <X size={18} />
@@ -154,7 +191,7 @@ export default function Onboarding({ onDone }: Props) {
         </button>
       )}
 
-      {/* Screen content — key triggers re-animation on step change */}
+      {/* Screen content */}
       <div className="ob-screen" key={step}>
         <ScreenIcon icon={screen.icon} />
 
@@ -162,14 +199,23 @@ export default function Onboarding({ onDone }: Props) {
 
         {screen.body && <p className="ob-body">{screen.body}</p>}
 
-        {/* Mode cards — screen 3 only */}
+        {/* Mode picker — screen 3 only */}
         {screen.modes && (
           <div className="ob-modes">
             {screen.modes.map(m => (
-              <div key={m.title} className="ob-mode-card">
-                <div className="ob-mode-title">{m.title}</div>
-                <div className="ob-mode-desc">{m.desc}</div>
-              </div>
+              <button
+                key={m.id}
+                className={`ob-mode-card ob-mode-btn${selectedMode === m.id ? ' ob-mode-selected' : ''}`}
+                onClick={() => pickMode(m.id)}
+              >
+                <div className="ob-mode-icon-wrap">
+                  <ModeIcon icon={m.icon} />
+                </div>
+                <div className="ob-mode-text">
+                  <div className="ob-mode-title">{m.title}</div>
+                  <div className="ob-mode-desc">{m.desc}</div>
+                </div>
+              </button>
             ))}
           </div>
         )}
@@ -177,31 +223,46 @@ export default function Onboarding({ onDone }: Props) {
         {screen.sub && <p className="ob-sub">{screen.sub}</p>}
       </div>
 
-      {/* Bottom controls */}
-      <div className="ob-bottom">
-        {/* Dots */}
-        <div className="ob-dots">
-          {Array.from({ length: total }).map((_, i) => (
-            <button
-              key={i}
-              className={`ob-dot${i === step ? ' active' : ''}`}
-              onClick={() => setStep(i)}
-              aria-label={`Screen ${i + 1}`}
-            />
-          ))}
+      {/* Bottom controls — hidden on modes screen (tap-to-continue replaces Next) */}
+      {!isModesScreen && (
+        <div className="ob-bottom">
+          <div className="ob-dots">
+            {Array.from({ length: total }).map((_, i) => (
+              <button
+                key={i}
+                className={`ob-dot${i === step ? ' active' : ''}`}
+                onClick={() => setStep(i)}
+                aria-label={`Screen ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          <button className="ob-btn-primary" onClick={next}>
+            {isLast ? copy.getStarted : copy.next}
+            {!isLast && <ChevronRight size={16} />}
+          </button>
+
+          <button className="ob-dont-show" onClick={onDone}>
+            {copy.dontShow}
+          </button>
         </div>
+      )}
 
-        {/* Primary action */}
-        <button className="ob-btn-primary" onClick={next}>
-          {isLast ? copy.getStarted : copy.next}
-          {!isLast && <ChevronRight size={16} />}
-        </button>
-
-        {/* Don't show again */}
-        <button className="ob-dont-show" onClick={onDone}>
-          {copy.dontShow}
-        </button>
-      </div>
+      {/* Dots only on modes screen (no button row) */}
+      {isModesScreen && (
+        <div className="ob-bottom ob-bottom-dots-only">
+          <div className="ob-dots">
+            {Array.from({ length: total }).map((_, i) => (
+              <button
+                key={i}
+                className={`ob-dot${i === step ? ' active' : ''}`}
+                onClick={() => setStep(i)}
+                aria-label={`Screen ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
