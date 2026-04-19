@@ -3802,3 +3802,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   transition: background 0.15s;
 }
 .an-empty-cta:hover { background: #7C3AED; }
+
+/* Green card variant — recurring income */
+.adv-card-icon--green { background: rgba(34,197,94,0.15); color: #22C55E; }
+.adv-card--green.adv-card-active { border-color: #22C55E; }
+.adv-card--green.adv-card-active .adv-card-header { background: rgba(34,197,94,0.07); }
+.adv-card-toggle--green.on { background: #22C55E; }

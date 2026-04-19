@@ -7,7 +7,7 @@ import {
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
   Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil, ChevronDown,
 } from 'lucide-react';
-import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
+import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -110,6 +110,7 @@ export default function DashboardPage() {
   const [rateLoading, setRateLoading]         = useState(false);
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
+  const [isRecurring, setIsRecurring]         = useState(false);
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
   const [advancedOpen, setAdvancedOpen]       = useState(false);
@@ -255,6 +256,7 @@ export default function DashboardPage() {
     setRatePreview('');
     setSplitEnabled(false);
     setNumInstallments(3);
+    setIsRecurring(false);
     setPasteText('');
     setShowPaste(false);
     setAdvancedOpen(false);
@@ -440,6 +442,19 @@ export default function DashboardPage() {
         ...txCurrencyMeta,
         ...receiptPayload,
       }});
+    }
+    // If income marked as recurring, also register as a recurring template
+    if (isIncome && isRecurring) {
+      const rec: RecurringExpense = {
+        id: `rec_${Date.now()}`,
+        amount: finalAmount,
+        categoryId: 'cat_other',
+        dayOfMonth: parseInt(date.split('-')[2]),
+        description: baseDesc,
+        isIncome: true,
+        paymentMethod: payMethod,
+      };
+      dispatch({ type: 'ADD_RECURRING', payload: rec });
     }
     // Receipt is now bound to the saved tx; clear the staged ref so the
     // close handler doesn't delete it.
@@ -910,6 +925,32 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
+
+              {/* Recurring income toggle */}
+              {isIncome && !editingTx && (
+                <div className={`adv-card adv-card--green${isRecurring ? ' adv-card-active' : ''}`}>
+                  <button
+                    className="adv-card-header"
+                    type="button"
+                    onClick={() => setIsRecurring(s => !s)}
+                  >
+                    <div className="adv-card-icon adv-card-icon--green"><Repeat size={15} /></div>
+                    <div className="adv-card-text">
+                      <div className="adv-card-title">{lang === 'he' ? 'הכנסה קבועה' : 'Recurring income'}</div>
+                      <div className="adv-card-sub">
+                        {isRecurring
+                          ? (lang === 'he'
+                              ? `חוזר ב-${parseInt(date.split('-')[2])} לכל חודש`
+                              : `Repeats on day ${parseInt(date.split('-')[2])} every month`)
+                          : (lang === 'he'
+                              ? 'חוזר על עצמו כל חודש באותו תאריך'
+                              : 'Repeats monthly on the same date')}
+                      </div>
+                    </div>
+                    <div className={`adv-card-toggle adv-card-toggle--green${isRecurring ? ' on' : ''}`} />
+                  </button>
+                </div>
+              )}
 
               {/* Payment options — inside field-group so they scroll with content */}
               {!isIncome && !editingTx && (
