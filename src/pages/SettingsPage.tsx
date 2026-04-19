@@ -92,7 +92,7 @@ const SettingsPage: React.FC = () => {
   }
 
   // Budget
-  const [budgetEdit, setBudgetEdit] = useState(String(monthlyBudget));
+  const [budgetEdit, setBudgetEdit] = useState(monthlyBudget > 0 ? String(monthlyBudget) : '');
   function saveBudget() {
     const val = parseFloat(budgetEdit);
     if (val > 0) { dispatch({ type: 'SET_BUDGET', payload: val }); showToast(t.savedSettings); }
@@ -390,7 +390,7 @@ const SettingsPage: React.FC = () => {
               </span>
               <input
                 type="number" className="set-input"
-                placeholder="0"
+                placeholder={lang === 'he' ? 'לדוגמה: 5,000' : 'e.g. 5,000'}
                 value={goalEdit}
                 onChange={e => setGoalEdit(e.target.value)}
                 onBlur={saveGoal}
@@ -408,6 +408,7 @@ const SettingsPage: React.FC = () => {
               <span className="set-lbl">{t.monthlyBudget} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})</span>
               <input
                 type="number" className="set-input"
+                placeholder={lang === 'he' ? 'לדוגמה: 10,000' : 'e.g. 10,000'}
                 value={budgetEdit}
                 onChange={e => setBudgetEdit(e.target.value)}
                 onBlur={saveBudget}

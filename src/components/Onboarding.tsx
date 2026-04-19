@@ -305,12 +305,17 @@ export default function Onboarding({ onDone }: Props) {
                 type="number"
                 inputMode="numeric"
                 className="ob-goal-input"
-                placeholder={isSavings ? '5,000' : '10,000'}
+                placeholder={he ? 'הכנס סכום' : 'Enter amount'}
                 value={goalAmount}
                 onChange={e => setGoalAmount(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
               />
             </div>
+            <p className="ob-goal-example">
+              {he
+                ? `לדוגמה: ${currencySymbol}${isSavings ? '5,000' : '10,000'}`
+                : `e.g. ${currencySymbol}${isSavings ? '5,000' : '10,000'}`}
+            </p>
             <p className="ob-goal-hint">{hint}</p>
           </div>
         </div>
