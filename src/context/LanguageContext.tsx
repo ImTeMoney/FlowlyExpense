@@ -104,6 +104,7 @@ export interface Translations {
   editExpense: string;
   editIncome: string;
   advancedOptions: string;
+  paymentOptions: string;
   // Money mode selector
   moneyModeTitle: string;
   modeTrackSavings: string;
@@ -340,6 +341,7 @@ const he: Translations = {
   editExpense: 'עריכת הוצאה',
   editIncome: 'עריכת הכנסה',
   advancedOptions: 'אפשרויות נוספות',
+  paymentOptions: 'אפשרויות תשלום',
   // Money mode selector
   moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
@@ -570,6 +572,7 @@ const en: Translations = {
   editExpense: 'Edit Expense',
   editIncome: 'Edit Income',
   advancedOptions: 'More options',
+  paymentOptions: 'Payment options',
   // Money mode selector
   moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',
