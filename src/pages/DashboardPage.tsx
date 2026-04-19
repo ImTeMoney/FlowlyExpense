@@ -5,7 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -111,6 +111,7 @@ export default function DashboardPage() {
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
+  const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
   const [splitN, setSplitN]                   = useState(3);
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -254,12 +255,41 @@ export default function DashboardPage() {
     setShowModal(true);
   }
 
+  function openEditModal(tx: Transaction) {
+    setEditingTx(tx);
+    setIsIncome(!!tx.isIncome);
+    setAmount(String(tx.originalAmount ?? tx.amount));
+    setDesc(tx.description);
+    setDate(tx.date);
+    setCatId(tx.categoryId);
+    setTxCurrency(tx.currency ?? mainCurrency);
+    setRatePreview('');
+    const splits = tx.paymentSplits;
+    if (splits && splits.length > 0) {
+      setPmSplitEnabled(true);
+      setPmSplits(splits.map(s => ({ pm: s.paymentMethod, amount: String(s.amount) })));
+    } else {
+      setPmSplitEnabled(false);
+      setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
+      setPayMethod(tx.paymentMethod ?? 'credit');
+    }
+    setSplitEnabled(false);
+    setNumInstallments(3);
+    setPasteText('');
+    setShowPaste(false);
+    setReceiptId(tx.receiptId);
+    setReceiptMeta(tx.receipt);
+    stagedReceiptIdRef.current = null;
+    setShowModal(true);
+  }
+
   // Cancel-close: drops any staged receipt blob so it doesn't orphan in IDB.
   function closeModal() {
     if (stagedReceiptIdRef.current) {
       deleteReceipt(stagedReceiptIdRef.current);
       stagedReceiptIdRef.current = null;
     }
+    setEditingTx(null);
     setShowModal(false);
   }
 
@@ -284,6 +314,52 @@ export default function DashboardPage() {
   async function handleAdd() {
     const num = parseFloat(amount);
     if (!num || num <= 0 || !catId) return;
+
+    // Edit mode: update existing transaction in-place
+    if (editingTx) {
+      const cat = categories.find(c => c.id === catId);
+      const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name) : '');
+      let finalAmount = num;
+      let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
+      if (txCurrency !== mainCurrency) {
+        try {
+          const { convertedAmount, rate } = await convertAmount(num, txCurrency, mainCurrency, date);
+          finalAmount = convertedAmount;
+          txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
+        } catch {
+          txCurrencyMeta = { currency: txCurrency, originalAmount: num };
+        }
+      }
+      let pmPayload: { paymentMethod?: PaymentMethod; paymentSplits?: PaymentSplit[] } =
+        { paymentMethod: payMethod };
+      if (!isIncome && pmSplitEnabled) {
+        const splits: PaymentSplit[] = pmSplits
+          .map(s => ({ paymentMethod: s.pm, amount: parseFloat(s.amount) || 0 }))
+          .filter(s => s.amount > 0);
+        pmPayload = { paymentSplits: splits };
+      }
+      const receiptPayload = receiptId ? { receiptId, receipt: receiptMeta } : {};
+      dispatch({
+        type: 'UPDATE_TRANSACTION',
+        payload: {
+          ...editingTx,
+          amount: finalAmount,
+          categoryId: catId,
+          date,
+          description: baseDesc,
+          isIncome,
+          ...pmPayload,
+          ...txCurrencyMeta,
+          ...receiptPayload,
+        },
+      });
+      stagedReceiptIdRef.current = null;
+      setEditingTx(null);
+      setShowModal(false);
+      clearDraft();
+      showToast(t.save);
+      return;
+    }
     const cat = categories.find(c => c.id === catId);
     const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name) : '');
 
@@ -576,6 +652,16 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
+                      {!tx.installments && (
+                        <button
+                          className="txn-del txn-edit-btn"
+                          onClick={() => openEditModal(tx)}
+                          aria-label={tx.isIncome ? t.editIncome : t.editExpense}
+                          title={tx.isIncome ? t.editIncome : t.editExpense}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
                       {!tx.isIncome && !tx.installments && (
                         <button
                           className="txn-del txn-split-btn"
@@ -668,7 +754,10 @@ export default function DashboardPage() {
           <div className="modal-sheet">
             <div className="modal-handle" />
             <div className="modal-title">
-              <span>{isIncome ? t.addIncome : t.addExpense}</span>
+              <span>{editingTx
+                ? (isIncome ? t.editIncome : t.editExpense)
+                : (isIncome ? t.addIncome : t.addExpense)
+              }</span>
               <button className="modal-close" onClick={closeModal} aria-label="Close">
                 <X size={14} />
               </button>
@@ -724,8 +813,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Installments — shown right below amount, always visible for expenses */}
-            {!isIncome && (
+            {/* Installments — shown right below amount, hidden in edit mode */}
+            {!isIncome && !editingTx && (
               <div className="split-section">
                 <button
                   type="button"
@@ -916,7 +1005,7 @@ export default function DashboardPage() {
               onClick={handleAdd}
               disabled={!amount || parseFloat(amount) <= 0}
             >
-              {t.add}
+              {editingTx ? t.save : t.add}
             </button>
           </div>
         </div>,
