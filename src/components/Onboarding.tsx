@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
-import { PiggyBank, TrendingUp, Wallet, Plus, ChevronRight, X } from 'lucide-react';
+import { TrendingUp, Wallet, Plus, ChevronRight, X } from 'lucide-react';
 import { CURRENCY_SYMBOL } from '../services/exchangeRate';
 import type { MoneyMode } from '../context/ExpenseContext';
 
@@ -20,25 +20,150 @@ export function resetOnboarding(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-// ── 4 steps: intro → mode → goal → launch ────────────────────────────────────
+// ── SVG ring ──────────────────────────────────────────────────────────────────
 
-const TOTAL = 4;
-
-interface Props {
-  onDone: () => void;
+function Ring({
+  pct, size = 80, stroke = 8, color = '#8B5CF6', label,
+}: { pct: number; size?: number; stroke?: number; color?: string; label?: string }) {
+  const r   = (size - stroke) / 2;
+  const c   = 2 * Math.PI * r;
+  const off = c * (1 - Math.max(0, Math.min(1, pct)));
+  const cx  = size / 2;
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        <circle
+          cx={cx} cy={cx} r={r} fill="none" stroke={color}
+          strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={`${c} ${c}`} strokeDashoffset={off}
+          style={{ transition: 'stroke-dashoffset 0.45s ease' }}
+        />
+      </svg>
+      {label && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: size > 100 ? 14 : 11, fontWeight: 700,
+          color: 'var(--text)', fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.2, textAlign: 'center', padding: '0 6px',
+        }}>
+          {label}
+        </div>
+      )}
+    </div>
+  );
 }
 
+// ── Intro app preview ─────────────────────────────────────────────────────────
+
+function AppPreview({ he }: { he: boolean }) {
+  const txns = [
+    { color: '#22C55E', name: he ? 'קניות סופר'  : 'Groceries',  amount: '₪340' },
+    { color: '#3B82F6', name: he ? 'חשמל ומים'   : 'Utilities',  amount: '₪210' },
+    { color: '#F59E0B', name: he ? 'בית קפה'     : 'Coffee',     amount: '₪45'  },
+  ];
+  return (
+    <div className="ob-app-preview" dir={he ? 'rtl' : 'ltr'}>
+      {/* Header bar */}
+      <div className="ob-pv-topbar">
+        <span className="ob-pv-brand">Finio</span>
+        <span className="ob-pv-month">{he ? 'אפריל 2026' : 'Apr 2026'}</span>
+      </div>
+      {/* Stats row */}
+      <div className="ob-pv-stats">
+        <Ring pct={0.71} size={64} stroke={6} color="#8B5CF6" label="71%" />
+        <div className="ob-pv-kpis">
+          <div className="ob-pv-kpi">
+            <span className="ob-pv-kpi-val" style={{ color: '#22C55E' }}>₪12,000</span>
+            <span className="ob-pv-kpi-lbl">{he ? 'הכנסות' : 'Income'}</span>
+          </div>
+          <div className="ob-pv-kpi">
+            <span className="ob-pv-kpi-val" style={{ color: '#F87171' }}>₪3,550</span>
+            <span className="ob-pv-kpi-lbl">{he ? 'הוצאות' : 'Spent'}</span>
+          </div>
+          <div className="ob-pv-kpi">
+            <span className="ob-pv-kpi-val" style={{ color: '#8B5CF6' }}>₪8,450</span>
+            <span className="ob-pv-kpi-lbl">{he ? 'חיסכון' : 'Saved'}</span>
+          </div>
+        </div>
+      </div>
+      {/* Transaction rows */}
+      <div className="ob-pv-txns">
+        {txns.map((tx, i) => (
+          <div key={i} className="ob-pv-txn">
+            <div className="ob-pv-dot" style={{ background: tx.color }} />
+            <span className="ob-pv-txn-name">{tx.name}</span>
+            <span className="ob-pv-txn-amount">{tx.amount}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Reactive ring (step 2) ────────────────────────────────────────────────────
+
+function ReactiveRing({ amount, isSavings, currency }: {
+  amount: string; isSavings: boolean; currency: string;
+}) {
+  const refMax = isSavings ? 6000 : 12000;
+  const val    = parseFloat(amount) || 0;
+  const pct    = val > 0 ? Math.min(val / refMax, 0.92) : 0;
+  const color  = isSavings ? '#22C55E' : '#F59E0B';
+  const label  = val > 0 ? `${currency}${val.toLocaleString()}` : '?';
+  return (
+    <div className="ob-reactive-ring">
+      <Ring pct={pct} size={110} stroke={9} color={color} label={label} />
+    </div>
+  );
+}
+
+// ── Launch screen preview ─────────────────────────────────────────────────────
+
+function LaunchPreview() {
+  return (
+    <div className="ob-launch-preview">
+      <div className="ob-launch-mock">
+        {/* Fake transaction rows */}
+        {[70, 50, 85].map((w, i) => (
+          <div key={i} className="ob-launch-mock-row">
+            <div className="ob-launch-mock-dot" style={{
+              background: ['#22C55E','#8B5CF6','#F59E0B'][i],
+            }} />
+            <div className="ob-launch-mock-bar" style={{ width: `${w}%` }} />
+          </div>
+        ))}
+        {/* FAB button in mock */}
+        <div className="ob-launch-fab-mock">
+          <Plus size={20} color="#fff" strokeWidth={2.5} />
+        </div>
+      </div>
+      {/* Arrow pointing up to FAB */}
+      <div className="ob-launch-arrow-wrap">
+        <div className="ob-launch-arrow-line" />
+        <div className="ob-launch-arrow-head" />
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+const TOTAL = 4;
+interface Props { onDone: () => void; }
+
 export default function Onboarding({ onDone }: Props) {
-  const { lang } = useLang();
-  const { dispatch, state } = useExpense();
-  const he = lang !== 'en';
-  const dir = he ? 'rtl' : 'ltr';
-  const currencySymbol = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
+  const { lang }              = useLang();
+  const { dispatch, state }   = useExpense();
+  const he                    = lang !== 'en';
+  const dir                   = he ? 'rtl' : 'ltr';
+  const currencySymbol        = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
 
   const [step, setStep]               = useState(0);
   const [selectedMode, setSelectedMode] = useState<MoneyMode | null>(null);
   const [goalAmount, setGoalAmount]   = useState('');
-  const goalInputRef = useRef<HTMLInputElement>(null);
+  const goalInputRef                  = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (step === 2) setTimeout(() => goalInputRef.current?.focus(), 300);
@@ -55,11 +180,8 @@ export default function Onboarding({ onDone }: Props) {
   function saveGoalAndAdvance() {
     const val = parseFloat(goalAmount);
     if (!isNaN(val) && val > 0) {
-      if (selectedMode === 'savings_based') {
-        dispatch({ type: 'SET_SAVINGS_GOAL', payload: val });
-      } else {
-        dispatch({ type: 'SET_BUDGET', payload: val });
-      }
+      if (selectedMode === 'savings_based') dispatch({ type: 'SET_SAVINGS_GOAL', payload: val });
+      else dispatch({ type: 'SET_BUDGET', payload: val });
     }
     advance();
   }
@@ -81,27 +203,23 @@ export default function Onboarding({ onDone }: Props) {
 
   if (step === 0) return (
     <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen" key={0}>
-        <div className="ob-icon-wrap ob-icon-logo">
-          <PiggyBank size={44} color="#8B5CF6" />
+      <div className="ob-screen ob-screen-visual" key={0}>
+        <AppPreview he={he} />
+        <div className="ob-visual-text">
+          <h1 className="ob-title ob-title-sm">
+            {he ? 'ניהול כסף, בלי סיבוך' : 'Money management, made simple'}
+          </h1>
+          <p className="ob-sub">
+            {he
+              ? 'הכל נשמר אצלך. אין חשבון, אין שרת.'
+              : 'Everything stays on your device. No account, no server.'}
+          </p>
         </div>
-        <h1 className="ob-title">
-          {he ? 'ניהול כסף, בלי סיבוך' : 'Money management, made simple'}
-        </h1>
-        <p className="ob-body">
-          {he
-            ? 'רשום הוצאות, עקוב אחרי מה שחשוב — הכל נשמר רק אצלך.'
-            : 'Log expenses, track what matters — everything stays on your device.'}
-        </p>
-        <p className="ob-sub">
-          {he ? 'אין חשבון, אין שרת.' : 'No account, no server.'}
-        </p>
       </div>
       <div className="ob-bottom">
         {dots}
         <button className="ob-btn-primary" onClick={advance}>
-          {he ? 'בוא נתחיל' : "Let's go"}
-          <ChevronRight size={16} />
+          {he ? 'בוא נתחיל' : "Let's go"} <ChevronRight size={16} />
         </button>
         <button className="ob-dont-show" onClick={onDone}>
           {he ? 'דלג' : 'Skip'}
@@ -118,24 +236,22 @@ export default function Onboarding({ onDone }: Props) {
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
       <div className="ob-screen" key={1}>
-        <div className="ob-icon-wrap ob-icon-modes">
-          <TrendingUp size={28} color="#22C55E" />
-          <Wallet size={28} color="#F59E0B" />
-        </div>
-        <h1 className="ob-title">
+        <h1 className="ob-title ob-title-sm">
           {he ? 'איך תרצה לנהל את הכסף?' : 'How do you want to manage your money?'}
         </h1>
         <div className="ob-modes">
           {([
             {
               id:    'savings_based' as MoneyMode,
-              icon:  <TrendingUp size={20} color="#22C55E" />,
-              title: he ? 'אני רוצה לחסוך יותר'         : 'I want to save more',
+              icon:  <TrendingUp size={22} color="#22C55E" />,
+              bg:    'rgba(34,197,94,0.15)',
+              title: he ? 'אני רוצה לחסוך יותר'          : 'I want to save more',
               desc:  he ? 'עוקב אחר הכנסות, הוצאות וחיסכון.' : 'Tracks income, expenses and savings.',
             },
             {
               id:    'budget_based' as MoneyMode,
-              icon:  <Wallet size={20} color="#F59E0B" />,
+              icon:  <Wallet size={22} color="#F59E0B" />,
+              bg:    'rgba(245,158,11,0.15)',
               title: he ? 'יש לי תקציב חודשי קבוע'       : 'I have a fixed monthly budget',
               desc:  he ? 'עוקב אחר ההוצאות ביחס לתקציב.'  : 'Tracks spending against a budget.',
             },
@@ -145,7 +261,7 @@ export default function Onboarding({ onDone }: Props) {
               className={`ob-mode-card ob-mode-btn${selectedMode === m.id ? ' ob-mode-selected' : ''}`}
               onClick={() => pickMode(m.id)}
             >
-              <div className="ob-mode-icon-wrap">{m.icon}</div>
+              <div className="ob-mode-icon-wrap" style={{ background: m.bg }}>{m.icon}</div>
               <div className="ob-mode-text">
                 <div className="ob-mode-title">{m.title}</div>
                 <div className="ob-mode-desc">{m.desc}</div>
@@ -155,24 +271,23 @@ export default function Onboarding({ onDone }: Props) {
           ))}
         </div>
         <p className="ob-sub">
-          {he ? 'ניתן לשנות בכל עת בפרופיל.' : 'You can change this any time in Profile.'}
+          {he ? 'ניתן לשנות בכל עת בפרופיל.' : 'Change this any time in Profile.'}
         </p>
       </div>
       <div className="ob-bottom ob-bottom-dots-only">{dots}</div>
     </div>
   );
 
-  // ── Step 2: Goal amount input ─────────────────────────────────────────────
+  // ── Step 2: Goal input ────────────────────────────────────────────────────
 
   if (step === 2) {
-    const isSavings   = selectedMode !== 'budget_based';
-    const question    = he
+    const isSavings = selectedMode !== 'budget_based';
+    const question  = he
       ? (isSavings ? 'כמה אני רוצה לחסוך בחודש?' : 'מה התקציב החודשי שלי?')
-      : (isSavings ? 'How much do I want to save per month?' : 'What is my monthly budget?');
-    const hint        = he
+      : (isSavings ? 'How much do I want to save per month?' : "What's my monthly budget?");
+    const hint = he
       ? (isSavings ? 'Finio יחשב אם הגעת ליעד.' : 'Finio יתריע כשתתקרב לגבול.')
       : (isSavings ? 'Finio will track whether you hit your goal.' : 'Finio will warn you when you approach the limit.');
-    const placeholder = isSavings ? '5,000' : '10,000';
 
     return (
       <div className="ob-overlay" dir={dir}>
@@ -180,31 +295,29 @@ export default function Onboarding({ onDone }: Props) {
           <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
         </button>
         <div className="ob-screen ob-screen-goal" key={2}>
-          <h1 className="ob-title ob-title-sm">{question}</h1>
-          <div className="ob-goal-wrap">
-            <span className="ob-goal-currency">{currencySymbol}</span>
-            <input
-              ref={goalInputRef}
-              type="number"
-              inputMode="numeric"
-              className="ob-goal-input"
-              placeholder={placeholder}
-              value={goalAmount}
-              onChange={e => setGoalAmount(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
-            />
+          <ReactiveRing amount={goalAmount} isSavings={isSavings} currency={currencySymbol} />
+          <div className="ob-goal-block">
+            <h1 className="ob-title ob-title-sm">{question}</h1>
+            <div className="ob-goal-wrap">
+              <span className="ob-goal-currency">{currencySymbol}</span>
+              <input
+                ref={goalInputRef}
+                type="number"
+                inputMode="numeric"
+                className="ob-goal-input"
+                placeholder={isSavings ? '5,000' : '10,000'}
+                value={goalAmount}
+                onChange={e => setGoalAmount(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
+              />
+            </div>
+            <p className="ob-goal-hint">{hint}</p>
           </div>
-          <p className="ob-goal-hint">{hint}</p>
         </div>
         <div className="ob-bottom">
           {dots}
-          <button
-            className="ob-btn-primary"
-            onClick={saveGoalAndAdvance}
-            disabled={!goalAmount}
-          >
-            {he ? 'המשך' : 'Continue'}
-            <ChevronRight size={16} />
+          <button className="ob-btn-primary" onClick={saveGoalAndAdvance} disabled={!goalAmount}>
+            {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
           </button>
           <button className="ob-dont-show" onClick={advance}>
             {he ? 'עדיין לא יודע' : 'Skip for now'}
@@ -218,27 +331,21 @@ export default function Onboarding({ onDone }: Props) {
 
   return (
     <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen" key={3}>
-        <div className="ob-launch-fab">
-          <Plus size={34} color="#fff" strokeWidth={2.5} />
+      <div className="ob-screen ob-screen-visual" key={3}>
+        <LaunchPreview />
+        <div className="ob-visual-text">
+          <h1 className="ob-title ob-title-sm">{he ? '!הכל מוכן' : 'All set!'}</h1>
+          <p className="ob-sub">
+            {he
+              ? 'לחץ על + כדי לרשום את ההוצאה הראשונה שלך.'
+              : 'Tap + to log your first expense.'}
+          </p>
         </div>
-        <h1 className="ob-title">{he ? '!הכל מוכן' : 'All set!'}</h1>
-        <p className="ob-body">
-          {he
-            ? 'לחץ על + כדי לרשום את ההוצאה הראשונה שלך.'
-            : 'Tap + to log your first expense.'}
-        </p>
-        <p className="ob-sub">
-          {he
-            ? 'Finio ילמד את הדפוסים שלך ויציג תובנות לאורך הזמן.'
-            : 'Finio will learn your patterns and surface insights over time.'}
-        </p>
       </div>
       <div className="ob-bottom">
         {dots}
         <button className="ob-btn-primary ob-btn-launch" onClick={handleLaunch}>
-          {he ? 'הוסף הוצאה ראשונה' : 'Add first expense'}
-          <ChevronRight size={16} />
+          {he ? 'הוסף הוצאה ראשונה' : 'Add first expense'} <ChevronRight size={16} />
         </button>
       </div>
     </div>
