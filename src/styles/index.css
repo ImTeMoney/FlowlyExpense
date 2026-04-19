@@ -2876,6 +2876,208 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .ob-mode-btn:hover .ob-mode-chevron { color: var(--text-muted); }
 
+/* ── Screens with top visual ── */
+.ob-screen-visual {
+  justify-content: center;
+  gap: 20px;
+  padding-top: 40px;
+}
+.ob-visual-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+/* ── App preview mockup (step 0) ── */
+.ob-app-preview {
+  width: 100%;
+  max-width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.ob-pv-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ob-pv-brand {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple);
+  letter-spacing: 0.04em;
+}
+.ob-pv-month {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.ob-pv-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.ob-pv-kpis {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.ob-pv-kpi {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.ob-pv-kpi-val {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ob-pv-kpi-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.ob-pv-txns {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 10px;
+}
+.ob-pv-txn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ob-pv-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ob-pv-txn-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ob-pv-txn-amount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Reactive ring (step 2) ── */
+.ob-screen-goal {
+  justify-content: center;
+  gap: 18px;
+  padding-top: 40px;
+}
+.ob-reactive-ring {
+  display: flex;
+  justify-content: center;
+}
+.ob-goal-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  text-align: center;
+}
+.ob-goal-block .ob-title-sm { margin-bottom: 14px; }
+
+/* ── Launch preview (step 3) ── */
+.ob-launch-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: 280px;
+}
+.ob-launch-mock {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 16px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  position: relative;
+}
+.ob-launch-mock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ob-launch-mock-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ob-launch-mock-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--glass-border);
+}
+.ob-launch-fab-mock {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px rgba(139,92,246,0.3), 0 0 20px var(--purple-glow);
+  animation: ob-launch-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ob-launch-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(139,92,246,0.3), 0 0 20px var(--purple-glow); }
+  50%       { box-shadow: 0 0 0 10px rgba(139,92,246,0),  0 0 28px var(--purple-glow); }
+}
+.ob-launch-arrow-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 28px;
+  gap: 2px;
+}
+.ob-launch-arrow-line {
+  width: 2px;
+  height: 18px;
+  background: var(--text-dim);
+  border-radius: 1px;
+}
+.ob-launch-arrow-head {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 7px solid var(--text-dim);
+}
+
+/* ── Small screens: hide previews if too cramped ── */
+@media (max-height: 660px) {
+  .ob-app-preview { display: none; }
+  .ob-launch-preview { display: none; }
+  .ob-reactive-ring { display: none; }
+  .ob-screen-visual { padding-top: 56px; }
+}
+
 .ob-dont-show {
   background: none;
   border: none;
