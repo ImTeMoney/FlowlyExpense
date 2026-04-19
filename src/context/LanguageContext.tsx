@@ -461,7 +461,7 @@ const he: Translations = {
   appUpToDate: 'האפליקציה מעודכנת ✓',
   showOnboardingAgain: 'הצג הדרכה מחדש',
   // Receipt attachment
-  receiptLabel:        'קבלה',
+  receiptLabel:        'קבלה (לא חובה)',
   attachReceipt:       'צרף קבלה',
   replaceReceipt:      'החלף',
   removeReceipt:       'הסר',
@@ -692,7 +692,7 @@ const en: Translations = {
   appUpToDate: 'App is up to date ✓',
   showOnboardingAgain: 'Show onboarding again',
   // Receipt attachment
-  receiptLabel:        'Receipt',
+  receiptLabel:        'Receipt (optional)',
   attachReceipt:       'Attach receipt',
   replaceReceipt:      'Replace',
   removeReceipt:       'Remove',

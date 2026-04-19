@@ -912,7 +912,7 @@ export default function DashboardPage() {
                 <div className="payment-opts-label">{t.paymentOptions}</div>
 
                 {/* Split Payment card */}
-                <div className={`adv-card${pmSplitEnabled ? ' adv-card-active' : ''}`}>
+                <div className={`adv-card adv-card--blue${pmSplitEnabled ? ' adv-card-active' : ''}`}>
                   <button
                     className="adv-card-header"
                     type="button"
@@ -926,9 +926,18 @@ export default function DashboardPage() {
                     <div className="adv-card-text">
                       <div className="adv-card-title">{t.splitPayment}</div>
                       <div className="adv-card-sub">
-                        {pmSplitEnabled
-                          ? (lang === 'he' ? `${pmSplits.length} שיטות תשלום` : `${pmSplits.length} payment methods`)
-                          : (lang === 'he' ? 'חלק בין כרטיס אשראי, מזומן ועוד' : 'Split across credit, cash & more')}
+                        {pmSplitEnabled ? (() => {
+                          const total  = parseFloat(amount) || 0;
+                          const alloc  = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+                          const remain = Math.round((total - alloc) * 100) / 100;
+                          const ok     = total > 0 && Math.abs(remain) < 0.01;
+                          if (total > 0 && alloc > 0) {
+                            return ok
+                              ? (lang === 'he' ? `${pmSplits.length} שיטות · מאוזן ✓` : `${pmSplits.length} methods · balanced ✓`)
+                              : (lang === 'he' ? `${pmSplits.length} שיטות · נותר ${formatCurrency(remain)}` : `${pmSplits.length} methods · ${formatCurrency(remain)} left`);
+                          }
+                          return lang === 'he' ? `${pmSplits.length} שיטות תשלום` : `${pmSplits.length} payment methods`;
+                        })() : (lang === 'he' ? 'חלק בין שיטות תשלום' : 'Split between payment methods')}
                       </div>
                     </div>
                     <div className={`adv-card-toggle${pmSplitEnabled ? ' on' : ''}`} />
