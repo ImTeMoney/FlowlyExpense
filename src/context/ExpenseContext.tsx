@@ -21,6 +21,7 @@ export interface Category {
   name: string;
   color: string;
   isCustom?: boolean;
+  isRenamed?: boolean;
 }
 
 export interface InstallmentInfo {
@@ -413,7 +414,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'RENAME_CATEGORY':
         setCategories(prev =>
           prev.map(c => c.id === action.payload.id
-            ? { ...c, name: action.payload.name, color: action.payload.color }
+            ? { ...c, name: action.payload.name, color: action.payload.color, isRenamed: true }
             : c
           )
         );

@@ -198,7 +198,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
 
       if (topCatId) {
         const cat = categories.find(c => c.id === topCatId);
-        const resolvedCatName = catName(topCatId, cat?.name ?? topCatId);
+        const resolvedCatName = catName(topCatId, cat?.name ?? topCatId, cat?.isRenamed);
         insights.push({
           id:    'spike_cat',
           type:  'spike_cat',

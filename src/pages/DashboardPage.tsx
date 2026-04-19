@@ -5,7 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil, ChevronDown,
 } from 'lucide-react';
 import { useExpense, Transaction, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -112,6 +112,7 @@ export default function DashboardPage() {
   const [numInstallments, setNumInstallments] = useState(3);
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
+  const [advancedOpen, setAdvancedOpen]       = useState(false);
   const [splitN, setSplitN]                   = useState(3);
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -249,6 +250,7 @@ export default function DashboardPage() {
     setNumInstallments(3);
     setPasteText('');
     setShowPaste(false);
+    setAdvancedOpen(false);
     setReceiptId(undefined);
     setReceiptMeta(undefined);
     stagedReceiptIdRef.current = null;
@@ -318,7 +320,7 @@ export default function DashboardPage() {
     // Edit mode: update existing transaction in-place
     if (editingTx) {
       const cat = categories.find(c => c.id === catId);
-      const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name) : '');
+      const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name, cat.isRenamed) : '');
       let finalAmount = num;
       let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
       if (txCurrency !== mainCurrency) {
@@ -361,7 +363,7 @@ export default function DashboardPage() {
       return;
     }
     const cat = categories.find(c => c.id === catId);
-    const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name) : '');
+    const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name, cat.isRenamed) : '');
 
     // Resolve amount in main currency
     let finalAmount = num;
@@ -596,7 +598,7 @@ export default function DashboardPage() {
                       <div className="txn-info">
                         <div className="txn-name">{tx.description}</div>
                         <div className="txn-meta">
-                          <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '')}</span>
+                          <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed)}</span>
                           {tx.installments && (
                             <span className="inst-badge">
                               <GitFork size={10} />
@@ -813,62 +815,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Installments — shown right below amount, hidden in edit mode */}
-            {!isIncome && !editingTx && (
-              <div className="split-section">
-                <button
-                  type="button"
-                  className={`split-toggle-btn${splitEnabled ? ' active' : ''}`}
-                  onClick={() => setSplitEnabled(s => !s)}
-                >
-                  <GitFork size={14} />
-                  <span>{t.installmentSplit}</span>
-                  <span className="split-toggle-pill">{splitEnabled ? t.active : t.off}</span>
-                </button>
-                {splitEnabled && (
-                  <>
-                    <div className="inst-stepper">
-                      <button type="button" className="inst-step-btn"
-                        onClick={() => setNumInstallments(n => Math.max(1, n - 1))}>−</button>
-                      <input
-                        type="number"
-                        className="inst-step-input"
-                        value={numInstallments}
-                        onChange={e => {
-                          const v = parseInt(e.target.value);
-                          if (!isNaN(v) && v >= 1 && v <= 100) setNumInstallments(v);
-                          else if (e.target.value === '') setNumInstallments(1);
-                        }}
-                        inputMode="numeric"
-                        min="1" max="100"
-                      />
-                      <button type="button" className="inst-step-btn"
-                        onClick={() => setNumInstallments(n => Math.min(100, n + 1))}>+</button>
-                      <span className="inst-step-lbl">{t.installments}</span>
-                    </div>
-                    {amount && parseFloat(amount) > 0 && (
-                      <div className="split-preview">
-                        {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} {t.perMonth}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Receipt attachment */}
-            {!isIncome && (
-              <ReceiptAttachment
-                receiptId={receiptId}
-                receiptMeta={receiptMeta}
-                onChange={handleReceiptChange}
-                onOcrPrefill={handleOcrPrefill}
-                onError={showToast}
-              />
-            )}
-
             <div className="field-group">
-              {/* Category picker (only for expenses) */}
+              {/* Category picker (expenses only) */}
               {!isIncome && (
                 <CategoryPicker
                   categories={categories}
@@ -877,28 +825,21 @@ export default function DashboardPage() {
                 />
               )}
 
-              {/* Payment method picker */}
+              {/* Date */}
+              <input
+                type="date"
+                className="aether-input"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+              />
+
+              {/* Payment method */}
               <div className="pm-section">
                 <div className="pm-label-row">
                   <span className="pm-label">{t.paymentMethod}</span>
-                  {!isIncome && (
-                    <button
-                      type="button"
-                      className={`pm-split-toggle${pmSplitEnabled ? ' active' : ''}`}
-                      onClick={() => {
-                        const next = !pmSplitEnabled;
-                        setPmSplitEnabled(next);
-                        if (next) {
-                          setPmSplits([{ pm: payMethod, amount: '' }, { pm: 'cash', amount: '' }]);
-                        }
-                      }}
-                    >
-                      {t.splitPayment}
-                    </button>
-                  )}
                 </div>
-
-                {pmSplitEnabled && !isIncome ? (
+                {editingTx && pmSplitEnabled ? (
+                  /* Edit mode with existing splits — show inline */
                   <div className="pm-split-rows">
                     {pmSplits.map((row, idx) => (
                       <div key={idx} className="pm-split-row">
@@ -924,40 +865,8 @@ export default function DashboardPage() {
                             i === idx ? { ...r, amount: e.target.value } : r
                           ))}
                         />
-                        {pmSplits.length > 2 && (
-                          <button
-                            type="button"
-                            className="pm-split-remove"
-                            onClick={() => setPmSplits(prev => prev.filter((_, i) => i !== idx))}
-                            aria-label="Remove"
-                          >
-                            <X size={13} />
-                          </button>
-                        )}
                       </div>
                     ))}
-
-                    <button
-                      type="button"
-                      className="pm-split-add"
-                      onClick={() => setPmSplits(prev => [...prev, { pm: 'cash', amount: '' }])}
-                    >
-                      + {t.addSplitRow}
-                    </button>
-
-                    {(() => {
-                      const total    = parseFloat(amount) || 0;
-                      const alloc    = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-                      const remain   = Math.round((total - alloc) * 100) / 100;
-                      const balanced = total > 0 && Math.abs(remain) < 0.01;
-                      return total > 0 ? (
-                        <div className={`pm-split-summary${balanced ? ' balanced' : ''}`}>
-                          <span>{t.splitAllocated}: {formatCurrency(alloc)}</span>
-                          {!balanced && <span className="pm-split-remain"> · {t.splitRemaining}: {formatCurrency(remain)}</span>}
-                          {balanced && <span className="pm-split-ok"> ✓</span>}
-                        </div>
-                      ) : null;
-                    })()}
                   </div>
                 ) : (
                   <div className="pm-picker">
@@ -983,6 +892,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
+              {/* Description */}
               <input
                 type="text"
                 className="aether-input"
@@ -991,14 +901,167 @@ export default function DashboardPage() {
                 onChange={e => setDesc(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}
               />
-
-              <input
-                type="date"
-                className="aether-input"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-              />
             </div>
+
+            {/* Advanced options toggle — new expense only */}
+            {!isIncome && !editingTx && (
+              <button
+                className={`adv-toggle${advancedOpen ? ' open' : ''}${pmSplitEnabled || splitEnabled || !!receiptId ? ' has-active' : ''}`}
+                onClick={() => setAdvancedOpen(o => !o)}
+              >
+                <ChevronDown size={14} className={`adv-chevron${advancedOpen ? ' rotated' : ''}`} />
+                <span>{t.advancedOptions}</span>
+                {(pmSplitEnabled || splitEnabled || !!receiptId) && <span className="adv-badge" />}
+              </button>
+            )}
+
+            {/* Advanced section */}
+            {!isIncome && !editingTx && advancedOpen && (
+              <div className="adv-section">
+
+                {/* Split Payment card */}
+                <div className={`adv-card${pmSplitEnabled ? ' adv-card-active' : ''}`}>
+                  <button
+                    className="adv-card-header"
+                    type="button"
+                    onClick={() => {
+                      const next = !pmSplitEnabled;
+                      setPmSplitEnabled(next);
+                      if (next) setPmSplits([{ pm: payMethod, amount: '' }, { pm: 'cash', amount: '' }]);
+                    }}
+                  >
+                    <div className="adv-card-icon adv-card-icon--blue"><CreditCard size={15} /></div>
+                    <div className="adv-card-text">
+                      <div className="adv-card-title">{t.splitPayment}</div>
+                      <div className="adv-card-sub">
+                        {lang === 'he' ? 'חלק בין כרטיס אשראי, מזומן ועוד' : 'Split across credit, cash & more'}
+                      </div>
+                    </div>
+                    <div className={`adv-card-toggle${pmSplitEnabled ? ' on' : ''}`} />
+                  </button>
+                  {pmSplitEnabled && (
+                    <div className="adv-card-body">
+                      <div className="pm-split-rows">
+                        {pmSplits.map((row, idx) => (
+                          <div key={idx} className="pm-split-row">
+                            <select
+                              className="pm-split-select"
+                              value={row.pm}
+                              onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                                i === idx ? { ...r, pm: e.target.value as PaymentMethod } : r
+                              ))}
+                            >
+                              {PAYMENT_METHODS.map(pm => (
+                                <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              className="pm-split-amount"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                              value={row.amount}
+                              onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                                i === idx ? { ...r, amount: e.target.value } : r
+                              ))}
+                            />
+                            {pmSplits.length > 2 && (
+                              <button
+                                type="button"
+                                className="pm-split-remove"
+                                onClick={() => setPmSplits(prev => prev.filter((_, i) => i !== idx))}
+                                aria-label="Remove"
+                              >
+                                <X size={13} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className="pm-split-add"
+                        onClick={() => setPmSplits(prev => [...prev, { pm: 'cash', amount: '' }])}
+                      >
+                        + {t.addSplitRow}
+                      </button>
+                      {(() => {
+                        const total    = parseFloat(amount) || 0;
+                        const alloc    = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+                        const remain   = Math.round((total - alloc) * 100) / 100;
+                        const balanced = total > 0 && Math.abs(remain) < 0.01;
+                        return total > 0 ? (
+                          <div className={`pm-split-summary${balanced ? ' balanced' : ''}`}>
+                            <span>{t.splitAllocated}: {formatCurrency(alloc)}</span>
+                            {!balanced && <span className="pm-split-remain"> · {t.splitRemaining}: {formatCurrency(remain)}</span>}
+                            {balanced && <span className="pm-split-ok"> ✓</span>}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Installments card */}
+                <div className={`adv-card${splitEnabled ? ' adv-card-active' : ''}`}>
+                  <button
+                    className="adv-card-header"
+                    type="button"
+                    onClick={() => setSplitEnabled(s => !s)}
+                  >
+                    <div className="adv-card-icon adv-card-icon--purple"><GitFork size={15} /></div>
+                    <div className="adv-card-text">
+                      <div className="adv-card-title">{t.installmentSplit}</div>
+                      <div className="adv-card-sub">
+                        {splitEnabled && amount && parseFloat(amount) > 0
+                          ? `${numInstallments} × ${formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)}`
+                          : (lang === 'he' ? 'פרוס לתשלומים חודשיים' : 'Spread across monthly payments')}
+                      </div>
+                    </div>
+                    <div className={`adv-card-toggle${splitEnabled ? ' on' : ''}`} />
+                  </button>
+                  {splitEnabled && (
+                    <div className="adv-card-body">
+                      <div className="inst-stepper">
+                        <button type="button" className="inst-step-btn"
+                          onClick={() => setNumInstallments(n => Math.max(1, n - 1))}>−</button>
+                        <input
+                          type="number"
+                          className="inst-step-input"
+                          value={numInstallments}
+                          onChange={e => {
+                            const v = parseInt(e.target.value);
+                            if (!isNaN(v) && v >= 1 && v <= 100) setNumInstallments(v);
+                            else if (e.target.value === '') setNumInstallments(1);
+                          }}
+                          inputMode="numeric"
+                          min="1" max="100"
+                        />
+                        <button type="button" className="inst-step-btn"
+                          onClick={() => setNumInstallments(n => Math.min(100, n + 1))}>+</button>
+                        <span className="inst-step-lbl">{t.installments}</span>
+                      </div>
+                      {amount && parseFloat(amount) > 0 && (
+                        <div className="split-preview">
+                          {numInstallments} × {formatCurrency(Math.round(parseFloat(amount) / numInstallments * 100) / 100)} {t.perMonth}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Receipt */}
+                <ReceiptAttachment
+                  receiptId={receiptId}
+                  receiptMeta={receiptMeta}
+                  onChange={handleReceiptChange}
+                  onOcrPrefill={handleOcrPrefill}
+                  onError={showToast}
+                />
+
+              </div>
+            )}
 
             <button
               className={`submit-btn ${isIncome ? 'submit-income' : ''}`}

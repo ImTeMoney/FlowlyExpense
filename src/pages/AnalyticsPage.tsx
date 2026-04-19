@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
   Package, Plus, X,
@@ -54,6 +55,7 @@ const PM_COLOR: Record<string, string> = {
 export default function AnalyticsPage() {
   const { state, dispatch, formatCurrency } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
+  const navigate = useNavigate();
   const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal } = state;
 
   // Month navigation
@@ -302,6 +304,9 @@ export default function AnalyticsPage() {
             <div className="a-sec-empty-icon"><BarChart2 size={18} /></div>
             <div className="a-sec-empty-msg">{t.noData}</div>
             <div className="a-sec-empty-hint">{t.noDataHint}</div>
+            <button className="empty-cta-btn" onClick={() => navigate('/')}>
+              {lang === 'he' ? 'הוסף הוצאה ראשונה' : 'Add your first expense'}
+            </button>
           </div>
         ) : (
           <>
@@ -318,7 +323,7 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="cb-info">
                     <div className="cb-name-row">
-                      <span className="cb-name">{catName(cat.id, cat.name)}</span>
+                      <span className="cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
                       <div className="cb-tags">
                         {hasRecurring && <span className="cat-tag cat-tag-fixed">{t.tagFixed}</span>}
                         {isHigher     && <span className="cat-tag cat-tag-high">{t.tagHigh}</span>}
@@ -349,8 +354,8 @@ export default function AnalyticsPage() {
               return (
                 <div className="a-insight-line">
                   {lang === 'he'
-                    ? `${pct}% מההוצאות הן ${catName(top.cat.id, top.cat.name)}`
-                    : `${pct}% of spending was ${catName(top.cat.id, top.cat.name)}`}
+                    ? `${pct}% מההוצאות הן ${catName(top.cat.id, top.cat.name, top.cat.isRenamed)}`
+                    : `${pct}% of spending was ${catName(top.cat.id, top.cat.name, top.cat.isRenamed)}`}
                 </div>
               );
             })()}
@@ -629,7 +634,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="rec-meta">
                       {t.day} {r.dayOfMonth}
-                      {!r.isIncome && cat ? ` · ${catName(cat.id, cat.name)}` : ''}
+                      {!r.isIncome && cat ? ` · ${catName(cat.id, cat.name, cat.isRenamed)}` : ''}
                       {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
                     </div>
                   </div>

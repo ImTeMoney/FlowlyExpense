@@ -3328,3 +3328,152 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   cursor: pointer;
   z-index: 1;
 }
+
+/* =====================================================
+   ADVANCED OPTIONS — modal section
+   ===================================================== */
+
+/* Amount row focus highlight */
+.amount-row:focus-within {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 2px var(--purple-dim);
+  border-radius: var(--r-sm);
+}
+
+/* Advanced toggle button */
+.adv-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+.adv-toggle:hover,
+.adv-toggle.open {
+  border-color: var(--purple);
+  color: var(--text);
+  background: var(--purple-dim);
+  border-style: solid;
+}
+.adv-toggle.has-active {
+  border-color: var(--purple);
+  border-style: solid;
+  color: var(--text);
+}
+.adv-chevron {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.adv-chevron.rotated { transform: rotate(180deg); }
+.adv-badge {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--purple);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Advanced section container */
+.adv-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+/* Individual advanced option card */
+.adv-card {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.adv-card.adv-card-active {
+  border-color: var(--purple);
+}
+
+/* Card header — clickable row */
+.adv-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--bg-input);
+  border: none;
+  padding: 11px 12px;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.12s;
+}
+.adv-card-header:hover { background: var(--bg-secondary); }
+.adv-card-active .adv-card-header { background: rgba(139,92,246,0.07); }
+
+/* Card icon circle */
+.adv-card-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.06);
+}
+.adv-card-icon--blue  { background: rgba(59,130,246,0.15); color: #3B82F6; }
+.adv-card-icon--purple { background: rgba(139,92,246,0.15); color: #8B5CF6; }
+
+/* Card title + sub */
+.adv-card-text { flex: 1; min-width: 0; }
+.adv-card-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.adv-card-sub   { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* On/off pill toggle */
+.adv-card-toggle {
+  width: 32px; height: 18px;
+  border-radius: 9px;
+  background: var(--glass-border);
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.2s;
+}
+.adv-card-toggle::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  top: 3px; left: 3px;
+  transition: transform 0.2s;
+}
+.adv-card-toggle.on {
+  background: var(--purple);
+}
+.adv-card-toggle.on::after {
+  transform: translateX(14px);
+}
+
+/* Card expandable body */
+.adv-card-body {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--glass-border);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Analytics empty state CTA */
+.a-sec-empty .empty-cta-btn {
+  margin-top: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+}
