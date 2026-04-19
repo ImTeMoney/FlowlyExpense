@@ -3637,3 +3637,168 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 /* Blue-themed card active state (Split Payment) */
 .adv-card--blue.adv-card-active { border-color: #3B82F6; }
 .adv-card--blue.adv-card-active .adv-card-header { background: rgba(59, 130, 246, 0.07); }
+
+/* =====================================================
+   ANALYTICS REDESIGN — premium dashboard layout
+   ===================================================== */
+
+/* Hero: centered donut + budget summary */
+.an-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 0 24px;
+}
+.an-hero-of {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.an-hero-remaining {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.an-hero-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+  width: 100%;
+  justify-content: center;
+}
+.an-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.an-stat-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.an-stat-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Sections: no card background, just spacing + divider */
+.an-section {
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--glass-border);
+}
+.an-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Compact weekly trend bars */
+.an-trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 56px;
+  margin-bottom: 8px;
+}
+.an-trend-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.an-trend-bar-bg {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.an-trend-bar-fill {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: height 0.5s ease;
+}
+.an-trend-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Insight line */
+.an-insight {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 8px;
+  padding: 0 2px;
+}
+
+/* Show more / less toggle */
+.an-show-more {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--purple);
+  background: none;
+  border: none;
+  padding: 8px 0 4px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.an-show-more:hover { opacity: 1; }
+
+/* Single empty state */
+.an-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 60px 20px;
+  text-align: center;
+}
+.an-empty-msg {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 4px 0 0;
+}
+.an-empty-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 240px;
+}
+.an-empty-cta {
+  margin-top: 8px;
+  padding: 10px 24px;
+  background: var(--purple);
+  color: #fff;
+  border-radius: var(--r-full);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.an-empty-cta:hover { background: #7C3AED; }
