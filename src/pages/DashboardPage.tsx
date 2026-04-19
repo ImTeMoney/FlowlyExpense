@@ -757,8 +757,7 @@ export default function DashboardPage() {
       {/* Add Transaction Modal — portalled so position:fixed is viewport-relative */}
       {showModal && createPortal(
         <div
-          className="modal-overlay"
-          onClick={e => e.target === e.currentTarget && closeModal()}
+          className="modal-overlay modal-overlay--full"
         >
           <div className="modal-sheet">
             <div className="modal-handle" />
@@ -911,10 +910,9 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Payment options — Split Payment + Installments, always visible for new expenses */}
-            {!isIncome && !editingTx && (
+              {/* Payment options — inside field-group so they scroll with content */}
+              {!isIncome && !editingTx && (
               <div className="payment-opts-section">
                 <div className="payment-opts-label">{t.paymentOptions}</div>
 
@@ -1062,19 +1060,21 @@ export default function DashboardPage() {
                 </div>
 
               </div>
-            )}
+              )}
 
-            {/* Receipt — inline, no collapse needed */}
-            {!isIncome && (
-              <ReceiptAttachment
-                receiptId={receiptId}
-                receiptMeta={receiptMeta}
-                onChange={handleReceiptChange}
-                onOcrPrefill={handleOcrPrefill}
-                onError={showToast}
-              />
-            )}
+              {/* Receipt — scrolls with content */}
+              {!isIncome && (
+                <ReceiptAttachment
+                  receiptId={receiptId}
+                  receiptMeta={receiptMeta}
+                  onChange={handleReceiptChange}
+                  onOcrPrefill={handleOcrPrefill}
+                  onError={showToast}
+                />
+              )}
+            </div>
 
+            {/* Submit — outside field-group, sticks to bottom */}
             <button
               className={`submit-btn ${isIncome ? 'submit-income' : ''}`}
               onClick={handleAdd}
