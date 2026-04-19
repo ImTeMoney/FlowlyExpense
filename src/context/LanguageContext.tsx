@@ -339,7 +339,7 @@ const he: Translations = {
   addIncome: 'הוסף הכנסה',
   editExpense: 'עריכת הוצאה',
   editIncome: 'עריכת הכנסה',
-  advancedOptions: 'אפשרויות מתקדמות',
+  advancedOptions: 'אפשרויות נוספות',
   // Money mode selector
   moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
@@ -569,7 +569,7 @@ const en: Translations = {
   addIncome: 'Add Income',
   editExpense: 'Edit Expense',
   editIncome: 'Edit Income',
-  advancedOptions: 'Advanced options',
+  advancedOptions: 'More options',
   // Money mode selector
   moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',

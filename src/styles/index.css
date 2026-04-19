@@ -3477,3 +3477,101 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 7px 16px;
   font-size: 13px;
 }
+
+/* =====================================================
+   MODAL STEP LABELS & SECTION HEADERS
+   ===================================================== */
+
+.modal-step { display: flex; flex-direction: column; gap: 5px; }
+.modal-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+
+/* More breathing room between sections */
+.field-group { gap: 10px !important; }
+
+.pm-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* Stronger selected pm-chip */
+.pm-chip.selected {
+  font-weight: 600;
+  transform: scale(1.03);
+  box-shadow: 0 0 0 2px currentColor;
+}
+.pm-chip.selected span { color: inherit; }
+
+/* =====================================================
+   SPLIT PAYMENT ROW — prominent, always visible
+   ===================================================== */
+
+.split-pay-row {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+  transition: border-color 0.15s;
+}
+.split-pay-row.active {
+  border-color: #3B82F6;
+}
+
+.split-pay-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--bg-input);
+  border: none;
+  padding: 11px 12px;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.12s;
+}
+.split-pay-header:hover { background: var(--bg-secondary); }
+.split-pay-row.active .split-pay-header { background: rgba(59,130,246,0.07); }
+
+.split-pay-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(59,130,246,0.15);
+  color: #3B82F6;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.split-pay-text { flex: 1; min-width: 0; }
+.split-pay-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.split-pay-sub   { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.split-pay-row.active .split-pay-sub { color: #3B82F6; }
+
+.split-pay-body {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--glass-border);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Advanced toggle: inline summary when active */
+.adv-summary {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--purple);
+  background: var(--purple-dim);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  white-space: nowrap;
+}
