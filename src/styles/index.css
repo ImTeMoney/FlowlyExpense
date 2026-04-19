@@ -562,10 +562,11 @@ input, select, textarea { font-family: inherit; color: inherit; }
   animation: overlayIn 0.18s ease;
   overflow: hidden; /* nothing scrolls — content must fit viewport */
 }
-/* field-group: no scroll in full-screen mode — content must fit */
+/* field-group scrolls internally; sheet stays fixed (no drag) */
 .modal-overlay--full .field-group {
-  overflow: visible !important;
-  flex: 0 0 auto !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 !important;
   min-height: 0;
   margin-bottom: 0;
 }
