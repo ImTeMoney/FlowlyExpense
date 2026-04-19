@@ -560,12 +560,14 @@ input, select, textarea { font-family: inherit; color: inherit; }
   border: none;
   padding-top: calc(env(safe-area-inset-top) + 16px);
   animation: overlayIn 0.18s ease;
-  overflow-y: hidden; /* field-group scrolls; sheet itself must not */
+  overflow: hidden; /* nothing scrolls — content must fit viewport */
 }
-/* field-group fills remaining height and scrolls internally */
+/* field-group: no scroll in full-screen mode — content must fit */
 .modal-overlay--full .field-group {
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+  min-height: 0;
   margin-bottom: 0;
-  padding-bottom: 8px;
 }
 
 .modal-sheet {
