@@ -12,6 +12,32 @@ import { CAT_ICON } from '../components/CategoryPicker';
 import { CURRENCY_SYMBOL } from '../services/exchangeRate';
 import ConfirmModal from '../components/ConfirmModal';
 
+// ── SVG ring ─────────────────────────────────────────────────────────────────
+
+function Ring({ pct, color, label }: { pct: number; color: string; label: string }) {
+  const r = 36, stroke = 7;
+  const c = 2 * Math.PI * r;
+  const off = c * (1 - Math.max(0, Math.min(1, pct)));
+  return (
+    <div style={{ position: 'relative', width: 86, height: 86, flexShrink: 0 }}>
+      <svg width={86} height={86} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+        <circle cx={43} cy={43} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        <circle cx={43} cy={43} r={r} fill="none" stroke={color}
+          strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={`${c} ${c}`} strokeDashoffset={off}
+          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, fontWeight: 700, color: 'var(--text)',
+        fontVariantNumeric: 'tabular-nums',
+      }}>{label}</div>
+    </div>
+  );
+}
+
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
@@ -189,96 +215,78 @@ export default function AnalyticsPage() {
         <button className="mnav-btn" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">›</button>
       </div>
 
-      {/* Summary card — layout switches per moneyMode */}
+      {/* Summary card — ring + KPI grid */}
       {(() => {
         const { moneyMode } = state;
 
         if (moneyMode === 'savings_based') {
-          const goal     = savingsGoal;
-          const pct      = goal > 0 ? Math.min(Math.max(0, savings / goal), 1) : 0;
-          const barColor = pct >= 1 ? '#22C55E' : pct >= 0.8 ? '#F59E0B' : savings > 0 ? '#8B5CF6' : '#EF4444';
-          const statusText = goal > 0
+          const goal  = savingsGoal;
+          const pct   = goal > 0 ? Math.min(Math.max(0, savings / goal), 1) : (savings > 0 ? 0.5 : 0);
+          const color = pct >= 1 ? '#22C55E' : pct >= 0.5 ? '#8B5CF6' : savings < 0 ? '#EF4444' : '#8B5CF6';
+          const label = goal > 0 ? `${Math.round(pct * 100)}%` : savings > 0 ? '↑' : '—';
+          const status = goal > 0
             ? savings > goal
-              ? lang === 'he'
-                ? `עברת את יעד החיסכון ב־${formatCurrency(savings - goal)} 💪`
-                : `Exceeded savings goal by ${formatCurrency(savings - goal)} 💪`
-              : lang === 'he'
-                ? `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
-                : `${Math.round(pct * 100)}% of savings goal${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
-            : income > 0
-              ? null
-              : t.noIncomeRecorded;
-          const subLine = (income > 0 || spent > 0)
-            ? lang === 'he'
-              ? `הכנסות ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}`
-              : `Income ${formatCurrency(income)} · Expenses ${formatCurrency(spent)}`
-            : null;
+              ? lang === 'he' ? `עברת את יעד החיסכון ב־${formatCurrency(savings - goal)} 💪` : `Exceeded goal by ${formatCurrency(savings - goal)} 💪`
+              : lang === 'he' ? `${Math.round(pct * 100)}% מיעד החיסכון${pct >= 0.9 ? ' · ' + t.almostThere : ''}` : `${Math.round(pct * 100)}% of savings goal${pct >= 0.9 ? ' · ' + t.almostThere : ''}`
+            : income === 0 ? t.noIncomeRecorded : null;
+
           return (
-            <div className="bcard">
-              <div className="bcard-hero-lbl">{t.savedThisMonth}</div>
-              <div className="bcard-hero-val" style={{ color: savings > 0 ? 'var(--success)' : savings < 0 ? 'var(--danger)' : 'var(--text-secondary)' }}>
-                {formatCurrency(savings)}
+            <>
+              <div className="bcard bcard-ring">
+                <Ring pct={pct} color={color} label={label} />
+                <div className="bcard-kpis">
+                  <div className="bcard-kpi-row">
+                    <span className="bcard-kpi-val" style={{ color: '#22C55E' }}>{formatCurrency(income)}</span>
+                    <span className="bcard-kpi-lbl">{t.income}</span>
+                  </div>
+                  <div className="bcard-kpi-row">
+                    <span className="bcard-kpi-val" style={{ color: '#F87171' }}>{formatCurrency(spent)}</span>
+                    <span className="bcard-kpi-lbl">{t.spent}</span>
+                  </div>
+                  <div className="bcard-kpi-row">
+                    <span className="bcard-kpi-val" style={{ color: savings >= 0 ? '#8B5CF6' : '#EF4444' }}>{formatCurrency(Math.abs(savings))}</span>
+                    <span className="bcard-kpi-lbl">{t.savedThisMonth}</span>
+                  </div>
+                </div>
               </div>
-              {subLine && <div className="bcard-sub-line">{subLine}</div>}
-              {goal > 0 && (
-                <div className="budget-bar" style={{ marginTop: 14 }}>
-                  <div className="budget-bar-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
-                </div>
-              )}
-              {statusText && (
-                <div className="bcard-of" style={{ color: goal > 0 && savings >= goal ? 'var(--success)' : 'var(--text-dim)', marginTop: goal > 0 ? 0 : 8 }}>
-                  {statusText}
-                </div>
-              )}
-            </div>
+              {status && <div className="bcard-status">{status}</div>}
+            </>
           );
         } else {
-          // budget_based
           const goal      = monthlyBudget;
           const remaining = goal - spent;
           const pct       = goal > 0 ? Math.min(spent / goal, 1) : 0;
-          const barColor  = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
-
-          // Hero: remaining if budget set, otherwise spent
-          const heroVal   = goal > 0 ? Math.abs(remaining) : spent;
-          const heroLbl   = goal > 0 ? (remaining >= 0 ? t.remainingLabel : t.overBudget) : t.budgetThisMonth;
-          const heroColor = goal > 0 ? (remaining >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-secondary)';
-
-          const subParts: string[] = [];
-          if (income > 0) subParts.push(`${lang === 'he' ? 'הכנסות' : 'Income'} ${formatCurrency(income)}`);
-          subParts.push(`${lang === 'he' ? 'הוצאות' : 'Spent'} ${formatCurrency(spent)}`);
-          if (goal > 0 && income === 0) subParts.push(`${lang === 'he' ? 'תקציב' : 'Budget'} ${formatCurrency(goal)}`);
-
-          const statusText = goal > 0
+          const color     = pct > 0.9 ? '#EF4444' : pct > 0.7 ? '#F59E0B' : '#8B5CF6';
+          const label     = goal > 0 ? `${Math.round(pct * 100)}%` : '—';
+          const status = goal > 0
             ? remaining < 0
-              ? lang === 'he'
-                ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}`
-                : `Over budget by ${formatCurrency(Math.abs(remaining))}`
-              : lang === 'he'
-                ? `${Math.round((1 - pct) * 100)}% מהתקציב נשאר`
-                : `${Math.round((1 - pct) * 100)}% of budget remaining`
+              ? lang === 'he' ? `חרגת מהתקציב ב־${formatCurrency(Math.abs(remaining))}` : `Over budget by ${formatCurrency(Math.abs(remaining))}`
+              : lang === 'he' ? `${Math.round((1 - pct) * 100)}% מהתקציב נשאר` : `${Math.round((1 - pct) * 100)}% of budget remaining`
             : null;
 
           return (
-            <div className="bcard">
-              <div className="bcard-hero-lbl">{heroLbl}</div>
-              <div className="bcard-hero-val" style={{ color: heroColor }}>
-                {formatCurrency(heroVal)}
+            <>
+              <div className="bcard bcard-ring">
+                <Ring pct={pct} color={color} label={label} />
+                <div className="bcard-kpis">
+                  {goal > 0 && (
+                    <div className="bcard-kpi-row">
+                      <span className="bcard-kpi-val" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(goal)}</span>
+                      <span className="bcard-kpi-lbl">{t.monthlyBudget}</span>
+                    </div>
+                  )}
+                  <div className="bcard-kpi-row">
+                    <span className="bcard-kpi-val" style={{ color: '#F87171' }}>{formatCurrency(spent)}</span>
+                    <span className="bcard-kpi-lbl">{t.spent}</span>
+                  </div>
+                  <div className="bcard-kpi-row">
+                    <span className="bcard-kpi-val" style={{ color: remaining >= 0 ? '#22C55E' : '#EF4444' }}>{formatCurrency(Math.abs(remaining))}</span>
+                    <span className="bcard-kpi-lbl">{remaining >= 0 ? t.remainingLabel : t.overBudget}</span>
+                  </div>
+                </div>
               </div>
-              {subParts.length > 0 && (
-                <div className="bcard-sub-line">{subParts.join(' · ')}</div>
-              )}
-              {goal > 0 && (
-                <div className="budget-bar" style={{ marginTop: 14 }}>
-                  <div className="budget-bar-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
-                </div>
-              )}
-              {statusText && (
-                <div className="bcard-of" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--text-dim)', marginTop: goal > 0 ? 0 : 8 }}>
-                  {statusText}
-                </div>
-              )}
-            </div>
+              {status && <div className="bcard-status">{status}</div>}
+            </>
           );
         }
       })()}

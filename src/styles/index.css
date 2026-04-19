@@ -1277,6 +1277,46 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
 .budget-bar-fill.danger { background: linear-gradient(90deg, #DC2626, var(--danger)); box-shadow: 0 0 8px rgba(239,68,68,0.4); }
 .bcard-of { font-variant-numeric: tabular-nums; font-size: 11px; color: var(--text-dim); text-align: center; }
 
+/* Ring + KPI layout */
+.bcard-ring {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+}
+.bcard-kpis {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bcard-kpi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.bcard-kpi-val {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.bcard-kpi-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.bcard-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  margin-top: -6px;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
 /* Section cards */
 .a-sec {
   background: var(--bg-card);
