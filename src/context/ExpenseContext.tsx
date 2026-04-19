@@ -114,7 +114,8 @@ type Action =
   | { type: 'SET_MAIN_CURRENCY';         payload: string }
   | { type: 'SET_MONEY_MODE';            payload: MoneyMode }
   | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] }   // append imported rows
-  | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } };
+  | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } }
+  | { type: 'UPDATE_TRANSACTION';        payload: Transaction };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -439,6 +440,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'MERGE_TRANSACTIONS':
         // Append imported rows; keep existing transactions intact
         setTransactions(prev => [...action.payload, ...prev]);
+        break;
+
+      case 'UPDATE_TRANSACTION':
+        setTransactions(prev => prev.map(t => t.id === action.payload.id ? action.payload : t));
         break;
 
       case 'UPDATE_TRANSACTION_RECEIPT':

@@ -101,6 +101,8 @@ export interface Translations {
   dailyAvg: string;
   weeklyBreakdown: string;
   addIncome: string;
+  editExpense: string;
+  editIncome: string;
   // Money mode selector
   moneyModeTitle: string;
   modeTrackSavings: string;
@@ -334,6 +336,8 @@ const he: Translations = {
   dailyAvg: 'ממוצע יומי',
   weeklyBreakdown: 'לפי שבועות',
   addIncome: 'הוסף הכנסה',
+  editExpense: 'עריכת הוצאה',
+  editIncome: 'עריכת הכנסה',
   // Money mode selector
   moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
@@ -561,6 +565,8 @@ const en: Translations = {
   dailyAvg: 'Daily Avg',
   weeklyBreakdown: 'By Weeks',
   addIncome: 'Add Income',
+  editExpense: 'Edit Expense',
+  editIncome: 'Edit Income',
   // Money mode selector
   moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',
