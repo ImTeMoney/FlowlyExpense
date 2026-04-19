@@ -3639,63 +3639,70 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .adv-card--blue.adv-card-active .adv-card-header { background: rgba(59, 130, 246, 0.07); }
 
 /* =====================================================
-   ANALYTICS REDESIGN — premium dashboard layout
+   ANALYTICS REDESIGN v2 — compact dashboard layout
    ===================================================== */
 
-/* Hero: centered donut + budget summary */
-.an-hero {
+/* Summary card: side donut + KPI list */
+.an-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.an-donut-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 20px 0 24px;
+  gap: 4px;
+  flex-shrink: 0;
 }
-.an-hero-of {
+.an-donut-pct {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-top: 2px;
-  font-variant-numeric: tabular-nums;
-}
-.an-hero-remaining {
-  font-size: 15px;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-.an-hero-stats {
-  display: flex;
-  gap: 24px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--glass-border);
-  width: 100%;
-  justify-content: center;
-}
-.an-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.an-stat-val {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.an-stat-lbl {
+.an-donut-lbl {
   font-size: 10px;
-  font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-align: center;
+  line-height: 1.3;
+  max-width: 80px;
+}
+.an-kpis {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.an-kpi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.an-kpi-lbl {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.an-kpi-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.an-kpi-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 2px 0;
 }
 
 /* Sections: no card background, just spacing + divider */
 .an-section {
-  padding: 16px 0 4px;
+  padding: 12px 0 4px;
   border-top: 1px solid var(--glass-border);
 }
 .an-section-title {
@@ -3704,7 +3711,45 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+}
+
+/* Compact category list */
+.an-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.an-cat-row:last-of-type { border-bottom: none; }
+[data-theme="light"] .an-cat-row { border-bottom-color: rgba(0,0,0,0.05); }
+.an-cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.an-cat-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.an-cat-amt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.an-cat-pct {
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Compact weekly trend bars */

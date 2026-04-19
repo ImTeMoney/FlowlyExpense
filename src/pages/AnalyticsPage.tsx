@@ -7,32 +7,22 @@ import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
 
-// ── Large donut chart ─────────────────────────────────────────────────────────
+// ── Small donut (side placement) ─────────────────────────────────────────────
 
-function BigDonut({ pct, color, label, sub }: { pct: number; color: string; label: string; sub?: string }) {
-  const size = 160, stroke = 14;
+function SmallDonut({ pct, color }: { pct: number; color: string }) {
+  const size = 80, stroke = 7;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const off = c * (1 - Math.max(0, Math.min(1, pct)));
   return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none"
-          stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color}
-          strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={`${c} ${c}`} strokeDashoffset={off}
-          style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-      </svg>
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 3, pointerEvents: 'none',
-      }}>
-        <span style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{label}</span>
-        {sub && <span style={{ fontSize: 11, color, fontWeight: 600 }}>{sub}</span>}
-      </div>
-    </div>
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block', flexShrink: 0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none"
+        stroke="rgba(255,255,255,0.07)" strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color}
+        strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={`${c} ${c}`} strokeDashoffset={off}
+        style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+    </svg>
   );
 }
 
@@ -89,7 +79,6 @@ export default function AnalyticsPage() {
       .sort((a,b) => b.total - a.total);
   }, [categories, monthTxns, prevTxns]);
 
-  const maxCat = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
 
   // Weekly breakdown
@@ -126,7 +115,7 @@ export default function AnalyticsPage() {
 
   // ── Hero: donut data ──────────────────────────────────────────────────────
   const { moneyMode } = state;
-  let heroPct: number, heroColor: string, heroInner: string, heroSub: string | undefined;
+  let heroPct: number, heroColor: string, heroSub: string | undefined;
   let heroFraction: string, heroRemaining: string, heroRemainingColor: string;
 
   if (moneyMode === 'budget_based') {
@@ -134,7 +123,6 @@ export default function AnalyticsPage() {
     const remaining = budget - spent;
     heroPct            = budget > 0 ? Math.min(spent / budget, 1) : 0;
     heroColor          = heroPct > 0.9 ? '#EF4444' : heroPct > 0.7 ? '#F59E0B' : '#8B5CF6';
-    heroInner          = formatCurrency(spent);
     heroSub            = budget > 0 ? `${Math.round(heroPct * 100)}%` : undefined;
     heroFraction       = budget > 0
       ? (lang === 'he' ? `מתוך ${formatCurrency(budget)}` : `of ${formatCurrency(budget)} budget`)
@@ -149,7 +137,6 @@ export default function AnalyticsPage() {
     const goal = savingsGoal;
     heroPct            = goal > 0 ? Math.min(Math.max(0, savings / goal), 1) : (savings > 0 ? 0.5 : 0);
     heroColor          = savings >= 0 ? (heroPct >= 1 ? '#22C55E' : '#8B5CF6') : '#EF4444';
-    heroInner          = formatCurrency(Math.abs(savings));
     heroSub            = goal > 0 ? `${Math.round(heroPct * 100)}%` : undefined;
     heroFraction       = income > 0
       ? (lang === 'he' ? `מתוך הכנסה ${formatCurrency(income)}` : `of ${formatCurrency(income)} income`)
@@ -194,30 +181,48 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <>
-          {/* ── Hero: big donut + budget summary ── */}
-          <div className="an-hero">
-            <BigDonut pct={heroPct} color={heroColor} label={heroInner} sub={heroSub} />
-            {heroFraction && <div className="an-hero-of">{heroFraction}</div>}
-            {heroRemaining && (
-              <div className="an-hero-remaining" style={{ color: heroRemainingColor }}>
-                {heroRemaining}
+          {/* ── Summary card: side donut + KPI list ── */}
+          <div className="an-summary-card">
+            <div className="an-donut-col">
+              <SmallDonut pct={heroPct} color={heroColor} />
+              <div className="an-donut-pct" style={{ color: heroColor }}>
+                {heroSub ?? `${Math.round(heroPct * 100)}%`}
               </div>
-            )}
-            <div className="an-hero-stats">
-              <div className="an-stat">
-                <span className="an-stat-val">{formatCurrency(dailyAvg)}</span>
-                <span className="an-stat-lbl">{lang === 'he' ? 'ממוצע יומי' : 'Daily avg'}</span>
-              </div>
-              {income > 0 && moneyMode === 'budget_based' && (
-                <div className="an-stat">
-                  <span className="an-stat-val" style={{ color: '#22C55E' }}>{formatCurrency(income)}</span>
-                  <span className="an-stat-lbl">{t.income}</span>
+              {heroFraction && <div className="an-donut-lbl">{heroFraction}</div>}
+            </div>
+            <div className="an-kpis">
+              {income > 0 && (
+                <div className="an-kpi-row">
+                  <span className="an-kpi-lbl">{t.income}</span>
+                  <span className="an-kpi-val" style={{ color: '#22C55E' }}>+{formatCurrency(income)}</span>
                 </div>
               )}
+              <div className="an-kpi-row">
+                <span className="an-kpi-lbl">{lang === 'he' ? 'הוצאות' : 'Expenses'}</span>
+                <span className="an-kpi-val" style={{ color: '#F87171' }}>−{formatCurrency(spent)}</span>
+              </div>
+              {income > 0 && (
+                <div className="an-kpi-row">
+                  <span className="an-kpi-lbl">{lang === 'he' ? 'חיסכון' : 'Savings'}</span>
+                  <span className="an-kpi-val" style={{ color: savings >= 0 ? '#22C55E' : '#F87171' }}>
+                    {savings >= 0 ? '+' : '−'}{formatCurrency(Math.abs(savings))}
+                  </span>
+                </div>
+              )}
+              <div className="an-kpi-divider" />
+              <div className="an-kpi-row">
+                <span className="an-kpi-lbl">{lang === 'he' ? 'ממוצע יומי' : 'Daily avg'}</span>
+                <span className="an-kpi-val">{formatCurrency(dailyAvg)}</span>
+              </div>
               {isCurrentMonth && (
-                <div className="an-stat">
-                  <span className="an-stat-val">{daysInMonth - daysPassed}</span>
-                  <span className="an-stat-lbl">{lang === 'he' ? 'ימים נשאר' : 'Days left'}</span>
+                <div className="an-kpi-row">
+                  <span className="an-kpi-lbl">{lang === 'he' ? 'ימים נשאר' : 'Days left'}</span>
+                  <span className="an-kpi-val">{daysInMonth - daysPassed}</span>
+                </div>
+              )}
+              {heroRemaining && (
+                <div className="an-kpi-row" style={{ marginTop: 2 }}>
+                  <span className="an-kpi-val" style={{ color: heroRemainingColor, fontSize: 11, fontWeight: 500 }}>{heroRemaining}</span>
                 </div>
               )}
             </div>
@@ -228,31 +233,17 @@ export default function AnalyticsPage() {
             <div className="an-section">
               <div className="an-section-title">{t.byCategory}</div>
               {visibleCats.map(({ cat, total, prevTotal }) => {
-                const Icon = CAT_ICON[cat.id] ?? Package;
                 const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
                 const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
                 return (
-                  <div key={cat.id} className="cb-row">
-                    <div className="cb-icon" style={{ background: `${cat.color}18` }}>
-                      <Icon size={15} color={cat.color} />
-                    </div>
-                    <div className="cb-info">
-                      <div className="cb-name-row">
-                        <span className="cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
-                        {prevTotal > 0 && change !== 0 && (
-                          <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>
-                            {change > 0 ? '+' : ''}{change}%
-                          </span>
-                        )}
-                      </div>
-                      <div className="cb-track">
-                        <div className="cb-fill" style={{ width: `${(total/maxCat)*100}%`, background: cat.color }} />
-                      </div>
-                    </div>
-                    <div className="cb-right">
-                      <span className="cb-amt">{formatCurrency(total)}</span>
-                      <span className="cb-pct">{pctOfTotal}%</span>
-                    </div>
+                  <div key={cat.id} className="an-cat-row">
+                    <span className="an-cat-dot" style={{ background: cat.color }} />
+                    <span className="an-cat-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
+                    {prevTotal > 0 && change !== 0 && (
+                      <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>{change > 0 ? '+' : ''}{change}%</span>
+                    )}
+                    <span className="an-cat-amt">{formatCurrency(total)}</span>
+                    <span className="an-cat-pct">{pctOfTotal}%</span>
                   </div>
                 );
               })}
