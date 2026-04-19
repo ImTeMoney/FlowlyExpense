@@ -816,16 +816,19 @@ export default function DashboardPage() {
             )}
 
             <div className="field-group">
-              {/* Category picker (expenses only) */}
+              {/* Step: Category */}
               {!isIncome && (
-                <CategoryPicker
-                  categories={categories}
-                  value={catId}
-                  onChange={setCatId}
-                />
+                <div className="modal-step">
+                  <div className="modal-step-label">{t.category}</div>
+                  <CategoryPicker
+                    categories={categories}
+                    value={catId}
+                    onChange={setCatId}
+                  />
+                </div>
               )}
 
-              {/* Date */}
+              {/* Step: Date */}
               <input
                 type="date"
                 className="aether-input"
@@ -833,7 +836,7 @@ export default function DashboardPage() {
                 onChange={e => setDate(e.target.value)}
               />
 
-              {/* Payment method */}
+              {/* Step: Payment method */}
               <div className="pm-section">
                 <div className="pm-label-row">
                   <span className="pm-label">{t.paymentMethod}</span>
@@ -903,105 +906,116 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Advanced options toggle — new expense only */}
+            {/* Split Payment — prominent card, always visible for new expenses */}
+            {!isIncome && !editingTx && (
+              <div className={`split-pay-row${pmSplitEnabled ? ' active' : ''}`}>
+                <button
+                  className="split-pay-header"
+                  type="button"
+                  onClick={() => {
+                    const next = !pmSplitEnabled;
+                    setPmSplitEnabled(next);
+                    if (next) setPmSplits([{ pm: payMethod, amount: '' }, { pm: 'cash', amount: '' }]);
+                  }}
+                >
+                  <div className="split-pay-icon"><CreditCard size={15} /></div>
+                  <div className="split-pay-text">
+                    <div className="split-pay-title">{t.splitPayment}</div>
+                    <div className="split-pay-sub">
+                      {pmSplitEnabled
+                        ? (lang === 'he' ? `${pmSplits.length} שיטות תשלום` : `${pmSplits.length} payment methods`)
+                        : (lang === 'he' ? 'חלק בין כרטיס אשראי, מזומן ועוד' : 'Split across credit, cash & more')}
+                    </div>
+                  </div>
+                  <div className={`adv-card-toggle${pmSplitEnabled ? ' on' : ''}`} />
+                </button>
+                {pmSplitEnabled && (
+                  <div className="split-pay-body">
+                    <div className="pm-split-rows">
+                      {pmSplits.map((row, idx) => (
+                        <div key={idx} className="pm-split-row">
+                          <select
+                            className="pm-split-select"
+                            value={row.pm}
+                            onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                              i === idx ? { ...r, pm: e.target.value as PaymentMethod } : r
+                            ))}
+                          >
+                            {PAYMENT_METHODS.map(pm => (
+                              <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            className="pm-split-amount"
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            value={row.amount}
+                            onChange={e => setPmSplits(prev => prev.map((r, i) =>
+                              i === idx ? { ...r, amount: e.target.value } : r
+                            ))}
+                          />
+                          {pmSplits.length > 2 && (
+                            <button
+                              type="button"
+                              className="pm-split-remove"
+                              onClick={() => setPmSplits(prev => prev.filter((_, i) => i !== idx))}
+                              aria-label="Remove"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="pm-split-add"
+                      onClick={() => setPmSplits(prev => [...prev, { pm: 'cash', amount: '' }])}
+                    >
+                      + {t.addSplitRow}
+                    </button>
+                    {(() => {
+                      const total    = parseFloat(amount) || 0;
+                      const alloc    = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+                      const remain   = Math.round((total - alloc) * 100) / 100;
+                      const balanced = total > 0 && Math.abs(remain) < 0.01;
+                      return total > 0 ? (
+                        <div className={`pm-split-summary${balanced ? ' balanced' : ''}`}>
+                          <span>{t.splitAllocated}: {formatCurrency(alloc)}</span>
+                          {!balanced && <span className="pm-split-remain"> · {t.splitRemaining}: {formatCurrency(remain)}</span>}
+                          {balanced && <span className="pm-split-ok"> ✓</span>}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* More options toggle — installments + receipt, new expense only */}
             {!isIncome && !editingTx && (
               <button
-                className={`adv-toggle${advancedOpen ? ' open' : ''}${pmSplitEnabled || splitEnabled || !!receiptId ? ' has-active' : ''}`}
+                className={`adv-toggle${advancedOpen ? ' open' : ''}${splitEnabled || !!receiptId ? ' has-active' : ''}`}
                 onClick={() => setAdvancedOpen(o => !o)}
               >
                 <ChevronDown size={14} className={`adv-chevron${advancedOpen ? ' rotated' : ''}`} />
                 <span>{t.advancedOptions}</span>
-                {(pmSplitEnabled || splitEnabled || !!receiptId) && <span className="adv-badge" />}
+                {splitEnabled && (
+                  <span className="adv-summary">
+                    {numInstallments}&nbsp;{lang === 'he' ? 'תשלומים' : 'payments'}
+                  </span>
+                )}
+                {!splitEnabled && !!receiptId && (
+                  <span className="adv-summary">{lang === 'he' ? 'קבלה' : 'Receipt'}</span>
+                )}
               </button>
             )}
 
-            {/* Advanced section */}
+            {/* Advanced section — installments + receipt */}
             {!isIncome && !editingTx && advancedOpen && (
               <div className="adv-section">
-
-                {/* Split Payment card */}
-                <div className={`adv-card${pmSplitEnabled ? ' adv-card-active' : ''}`}>
-                  <button
-                    className="adv-card-header"
-                    type="button"
-                    onClick={() => {
-                      const next = !pmSplitEnabled;
-                      setPmSplitEnabled(next);
-                      if (next) setPmSplits([{ pm: payMethod, amount: '' }, { pm: 'cash', amount: '' }]);
-                    }}
-                  >
-                    <div className="adv-card-icon adv-card-icon--blue"><CreditCard size={15} /></div>
-                    <div className="adv-card-text">
-                      <div className="adv-card-title">{t.splitPayment}</div>
-                      <div className="adv-card-sub">
-                        {lang === 'he' ? 'חלק בין כרטיס אשראי, מזומן ועוד' : 'Split across credit, cash & more'}
-                      </div>
-                    </div>
-                    <div className={`adv-card-toggle${pmSplitEnabled ? ' on' : ''}`} />
-                  </button>
-                  {pmSplitEnabled && (
-                    <div className="adv-card-body">
-                      <div className="pm-split-rows">
-                        {pmSplits.map((row, idx) => (
-                          <div key={idx} className="pm-split-row">
-                            <select
-                              className="pm-split-select"
-                              value={row.pm}
-                              onChange={e => setPmSplits(prev => prev.map((r, i) =>
-                                i === idx ? { ...r, pm: e.target.value as PaymentMethod } : r
-                              ))}
-                            >
-                              {PAYMENT_METHODS.map(pm => (
-                                <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
-                              ))}
-                            </select>
-                            <input
-                              type="number"
-                              className="pm-split-amount"
-                              placeholder="0"
-                              min="0"
-                              step="0.01"
-                              value={row.amount}
-                              onChange={e => setPmSplits(prev => prev.map((r, i) =>
-                                i === idx ? { ...r, amount: e.target.value } : r
-                              ))}
-                            />
-                            {pmSplits.length > 2 && (
-                              <button
-                                type="button"
-                                className="pm-split-remove"
-                                onClick={() => setPmSplits(prev => prev.filter((_, i) => i !== idx))}
-                                aria-label="Remove"
-                              >
-                                <X size={13} />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        className="pm-split-add"
-                        onClick={() => setPmSplits(prev => [...prev, { pm: 'cash', amount: '' }])}
-                      >
-                        + {t.addSplitRow}
-                      </button>
-                      {(() => {
-                        const total    = parseFloat(amount) || 0;
-                        const alloc    = pmSplits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-                        const remain   = Math.round((total - alloc) * 100) / 100;
-                        const balanced = total > 0 && Math.abs(remain) < 0.01;
-                        return total > 0 ? (
-                          <div className={`pm-split-summary${balanced ? ' balanced' : ''}`}>
-                            <span>{t.splitAllocated}: {formatCurrency(alloc)}</span>
-                            {!balanced && <span className="pm-split-remain"> · {t.splitRemaining}: {formatCurrency(remain)}</span>}
-                            {balanced && <span className="pm-split-ok"> ✓</span>}
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-                </div>
 
                 {/* Installments card */}
                 <div className={`adv-card${splitEnabled ? ' adv-card-active' : ''}`}>
