@@ -686,19 +686,20 @@ input, select, textarea { font-family: inherit; color: inherit; }
 /* Submit */
 .submit-btn {
   width: 100%;
-  background: var(--purple);
+  background: linear-gradient(135deg, #9333EA 0%, var(--purple) 100%);
   color: #fff;
   border-radius: var(--r-md);
-  padding: 14px;
-  font-size: 15px;
+  padding: 16px;
+  font-size: 16px;
   font-weight: 700;
+  letter-spacing: 0.01em;
   transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-  box-shadow: 0 0 16px var(--purple-glow);
-  margin-top: 4px;
+  box-shadow: 0 4px 20px var(--purple-glow), 0 1px 0 rgba(255,255,255,0.12) inset;
+  margin-top: 6px;
   flex-shrink: 0;
 }
-.submit-btn:hover { background: #7C3AED; box-shadow: 0 0 24px var(--purple-glow); }
-.submit-btn:active { transform: scale(0.98); }
+.submit-btn:hover { background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); box-shadow: 0 6px 28px var(--purple-glow); }
+.submit-btn:active { transform: scale(0.98); box-shadow: 0 2px 12px var(--purple-glow); }
 .submit-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
 
 /* =====================================================
@@ -3338,6 +3339,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 /* Amount row focus highlight */
 .amount-row:focus-within {
   border-bottom-color: var(--purple);
+  box-shadow: 0 2px 0 0 var(--purple);
 }
 
 /* Advanced toggle button */
@@ -3585,7 +3587,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
-  margin: 8px 0 6px;
+  margin: 14px 0 6px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
@@ -3597,13 +3599,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .payment-opts-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text);
   padding: 0;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 /* Blue-themed card active state (Split Payment) */
