@@ -40,10 +40,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <button
           className={`nav-tab ${location.pathname === '/settings' ? 'active' : ''}`}
           onClick={() => navigate('/settings')}
-          aria-label={t.profile}
+          aria-label={t.settings}
         >
           <User />
-          {t.profile}
+          {t.settings}
         </button>
       </nav>
     </div>

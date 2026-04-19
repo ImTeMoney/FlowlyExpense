@@ -317,7 +317,7 @@ const SettingsPage: React.FC = () => {
       {/* Header */}
       <div className="aether-header">
         <div className="header-row">
-          <div className="header-brand">{t.profile}</div>
+          <div className="header-brand">{t.settings}</div>
           <div className="header-actions">
             <button
               className="icon-btn"
@@ -504,12 +504,12 @@ const SettingsPage: React.FC = () => {
             ) : (
               /* Tap whole row to enter edit mode */
               <button
-                onClick={() => startEdit(cat.id, catName(cat.id, cat.name), cat.color)}
+                onClick={() => startEdit(cat.id, catName(cat.id, cat.name, cat.isRenamed), cat.color)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', textAlign: 'start' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-                  <span className="set-lbl">{catName(cat.id, cat.name)}</span>
+                  <span className="set-lbl">{catName(cat.id, cat.name, cat.isRenamed)}</span>
                 </div>
                 <ChevronRight size={14} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
               </button>

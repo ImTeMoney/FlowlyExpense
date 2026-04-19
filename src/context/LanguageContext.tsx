@@ -103,6 +103,7 @@ export interface Translations {
   addIncome: string;
   editExpense: string;
   editIncome: string;
+  advancedOptions: string;
   // Money mode selector
   moneyModeTitle: string;
   modeTrackSavings: string;
@@ -338,6 +339,7 @@ const he: Translations = {
   addIncome: 'הוסף הכנסה',
   editExpense: 'עריכת הוצאה',
   editIncome: 'עריכת הכנסה',
+  advancedOptions: 'אפשרויות מתקדמות',
   // Money mode selector
   moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
@@ -567,6 +569,7 @@ const en: Translations = {
   addIncome: 'Add Income',
   editExpense: 'Edit Expense',
   editIncome: 'Edit Income',
+  advancedOptions: 'Advanced options',
   // Money mode selector
   moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',
@@ -713,8 +716,8 @@ interface LanguageContextProps {
   monthLabel: (y: number, m: number) => string;
   /** Full date label for today, e.g. "יום שישי · 13 באפריל 2026" */
   todayFullLabel: () => string;
-  /** Returns translated name for built-in categories; falls back to stored name for custom ones. */
-  catName: (catId: string, storedName: string) => string;
+  /** Returns translated name for built-in categories; uses storedName if user explicitly renamed. */
+  catName: (catId: string, storedName: string, isRenamed?: boolean) => string;
 }
 
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
@@ -784,13 +787,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
-  function catName(catId: string, storedName: string): string {
-    // Built-in category ids match translation keys directly (e.g. cat_groceries)
-    // Custom category ids contain "custom" — always use the stored name as-is
-    if (!catId.includes('custom')) {
-      const translated = (t as Record<string, unknown>)[catId];
-      if (typeof translated === 'string') return translated;
-    }
+  function catName(catId: string, storedName: string, isRenamed?: boolean): string {
+    // User explicitly renamed this category — always respect their choice
+    if (isRenamed) return storedName;
+    // Custom categories: use stored name as-is
+    if (catId.includes('custom')) return storedName;
+    // Built-in: return live translation for language-switching support
+    const translated = (t as Record<string, unknown>)[catId];
+    if (typeof translated === 'string') return translated;
     return storedName;
   }
 

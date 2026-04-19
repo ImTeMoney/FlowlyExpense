@@ -46,7 +46,7 @@ export default function CategoryPicker({ categories, value, onChange }: Props) {
             } : undefined}
           >
             <Icon size={20} color={selected ? cat.color : 'var(--text-muted)'} />
-            <span className="cat-chip-name">{catName(cat.id, cat.name)}</span>
+            <span className="cat-chip-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
           </button>
         );
       })}
