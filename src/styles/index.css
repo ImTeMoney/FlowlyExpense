@@ -544,6 +544,30 @@ input, select, textarea { font-family: inherit; color: inherit; }
   to   { opacity: 1; }
 }
 
+/* Full-screen modal variant — no bottom-sheet behaviour */
+.modal-overlay--full {
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--modal-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.modal-overlay--full .modal-sheet {
+  flex: 1;
+  max-height: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  padding-top: calc(env(safe-area-inset-top) + 16px);
+  animation: overlayIn 0.18s ease;
+  overflow-y: hidden; /* field-group scrolls; sheet itself must not */
+}
+/* field-group fills remaining height and scrolls internally */
+.modal-overlay--full .field-group {
+  margin-bottom: 0;
+  padding-bottom: 8px;
+}
+
 .modal-sheet {
   width: 100%;
   max-width: 500px;
