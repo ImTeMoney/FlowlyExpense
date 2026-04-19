@@ -2642,6 +2642,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }
+/* Amount input is bare — suppress outline, parent row handles focus indicator */
+.amount-input:focus-visible { outline: none; }
 
 /* =====================================================
    ONBOARDING OVERLAY
@@ -3335,9 +3337,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 /* Amount row focus highlight */
 .amount-row:focus-within {
-  border-color: var(--purple);
-  box-shadow: 0 0 0 2px var(--purple-dim);
-  border-radius: var(--r-sm);
+  border-bottom-color: var(--purple);
 }
 
 /* Advanced toggle button */

@@ -828,6 +828,16 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {/* Description — close to Category so merchant/item name flows naturally */}
+              <input
+                type="text"
+                className="aether-input"
+                placeholder={t.descOptional}
+                value={desc}
+                onChange={e => setDesc(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              />
+
               {/* Step: Date */}
               <input
                 type="date"
@@ -894,16 +904,6 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-
-              {/* Description */}
-              <input
-                type="text"
-                className="aether-input"
-                placeholder={t.descOptional}
-                value={desc}
-                onChange={e => setDesc(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              />
             </div>
 
             {/* Payment options — Split Payment + Installments, always visible for new expenses */}
