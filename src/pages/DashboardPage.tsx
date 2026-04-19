@@ -129,6 +129,13 @@ export default function DashboardPage() {
   // Standalone viewer triggered from the transaction list
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
 
+  // Lock body scroll when any modal is open (prevents iOS touch-drag bleed)
+  useEffect(() => {
+    const anyOpen = showModal || !!splitTx || !!confirm;
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showModal, splitTx, confirm]);
+
   // FAB hint ring — shown once after onboarding completes
   const [fabHint, setFabHint] = useState(() => !!localStorage.getItem('finio_fab_hint'));
   useEffect(() => {

@@ -533,6 +533,10 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: flex;
   align-items: flex-end;
   animation: overlayIn 0.2s ease;
+  touch-action: none;
+}
+.modal-overlay .modal-sheet {
+  touch-action: pan-y;
 }
 
 @keyframes overlayIn {
