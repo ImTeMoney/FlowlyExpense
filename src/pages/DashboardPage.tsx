@@ -366,6 +366,18 @@ export default function DashboardPage() {
         },
       });
       stagedReceiptIdRef.current = null;
+      if (isRecurring) {
+        dispatch({ type: 'ADD_RECURRING', payload: {
+          id: `rec_${Date.now()}`,
+          amount: finalAmount,
+          categoryId: isIncome ? 'cat_other' : catId,
+          dayOfMonth: parseInt(date.split('-')[2]),
+          description: baseDesc,
+          isIncome,
+          paymentMethod: payMethod,
+          lastPostedMonth: date.substring(0, 7),
+        }});
+      }
       setEditingTx(null);
       setShowModal(false);
       clearDraft();
@@ -454,6 +466,7 @@ export default function DashboardPage() {
         description: baseDesc,
         isIncome,
         paymentMethod: payMethod,
+        lastPostedMonth: date.substring(0, 7), // user just added this month manually — skip auto-post
       };
       dispatch({ type: 'ADD_RECURRING', payload: rec });
     }
