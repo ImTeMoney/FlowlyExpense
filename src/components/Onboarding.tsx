@@ -245,7 +245,7 @@ export default function Onboarding({ onDone }: Props) {
       </button>
       <div className="ob-screen" key={1}>
         <h1 className="ob-title ob-title-sm">
-          {he ? 'איך אתה מנהל כסף?' : 'What's your money style?'}
+          {he ? 'איך אתה מנהל כסף?' : "What's your money style?"}
         </h1>
         <p className="ob-sub ob-mode-intro">
           {he
@@ -370,7 +370,7 @@ export default function Onboarding({ onDone }: Props) {
       <div className="ob-screen ob-screen-visual" key={3}>
         <LaunchPreview />
         <div className="ob-visual-text">
-          <h1 className="ob-title ob-title-sm">{he ? 'הכל מוכן!' : 'You're all set!'}</h1>
+          <h1 className="ob-title ob-title-sm">{he ? 'הכל מוכן!' : "You're all set!"}</h1>
           <p className="ob-sub">
             {he
               ? 'לחץ על + כדי לרשום את ההוצאה הראשונה שלך.'
