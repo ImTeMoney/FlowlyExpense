@@ -91,6 +91,7 @@ export default function AnalyticsPage() {
       .sort((a,b) => b.total - a.total);
   }, [categories, monthTxns, prevTxns]);
 
+  const maxCat        = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
 
   // Weekly breakdown
@@ -121,8 +122,9 @@ export default function AnalyticsPage() {
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
 
   const hasData = monthTxns.length > 0;
-  const visibleCats = showAllCats ? catTotals : catTotals.slice(0, 5);
-  const hiddenCount = Math.max(0, catTotals.length - 5);
+  const CAT_LIMIT = 7;
+  const visibleCats = showAllCats ? catTotals : catTotals.slice(0, CAT_LIMIT);
+  const hiddenCount = Math.max(0, catTotals.length - CAT_LIMIT);
   const hasTrend = weeklyTotals.some(w => w.total > 0);
 
   // ── Hero: donut data ──────────────────────────────────────────────────────
@@ -185,7 +187,7 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <>
-          {/* ── Summary card: KPI list (left) + donut (right) ── */}
+          {/* ── Summary card ── */}
           <div className="an-summary-card">
             <div className="an-kpis">
               {income > 0 && (
@@ -200,8 +202,8 @@ export default function AnalyticsPage() {
               </div>
               {income > 0 && (
                 <div className="an-kpi-row">
-                  <span className="an-kpi-lbl">{lang === 'he' ? 'חיסכון' : 'Savings'}</span>
-                  <span className="an-kpi-val" style={{ color: savings >= 0 ? '#22C55E' : '#F87171' }}>
+                  <span className="an-kpi-lbl">{lang === 'he' ? 'חיסכון החודש' : 'Monthly savings'}</span>
+                  <span className="an-kpi-val" style={{ color: savings >= 0 ? '#8B5CF6' : '#F87171' }}>
                     {formatCurrency(Math.abs(savings))}
                   </span>
                 </div>
@@ -209,39 +211,52 @@ export default function AnalyticsPage() {
               <div className="an-kpi-divider" />
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'ממוצע יומי' : 'Daily avg'}</span>
-                <span className="an-kpi-val">{formatCurrency(dailyAvg)}</span>
+                <span className="an-kpi-val" style={{ fontSize: 13, fontWeight: 600 }}>{formatCurrency(dailyAvg)}</span>
               </div>
-              {isCurrentMonth && (
-                <div className="an-kpi-row">
-                  <span className="an-kpi-lbl">{lang === 'he' ? 'ימים נשאר' : 'Days left'}</span>
-                  <span className="an-kpi-val">{daysInMonth - daysPassed}</span>
-                </div>
-              )}
-              {heroRemaining && (
-                <div className="an-kpi-row" style={{ marginTop: 1 }}>
-                  <span style={{ color: heroRemainingColor, fontSize: 11, fontWeight: 500 }}>{heroRemaining}</span>
-                </div>
-              )}
             </div>
-            <SideDonut pct={heroPct} color={heroColor} />
+            <div className="an-donut-col">
+              <SideDonut pct={heroPct} color={heroColor} />
+            </div>
           </div>
+          {heroRemaining && (
+            <div className="an-card-subtitle" style={{ color: heroRemainingColor }}>
+              {`${Math.round(heroPct * 100)}% ${heroRemaining}`}
+            </div>
+          )}
 
           {/* ── Category breakdown ── */}
           {catTotals.length > 0 && (
-            <div className="an-section">
-              <div className="an-section-title">{t.byCategory}</div>
-              {visibleCats.map(({ cat, total, prevTotal }) => {
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{t.byCategory}</span>
+                <span className="an-cat-card-count">{catTotals.length} {lang === 'he' ? 'קטגוריות' : 'categories'}</span>
+              </div>
+              {visibleCats.map(({ cat, total }) => {
+                const Icon = CAT_ICON[cat.id] ?? Package;
                 const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
-                const change = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
+                const isRecurringCat = recurringExpenses.some(r => r.categoryId === cat.id && !r.isIncome);
+                const isSingleTx = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).length === 1;
                 return (
-                  <div key={cat.id} className="an-cat-row">
-                    <span className="an-cat-dot" style={{ background: cat.color }} />
-                    <span className="an-cat-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
-                    {prevTotal > 0 && change !== 0 && (
-                      <span className={`cb-change ${change > 0 ? 'up' : 'down'}`}>{change > 0 ? '+' : ''}{change}%</span>
-                    )}
-                    <span className="an-cat-amt">{formatCurrency(total)}</span>
-                    <span className="an-cat-pct">{pctOfTotal}%</span>
+                  <div key={cat.id} className="an-cb-item">
+                    <div className="an-cb-row">
+                      <div className="an-cb-name-side">
+                        <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
+                          <Icon size={17} color={cat.color} />
+                        </div>
+                        <div className="an-cb-name-group">
+                          <span className="an-cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
+                          {isRecurringCat && <span className="an-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>}
+                          {!isRecurringCat && isSingleTx && <span className="an-once-badge">{lang === 'he' ? 'חד פעמי' : 'one-time'}</span>}
+                        </div>
+                      </div>
+                      <div className="an-cb-amount-side">
+                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-pct">{pctOfTotal}%</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-bar-row">
+                      <div className="an-cb-bar-fill" style={{ width: `${(total / maxCat) * 100}%`, background: cat.color }} />
+                    </div>
                   </div>
                 );
               })}
@@ -252,7 +267,6 @@ export default function AnalyticsPage() {
                     : (lang === 'he' ? `+${hiddenCount} עוד` : `+${hiddenCount} more`)}
                 </button>
               )}
-              {/* Top category insight */}
               {totalCatSpent > 0 && (() => {
                 const top = catTotals[0];
                 const pct = Math.round((top.total / totalCatSpent) * 100);
@@ -260,7 +274,7 @@ export default function AnalyticsPage() {
                 return (
                   <div className="an-insight">
                     {lang === 'he'
-                      ? `${pct}% מההוצאות: ${catName(top.cat.id, top.cat.name, top.cat.isRenamed)}`
+                      ? `${pct}% מההוצאות הן ${catName(top.cat.id, top.cat.name, top.cat.isRenamed)}`
                       : `${pct}% of spending: ${catName(top.cat.id, top.cat.name, top.cat.isRenamed)}`}
                   </div>
                 );

@@ -3642,22 +3642,27 @@ button:focus-visible, input:focus-visible, select:focus-visible {
    ANALYTICS REDESIGN v2 — compact dashboard layout
    ===================================================== */
 
-/* Summary card: side donut + KPI list */
+/* Summary card */
 .an-summary-card {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 12px;
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  padding: 16px;
+  margin-bottom: 6px;
 }
+[data-theme="light"] .an-summary-card {
+  background: linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(59,130,246,0.05) 100%);
+}
+.an-donut-col { flex-shrink: 0; }
+
 .an-kpis {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 .an-kpi-row {
   display: flex;
@@ -3665,12 +3670,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
 }
 .an-kpi-lbl {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 .an-kpi-val {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -3678,6 +3683,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   height: 1px;
   background: var(--glass-border);
   margin: 2px 0;
+}
+/* Subtitle below summary card */
+.an-card-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 14px;
+  opacity: 0.8;
 }
 
 /* Sections: no card background, just spacing + divider */
@@ -3694,42 +3707,122 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   margin-bottom: 10px;
 }
 
-/* Compact category list */
-.an-cat-row {
+/* Category card */
+.an-cat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  padding: 14px 16px 8px;
+  margin-bottom: 12px;
+}
+.an-cat-card-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.an-cat-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.an-cat-card-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Category rows */
+.an-cb-item {
+  margin-bottom: 10px;
+}
+.an-cb-item:last-of-type { margin-bottom: 4px; }
+.an-cb-row {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  margin-bottom: 5px;
 }
-.an-cat-row:last-of-type { border-bottom: none; }
-[data-theme="light"] .an-cat-row { border-bottom-color: rgba(0,0,0,0.05); }
-.an-cat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.an-cb-name-side {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.an-cb-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
-.an-cat-name {
-  flex: 1;
-  font-size: 13px;
+.an-cb-name-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.an-cb-name {
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.an-cat-amt {
-  font-size: 13px;
-  font-weight: 600;
+.an-cb-amount-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 1px;
+}
+.an-cb-amt {
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.an-cat-pct {
+.an-cb-pct {
   font-size: 11px;
   color: var(--text-muted);
-  min-width: 30px;
-  text-align: right;
   font-variant-numeric: tabular-nums;
+}
+.an-cb-bar-row {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+[data-theme="light"] .an-cb-bar-row { background: rgba(0,0,0,0.07); }
+.an-cb-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+/* Badges */
+.an-recurring-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+  background: rgba(139,92,246,0.15);
+  color: #8B5CF6;
+  line-height: 1.6;
+}
+.an-once-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+  background: rgba(100,116,139,0.12);
+  color: var(--text-muted);
+  line-height: 1.6;
 }
 
 /* Compact weekly trend bars */
