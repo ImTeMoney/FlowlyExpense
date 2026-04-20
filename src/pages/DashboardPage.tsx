@@ -286,7 +286,9 @@ export default function DashboardPage() {
     }
     setSplitEnabled(false);
     setNumInstallments(3);
-    setIsRecurring(false);
+    setIsRecurring(!!recurringExpenses.find(r =>
+      r.description === tx.description && r.isIncome === !!tx.isIncome
+    ));
     setPasteText('');
     setShowPaste(false);
     setReceiptId(tx.receiptId);
@@ -366,7 +368,7 @@ export default function DashboardPage() {
         },
       });
       stagedReceiptIdRef.current = null;
-      if (isRecurring) {
+      if (isRecurring && !recurringExpenses.some(r => r.description === baseDesc && r.isIncome === isIncome)) {
         dispatch({ type: 'ADD_RECURRING', payload: {
           id: `rec_${Date.now()}`,
           amount: finalAmount,
@@ -456,9 +458,9 @@ export default function DashboardPage() {
         ...receiptPayload,
       }});
     }
-    // Register as recurring template if toggled
-    if (isRecurring) {
-      const rec: RecurringExpense = {
+    // Register as recurring template if toggled (skip if already registered)
+    if (isRecurring && !recurringExpenses.some(r => r.description === baseDesc && r.isIncome === isIncome)) {
+      dispatch({ type: 'ADD_RECURRING', payload: {
         id: `rec_${Date.now()}`,
         amount: finalAmount,
         categoryId: isIncome ? 'cat_other' : catId,
@@ -466,9 +468,8 @@ export default function DashboardPage() {
         description: baseDesc,
         isIncome,
         paymentMethod: payMethod,
-        lastPostedMonth: date.substring(0, 7), // user just added this month manually — skip auto-post
-      };
-      dispatch({ type: 'ADD_RECURRING', payload: rec });
+        lastPostedMonth: date.substring(0, 7),
+      }});
     }
     // Receipt is now bound to the saved tx; clear the staged ref so the
     // close handler doesn't delete it.
@@ -620,6 +621,9 @@ export default function DashboardPage() {
                   const Icon   = tx.isIncome ? TrendingUp : (CAT_ICON[tx.categoryId] ?? Package);
                   const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
                   const PmIcon = tx.paymentMethod ? PM_ICON[tx.paymentMethod] : null;
+                  const isRecurringTx = recurringExpenses.some(r =>
+                    r.description === tx.description && r.isIncome === !!tx.isIncome
+                  );
                   return (
                     <div key={tx.id} className="txn-item">
                       <div
@@ -635,6 +639,9 @@ export default function DashboardPage() {
                         <div className="txn-name">{tx.description}</div>
                         <div className="txn-meta">
                           <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed)}</span>
+                          {isRecurringTx && (
+                            <span className="txn-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>
+                          )}
                           {tx.installments && (
                             <span className="inst-badge">
                               <GitFork size={10} />
