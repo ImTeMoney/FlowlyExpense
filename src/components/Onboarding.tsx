@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
-import { TrendingUp, Wallet, Plus, ChevronRight, X } from 'lucide-react';
+import { TrendingUp, Wallet, Plus, ChevronRight, X, Check } from 'lucide-react';
 import { CURRENCY_SYMBOL } from '../services/exchangeRate';
 import type { MoneyMode } from '../context/ExpenseContext';
 
@@ -201,32 +201,40 @@ export default function Onboarding({ onDone }: Props) {
 
   // ── Step 0: Intro ─────────────────────────────────────────────────────────
 
-  if (step === 0) return (
-    <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen ob-screen-visual" key={0}>
-        <AppPreview he={he} />
-        <div className="ob-visual-text">
-          <h1 className="ob-title ob-title-sm">
-            {he ? 'ניהול כסף, בלי סיבוך' : 'Money management, made simple'}
-          </h1>
-          <p className="ob-sub">
-            {he
-              ? 'הכל נשמר אצלך. אין חשבון, אין שרת.'
-              : 'Everything stays on your device. No account, no server.'}
-          </p>
+  if (step === 0) {
+    const features = he
+      ? ['הכל נשמר אצלך — אין שרת', 'בלי הרשמה, בלי אימייל', 'עובד גם ללא אינטרנט']
+      : ['Everything stored on your device', 'No signup, no email', 'Works fully offline'];
+    return (
+      <div className="ob-overlay" dir={dir}>
+        <div className="ob-screen ob-screen-visual" key={0}>
+          <AppPreview he={he} />
+          <div className="ob-visual-text">
+            <h1 className="ob-title ob-title-sm">
+              {he ? 'הכסף שלך, ברור סוף סוף' : 'Your money. Finally clear.'}
+            </h1>
+            <ul className="ob-feature-list">
+              {features.map((f, i) => (
+                <li key={i} className="ob-feature-item">
+                  <Check size={13} strokeWidth={2.5} className="ob-feature-check" />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="ob-bottom">
+          {dots}
+          <button className="ob-btn-primary" onClick={advance}>
+            {he ? 'מתחילים' : 'Get started'} <ChevronRight size={16} />
+          </button>
+          <button className="ob-dont-show" onClick={onDone}>
+            {he ? 'דלג' : 'Skip'}
+          </button>
         </div>
       </div>
-      <div className="ob-bottom">
-        {dots}
-        <button className="ob-btn-primary" onClick={advance}>
-          {he ? 'בוא נתחיל' : "Let's go"} <ChevronRight size={16} />
-        </button>
-        <button className="ob-dont-show" onClick={onDone}>
-          {he ? 'דלג' : 'Skip'}
-        </button>
-      </div>
-    </div>
-  );
+    );
+  }
 
   // ── Step 1: Mode picker ───────────────────────────────────────────────────
 
@@ -237,23 +245,36 @@ export default function Onboarding({ onDone }: Props) {
       </button>
       <div className="ob-screen" key={1}>
         <h1 className="ob-title ob-title-sm">
-          {he ? 'איך תרצה לנהל את הכסף?' : 'How do you want to manage your money?'}
+          {he ? 'איך אתה מנהל כסף?' : 'What's your money style?'}
         </h1>
+        <p className="ob-sub ob-mode-intro">
+          {he
+            ? 'בחר את הגישה שמתאימה לך — המערכת תתאים את עצמה.'
+            : 'Pick the approach that fits you — the app adapts to match.'}
+        </p>
         <div className="ob-modes">
           {([
             {
-              id:    'savings_based' as MoneyMode,
-              icon:  <TrendingUp size={22} color="#22C55E" />,
-              bg:    'rgba(34,197,94,0.15)',
-              title: he ? 'אני רוצה לחסוך יותר'          : 'I want to save more',
-              desc:  he ? 'עוקב אחר הכנסות, הוצאות וחיסכון.' : 'Tracks income, expenses and savings.',
+              id:     'savings_based' as MoneyMode,
+              icon:   <TrendingUp size={22} color="#22C55E" />,
+              bg:     'rgba(34,197,94,0.15)',
+              accent: '#22C55E',
+              title:  he ? 'אני רוצה לחסוך יותר'         : 'I want to save more',
+              desc:   he
+                ? 'קובע יעד חיסכון חודשי. המערכת מחשבת כמה מותר לבזבז לפי ההכנסות שלך.'
+                : 'Set a monthly savings target. The app calculates your safe-to-spend from your income.',
+              tag:    he ? 'מעקב הכנסות + הוצאות + חיסכון' : 'Tracks income · expenses · savings',
             },
             {
-              id:    'budget_based' as MoneyMode,
-              icon:  <Wallet size={22} color="#F59E0B" />,
-              bg:    'rgba(245,158,11,0.15)',
-              title: he ? 'יש לי תקציב חודשי קבוע'       : 'I have a fixed monthly budget',
-              desc:  he ? 'עוקב אחר ההוצאות ביחס לתקציב.'  : 'Tracks spending against a budget.',
+              id:     'budget_based' as MoneyMode,
+              icon:   <Wallet size={22} color="#F59E0B" />,
+              bg:     'rgba(245,158,11,0.15)',
+              accent: '#F59E0B',
+              title:  he ? 'יש לי תקציב חודשי קבוע'      : 'I have a fixed monthly budget',
+              desc:   he
+                ? 'קובע כמה מותר לבזבז החודש. מקבל התראה לפני חריגה — ללא מעקב הכנסות.'
+                : 'Set how much you want to spend. Get warned before overspending — no income tracking.',
+              tag:    he ? 'מעקב הוצאות מול תקציב בלבד'   : 'Tracks spending against your cap',
             },
           ] as const).map(m => (
             <button
@@ -265,6 +286,7 @@ export default function Onboarding({ onDone }: Props) {
               <div className="ob-mode-text">
                 <div className="ob-mode-title">{m.title}</div>
                 <div className="ob-mode-desc">{m.desc}</div>
+                <div className="ob-mode-tag" style={{ color: m.accent }}>{m.tag}</div>
               </div>
               <ChevronRight size={14} className="ob-mode-chevron" />
             </button>
@@ -283,11 +305,15 @@ export default function Onboarding({ onDone }: Props) {
   if (step === 2) {
     const isSavings = selectedMode !== 'budget_based';
     const question  = he
-      ? (isSavings ? 'כמה אני רוצה לחסוך בחודש?' : 'מה התקציב החודשי שלי?')
-      : (isSavings ? 'How much do I want to save per month?' : "What's my monthly budget?");
-    const hint = he
-      ? (isSavings ? 'Finio יחשב אם הגעת ליעד.' : 'Finio יתריע כשתתקרב לגבול.')
-      : (isSavings ? 'Finio will track whether you hit your goal.' : 'Finio will warn you when you approach the limit.');
+      ? (isSavings ? 'כמה אתה רוצה לחסוך בחודש?' : 'מה התקציב החודשי שלך?')
+      : (isSavings ? 'How much do you want to save per month?' : "What's your monthly budget?");
+    const explain = he
+      ? (isSavings
+          ? 'Finio יחסיר את היעד מהכנסותיך ויציג כמה מותר לבזבז החודש.'
+          : 'Finio יציג כמה נשאר מהתקציב ויתריע לפני שחורגים.')
+      : (isSavings
+          ? 'Finio subtracts this from your income to show how much you can safely spend each month.'
+          : 'Finio shows remaining budget and warns you before you overspend.');
 
     return (
       <div className="ob-overlay" dir={dir}>
@@ -316,7 +342,12 @@ export default function Onboarding({ onDone }: Props) {
                 ? `לדוגמה: ${currencySymbol}${isSavings ? '5,000' : '10,000'}`
                 : `e.g. ${currencySymbol}${isSavings ? '5,000' : '10,000'}`}
             </p>
-            <p className="ob-goal-hint">{hint}</p>
+            <div className="ob-goal-explain" dir={dir}>
+              <span className="ob-goal-explain-label">
+                {he ? 'איך זה עובד?' : 'How this works'}
+              </span>
+              <span className="ob-goal-explain-text">{explain}</span>
+            </div>
           </div>
         </div>
         <div className="ob-bottom">
@@ -339,7 +370,7 @@ export default function Onboarding({ onDone }: Props) {
       <div className="ob-screen ob-screen-visual" key={3}>
         <LaunchPreview />
         <div className="ob-visual-text">
-          <h1 className="ob-title ob-title-sm">{he ? '!הכל מוכן' : 'All set!'}</h1>
+          <h1 className="ob-title ob-title-sm">{he ? 'הכל מוכן!' : 'You're all set!'}</h1>
           <p className="ob-sub">
             {he
               ? 'לחץ על + כדי לרשום את ההוצאה הראשונה שלך.'
