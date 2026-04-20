@@ -269,7 +269,11 @@ export default function DashboardPage() {
   function openEditModal(tx: Transaction) {
     setEditingTx(tx);
     setIsIncome(!!tx.isIncome);
-    setAmount(String(tx.originalAmount ?? tx.amount));
+    // For installment txs, show the full amount (per-installment × total) in the field
+    const fullAmt = tx.installments
+      ? Math.round(tx.amount * tx.installments.total * 100) / 100
+      : (tx.originalAmount ?? tx.amount);
+    setAmount(String(fullAmt));
     setDesc(tx.description);
     setDate(tx.date);
     setCatId(tx.categoryId);
@@ -284,8 +288,8 @@ export default function DashboardPage() {
       setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
       setPayMethod(tx.paymentMethod ?? 'credit');
     }
-    setSplitEnabled(false);
-    setNumInstallments(3);
+    setSplitEnabled(!!tx.installments);
+    setNumInstallments(tx.installments?.total ?? 3);
     setIsRecurring(!!recurringExpenses.find(r =>
       r.description === tx.description && r.isIncome === !!tx.isIncome
     ));
@@ -353,19 +357,33 @@ export default function DashboardPage() {
         pmPayload = { paymentSplits: splits };
       }
       const receiptPayload = receiptId ? { receiptId, receipt: receiptMeta } : {};
+      // When installments are kept on, preserve the original per-installment amount and
+      // installments metadata. When turned off, strip installments and use the full amount.
+      const keepInstallments = splitEnabled && !!editingTx.installments;
+      const { installments: _inst, ...editingTxBase } = editingTx;
       dispatch({
         type: 'UPDATE_TRANSACTION',
-        payload: {
-          ...editingTx,
-          amount: finalAmount,
-          categoryId: catId,
-          date,
-          description: baseDesc,
-          isIncome,
-          ...pmPayload,
-          ...txCurrencyMeta,
-          ...receiptPayload,
-        },
+        payload: keepInstallments
+          ? {
+              ...editingTx,
+              categoryId: catId,
+              date,
+              description: baseDesc,
+              isIncome,
+              ...pmPayload,
+              ...receiptPayload,
+            }
+          : {
+              ...editingTxBase,
+              amount: finalAmount,
+              categoryId: catId,
+              date,
+              description: baseDesc,
+              isIncome,
+              ...pmPayload,
+              ...txCurrencyMeta,
+              ...receiptPayload,
+            },
       });
       stagedReceiptIdRef.current = null;
       if (isRecurring && !recurringExpenses.some(r => r.description === baseDesc && r.isIncome === isIncome)) {
