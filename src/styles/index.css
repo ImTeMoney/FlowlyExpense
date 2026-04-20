@@ -2944,6 +2944,66 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   margin: 4px 0 0;
 }
 
+/* Intro feature list */
+.ob-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.ob-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.ob-feature-check {
+  color: #22C55E;
+  flex-shrink: 0;
+}
+
+/* Mode intro sub */
+.ob-mode-intro {
+  margin: -2px 0 14px;
+}
+
+/* Mode card tag line */
+.ob-mode-tag {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 7px;
+  letter-spacing: 0.01em;
+}
+
+/* Goal explain block */
+.ob-goal-explain {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: start;
+}
+.ob-goal-explain-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.ob-goal-explain-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 /* Launch screen FAB icon */
 @keyframes ob-launch-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
