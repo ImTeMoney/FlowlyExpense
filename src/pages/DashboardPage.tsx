@@ -286,6 +286,7 @@ export default function DashboardPage() {
     }
     setSplitEnabled(false);
     setNumInstallments(3);
+    setIsRecurring(false);
     setPasteText('');
     setShowPaste(false);
     setReceiptId(tx.receiptId);
@@ -676,16 +677,14 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      {!tx.installments && (
-                        <button
-                          className="txn-del txn-edit-btn"
-                          onClick={() => openEditModal(tx)}
-                          aria-label={tx.isIncome ? t.editIncome : t.editExpense}
-                          title={tx.isIncome ? t.editIncome : t.editExpense}
-                        >
-                          <Pencil size={13} />
-                        </button>
-                      )}
+                      <button
+                        className="txn-del txn-edit-btn"
+                        onClick={() => openEditModal(tx)}
+                        aria-label={tx.isIncome ? t.editIncome : t.editExpense}
+                        title={tx.isIncome ? t.editIncome : t.editExpense}
+                      >
+                        <Pencil size={13} />
+                      </button>
                       {!tx.isIncome && !tx.installments && (
                         <button
                           className="txn-del txn-split-btn"
@@ -927,7 +926,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Recurring income toggle */}
-              {isIncome && !editingTx && (
+              {isIncome && (
                 <div className={`adv-card adv-card--green${isRecurring ? ' adv-card-active' : ''}`}>
                   <button
                     className="adv-card-header"
@@ -953,7 +952,7 @@ export default function DashboardPage() {
               )}
 
               {/* Payment options — inside field-group so they scroll with content */}
-              {!isIncome && !editingTx && (
+              {!isIncome && (
               <div className="payment-opts-section">
                 <div className="payment-opts-label">{t.paymentOptions}</div>
 
