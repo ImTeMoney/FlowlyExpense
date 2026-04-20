@@ -929,15 +929,17 @@ input, select, textarea { font-family: inherit; color: inherit; }
   position: fixed;
   bottom: calc(72px + env(safe-area-inset-bottom) + 10px);
   left: 50%; transform: translateX(-50%);
-  background: var(--bg-raised);
-  border: 1px solid var(--purple);
+  background: rgba(12,14,30,0.88);
+  border: 1px solid rgba(139,92,246,0.4);
   border-radius: var(--r-md);
   padding: 10px 20px;
   font-size: 13px; font-weight: 600;
   color: #C4B5FD;
   z-index: 300;
   white-space: nowrap;
-  box-shadow: 0 0 16px var(--purple-glow);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--glass-inset-sm), 0 0 20px var(--purple-glow);
   animation: toastIn 0.2s ease;
   pointer-events: none;
 }
@@ -992,12 +994,15 @@ input, select, textarea { font-family: inherit; color: inherit; }
   animation: overlayIn 0.15s ease;
 }
 .mpicker-card {
-  background: var(--modal-bg);
+  background: rgba(10,13,26,0.92);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   padding: 20px;
   width: min(300px, 88vw);
   animation: confirmPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--glass-inset), 0 20px 60px rgba(0,0,0,0.5);
 }
 .mpicker-year-nav {
   display: flex; align-items: center; justify-content: space-between;
@@ -1096,6 +1101,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--glass-inset), 0 4px 20px rgba(0,0,0,0.2);
 }
 .grow-hero-card::before {
   content: '';
@@ -1292,6 +1300,9 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   padding: 20px;
   margin-bottom: 12px;
   position: relative; overflow: hidden;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--glass-inset), 0 4px 20px rgba(0,0,0,0.2);
 }
 .bcard::before {
   content: '';
@@ -2561,6 +2572,9 @@ select.sm-in option { background: var(--modal-bg); }
   border-radius: var(--r-xl);
   padding: 24px 20px 20px;
   animation: confirmPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--glass-inset), 0 20px 60px rgba(0,0,0,0.5);
 }
 
 @keyframes confirmPop {
@@ -2830,6 +2844,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 14px;
   padding: 16px;
   text-align: start;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--glass-inset-sm);
 }
 
 .ob-mode-btn {
@@ -2939,7 +2956,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 /* Goal input screen */
-.ob-screen-goal { justify-content: center; gap: 24px; }
+.ob-screen-goal { justify-content: center; gap: 24px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .ob-title-sm { font-size: 20px; }
 .ob-goal-wrap {
   display: flex;
@@ -3037,6 +3054,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex-direction: column;
   gap: 4px;
   text-align: start;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .ob-goal-explain-label {
   font-size: 10px;
@@ -3546,6 +3565,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-sm);
   overflow: hidden;
   transition: border-color 0.15s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--glass-inset-sm);
 }
 .adv-card.adv-card-active {
   border-color: var(--purple);
@@ -3771,6 +3793,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-md);
   padding: 16px;
   margin-bottom: 6px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--glass-inset), 0 2px 12px rgba(0,0,0,0.2);
 }
 [data-theme="light"] .an-summary-card {
   background: linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(59,130,246,0.05) 100%);
@@ -3833,6 +3858,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-md);
   padding: 14px 16px 8px;
   margin-bottom: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--glass-inset), 0 2px 12px rgba(0,0,0,0.2);
 }
 .an-cat-card-header {
   display: flex;
