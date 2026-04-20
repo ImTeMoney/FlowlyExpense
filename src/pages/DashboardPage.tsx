@@ -379,6 +379,9 @@ export default function DashboardPage() {
           paymentMethod: payMethod,
           lastPostedMonth: date.substring(0, 7),
         }});
+      } else if (!isRecurring) {
+        const existing = recurringExpenses.find(r => r.description === baseDesc && r.isIncome === isIncome);
+        if (existing) dispatch({ type: 'DELETE_RECURRING', payload: existing.id });
       }
       setEditingTx(null);
       setShowModal(false);
