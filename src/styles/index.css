@@ -19,21 +19,21 @@
 
   --bg:           #0D0228;
   --bg-raised:    #130636;
-  --bg-card:      rgba(255, 255, 255, 0.09);
+  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%);
   --bg-input:     rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.22);
-  --glass-hi:     rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-hi:     rgba(255, 255, 255, 0.40);
   --text:         #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted:   #64748B;
-  --text-dim:     #334155;
-  --nav-bg:       rgba(10, 2, 32, 0.52);
-  --header-bg:    rgba(8, 1, 28, 0.48);
-  --modal-bg:     rgba(12, 3, 38, 0.86);
+  --text-secondary: #CBD5E1;
+  --text-muted:   #94A3B8;
+  --text-dim:     #475569;
+  --nav-bg:       rgba(10, 2, 32, 0.45);
+  --header-bg:    rgba(8, 1, 28, 0.40);
+  --modal-bg:     rgba(12, 3, 38, 0.82);
   --scrollbar:    rgba(255,255,255,0.07);
-  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(0,0,0,0.10);
-  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.28);
-  --glass-shadow: 0 2px 12px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2);
+  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.58), inset 0 -1px 0 rgba(0,0,0,0.12);
+  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.40);
+  --glass-shadow: 0 4px 24px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.15);
   --bg-primary:     var(--bg);
   --glass-bg:       var(--bg-card);
 
@@ -47,47 +47,62 @@
 [data-theme="light"] {
   --bg:           #BDB0E4;
   --bg-raised:    #CAC0EE;
-  --bg-card:      rgba(255, 255, 255, 0.42);
-  --bg-input:     rgba(255, 255, 255, 0.62);
-  --glass-border: rgba(255, 255, 255, 0.68);
-  --glass-hi:     rgba(255, 255, 255, 0.92);
+  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.38) 100%);
+  --bg-input:     rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-hi:     rgba(255, 255, 255, 0.95);
   --text:         #150A30;
-  --text-secondary: #3D2E6B;
-  --text-muted:   #6B5E9A;
-  --text-dim:     #9A90C0;
-  --nav-bg:       rgba(155, 140, 205, 0.50);
-  --header-bg:    rgba(150, 135, 200, 0.48);
-  --modal-bg:     rgba(180, 165, 225, 0.88);
+  --text-secondary: #2D1E60;
+  --text-muted:   #5A4A88;
+  --text-dim:     #8878B8;
+  --nav-bg:       rgba(145, 128, 196, 0.45);
+  --header-bg:    rgba(138, 122, 190, 0.42);
+  --modal-bg:     rgba(168, 152, 215, 0.85);
   --scrollbar:    rgba(0,0,0,0.10);
-  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(80,40,160,0.08);
-  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.85);
+  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(80,40,160,0.10);
+  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.90);
 }
 
-[data-theme="light"] body {
-  background:
-    radial-gradient(ellipse 130% 70% at -5% -15%, rgba(140,70,255,0.55) 0%, transparent 48%),
-    radial-gradient(ellipse 100% 80% at 108% 110%, rgba(70,110,255,0.40) 0%, transparent 48%),
-    radial-gradient(ellipse 70% 55% at 52% 55%, rgba(255,100,180,0.22) 0%, transparent 55%),
-    var(--bg);
-}
+/* background now on html::before (fixed layer) */
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  height: 100%;
+}
+
+/* Fixed gradient layer — stays in place during scroll, glass composites against this */
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle 900px at -8% -12%, rgba(130,50,255,0.90) 0%, transparent 52%),
+    radial-gradient(circle 750px at 112% 115%, rgba(55,85,255,0.70) 0%, transparent 52%),
+    radial-gradient(circle 550px at 55% 62%, rgba(210,55,200,0.28) 0%, transparent 55%),
+    #0D0228;
+  z-index: -1;
+  pointer-events: none;
+}
+html[data-theme="light"]::before {
+  background:
+    radial-gradient(circle 800px at -8% -12%, rgba(140,65,255,0.62) 0%, transparent 50%),
+    radial-gradient(circle 700px at 112% 112%, rgba(65,105,255,0.48) 0%, transparent 50%),
+    radial-gradient(circle 500px at 55% 60%, rgba(255,90,170,0.26) 0%, transparent 55%),
+    #BDB0E4;
+}
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
-  background:
-    radial-gradient(ellipse 150% 80% at -5% -15%, rgba(130,50,255,0.78) 0%, transparent 48%),
-    radial-gradient(ellipse 100% 90% at 108% 112%, rgba(60,90,255,0.58) 0%, transparent 48%),
-    radial-gradient(ellipse 85% 65% at 55% 65%, rgba(210,60,200,0.22) 0%, transparent 55%),
-    var(--bg);
+  background: transparent;
   color: var(--text);
-  min-height: 100vh;
+  min-height: 100%;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.3s, color 0.3s;
+  transition: color 0.3s;
 }
 
 #root { min-height: 100vh; }
@@ -117,20 +132,6 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 
 @media (min-width: 501px) {
-  body {
-    background:
-      radial-gradient(ellipse 150% 80% at -5% -15%, rgba(130,50,255,0.78) 0%, transparent 48%),
-      radial-gradient(ellipse 100% 90% at 108% 112%, rgba(60,90,255,0.58) 0%, transparent 48%),
-      radial-gradient(ellipse 85% 65% at 55% 65%, rgba(210,60,200,0.22) 0%, transparent 55%),
-      #0D0228;
-  }
-  [data-theme="light"] body {
-    background:
-      radial-gradient(ellipse 130% 70% at -5% -15%, rgba(140,70,255,0.55) 0%, transparent 48%),
-      radial-gradient(ellipse 100% 80% at 108% 110%, rgba(70,110,255,0.40) 0%, transparent 48%),
-      radial-gradient(ellipse 70% 55% at 52% 55%, rgba(255,100,180,0.22) 0%, transparent 55%),
-      #BDB0E4;
-  }
   .app-container {
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.10),
@@ -157,8 +158,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   width: 100%;
   max-width: 500px;
   background: var(--nav-bg);
-  backdrop-filter: blur(40px) saturate(280%);
-  -webkit-backdrop-filter: blur(40px) saturate(280%);
+  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
   border-top: 1px solid var(--glass-border);
   box-shadow: 0 -1px 0 rgba(255,255,255,0.1), 0 -8px 32px rgba(0,0,0,0.28);
   display: flex;
@@ -195,8 +196,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   top: 0;
   z-index: 50;
   background: var(--header-bg);
-  backdrop-filter: blur(40px) saturate(280%);
-  -webkit-backdrop-filter: blur(40px) saturate(280%);
+  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.15);
   padding: calc(env(safe-area-inset-top) + 14px) 16px 16px;
@@ -250,8 +251,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: var(--text-muted);
   flex-shrink: 0;
   box-shadow: var(--glass-inset-sm);
-  backdrop-filter: blur(14px) saturate(240%);
-  -webkit-backdrop-filter: blur(14px) saturate(240%);
+  backdrop-filter: blur(16px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(280%) brightness(110%);
 }
 
 .icon-btn:hover {
@@ -280,8 +281,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 8px;
   border: 1px solid var(--glass-border);
   background: var(--bg-card);
-  backdrop-filter: blur(16px) saturate(260%);
-  -webkit-backdrop-filter: blur(16px) saturate(260%);
+  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
   box-shadow: var(--glass-inset-sm), 0 2px 8px rgba(0,0,0,0.15);
 }
 .smart-status-card.good    { border-color: rgba(34,197,94,0.22);  background: rgba(34,197,94,0.05); }
@@ -320,8 +321,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 12px 14px;
   margin-bottom: 8px;
   display: flex; gap: 12px; align-items: flex-start;
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
   box-shadow: var(--glass-inset-sm);
 }
 .insight-card.spike_week,
@@ -497,8 +498,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   text-align: center;
   transition: border-color 0.2s;
   box-shadow: var(--glass-inset-sm);
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
 }
 
 .stat-chip-lbl {
@@ -629,8 +630,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(40px) saturate(260%);
-  -webkit-backdrop-filter: blur(40px) saturate(260%);
+  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
   box-shadow: var(--glass-inset), 0 -8px 40px rgba(0,0,0,0.4);
 }
 
@@ -814,8 +815,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 6px;
   transition: background 0.15s, border-color 0.15s;
   box-shadow: var(--glass-inset-sm), 0 1px 4px rgba(0,0,0,0.15);
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
 }
 .txn-item:hover { background: var(--bg-input); border-color: var(--glass-hi); }
 
@@ -939,8 +940,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: #C4B5FD;
   z-index: 300;
   white-space: nowrap;
-  backdrop-filter: blur(20px) saturate(260%);
-  -webkit-backdrop-filter: blur(20px) saturate(260%);
+  backdrop-filter: blur(20px) saturate(300%) brightness(112%);
+  -webkit-backdrop-filter: blur(20px) saturate(300%) brightness(112%);
   box-shadow: var(--glass-inset-sm), 0 0 20px var(--purple-glow);
   animation: toastIn 0.2s ease;
   pointer-events: none;
@@ -989,8 +990,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .mpicker-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(14px) saturate(240%);
-  -webkit-backdrop-filter: blur(14px) saturate(240%);
+  backdrop-filter: blur(16px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(280%) brightness(110%);
   z-index: 300;
   display: flex; align-items: center; justify-content: center;
   animation: overlayIn 0.15s ease;
@@ -1002,8 +1003,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 20px;
   width: min(300px, 88vw);
   animation: confirmPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  backdrop-filter: blur(24px) saturate(260%);
-  -webkit-backdrop-filter: blur(24px) saturate(260%);
+  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
   box-shadow: var(--glass-inset), 0 20px 60px rgba(0,0,0,0.5);
 }
 .mpicker-year-nav {
@@ -1103,8 +1104,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(16px) saturate(260%);
-  -webkit-backdrop-filter: blur(16px) saturate(260%);
+  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
   box-shadow: var(--glass-inset), 0 4px 20px rgba(0,0,0,0.2);
 }
 .grow-hero-card::before {
@@ -1302,8 +1303,8 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   padding: 20px;
   margin-bottom: 12px;
   position: relative; overflow: hidden;
-  backdrop-filter: blur(16px) saturate(260%);
-  -webkit-backdrop-filter: blur(16px) saturate(260%);
+  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
   box-shadow: var(--glass-inset), 0 4px 20px rgba(0,0,0,0.2);
 }
 .bcard::before {
@@ -1411,8 +1412,8 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   border-radius: var(--r-lg);
   padding: 18px;
   margin-bottom: 12px;
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
 }
 .a-sec-title {
   font-size: 13px; font-weight: 700;
@@ -2556,8 +2557,8 @@ select.sm-in option { background: var(--modal-bg); }
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(14px) saturate(240%);
-  -webkit-backdrop-filter: blur(14px) saturate(240%);
+  backdrop-filter: blur(16px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(280%) brightness(110%);
   z-index: 250;
   display: flex;
   align-items: center;
@@ -2574,8 +2575,8 @@ select.sm-in option { background: var(--modal-bg); }
   border-radius: var(--r-xl);
   padding: 24px 20px 20px;
   animation: confirmPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  backdrop-filter: blur(24px) saturate(260%);
-  -webkit-backdrop-filter: blur(24px) saturate(260%);
+  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
   box-shadow: var(--glass-inset), 0 20px 60px rgba(0,0,0,0.5);
 }
 
@@ -2846,8 +2847,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 14px;
   padding: 16px;
   text-align: start;
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
   box-shadow: var(--glass-inset-sm);
 }
 
@@ -2958,7 +2959,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 /* Goal input screen */
-.ob-screen-goal { justify-content: center; gap: 24px; backdrop-filter: blur(12px) saturate(240%); -webkit-backdrop-filter: blur(12px) saturate(240%); }
+.ob-screen-goal { justify-content: center; gap: 24px; backdrop-filter: blur(14px) saturate(280%) brightness(110%); -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%); }
 .ob-title-sm { font-size: 20px; }
 .ob-goal-wrap {
   display: flex;
@@ -3056,8 +3057,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex-direction: column;
   gap: 4px;
   text-align: start;
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
 }
 .ob-goal-explain-label {
   font-size: 10px;
@@ -3567,8 +3568,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-sm);
   overflow: hidden;
   transition: border-color 0.15s;
-  backdrop-filter: blur(12px) saturate(240%);
-  -webkit-backdrop-filter: blur(12px) saturate(240%);
+  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
   box-shadow: var(--glass-inset-sm);
 }
 .adv-card.adv-card-active {
@@ -3795,8 +3796,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-md);
   padding: 16px;
   margin-bottom: 6px;
-  backdrop-filter: blur(16px) saturate(260%);
-  -webkit-backdrop-filter: blur(16px) saturate(260%);
+  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
   box-shadow: var(--glass-inset), 0 2px 12px rgba(0,0,0,0.2);
 }
 [data-theme="light"] .an-summary-card {
@@ -3860,8 +3861,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-md);
   padding: 14px 16px 8px;
   margin-bottom: 12px;
-  backdrop-filter: blur(16px) saturate(260%);
-  -webkit-backdrop-filter: blur(16px) saturate(260%);
+  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
   box-shadow: var(--glass-inset), 0 2px 12px rgba(0,0,0,0.2);
 }
 .an-cat-card-header {
