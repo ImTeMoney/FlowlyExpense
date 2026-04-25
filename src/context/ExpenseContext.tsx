@@ -116,7 +116,8 @@ type Action =
   | { type: 'SET_MONEY_MODE';            payload: MoneyMode }
   | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] }   // append imported rows
   | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } }
-  | { type: 'UPDATE_TRANSACTION';        payload: Transaction };
+  | { type: 'UPDATE_TRANSACTION';        payload: Transaction }
+  | { type: 'REORDER_CATEGORIES';        payload: Category[] };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -418,6 +419,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
             : c
           )
         );
+        break;
+
+      case 'REORDER_CATEGORIES':
+        setCategories(action.payload);
         break;
 
       case 'UPDATE_LAST_POSTED':

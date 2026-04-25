@@ -4,8 +4,49 @@ import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transactio
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// ── Sortable wrapper for a category row ──────────────────────────────────────
+function SortableCatItem({ id, children }: { id: string; children: (handle: React.ReactNode) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.45 : 1,
+  };
+  const handle = (
+    <span
+      {...attributes}
+      {...listeners}
+      style={{ touchAction: 'none', cursor: 'grab', display: 'flex', alignItems: 'center', color: 'var(--text-dim)', padding: '0 4px 0 0', flexShrink: 0 }}
+      aria-label="drag to reorder"
+    >
+      <GripVertical size={17} />
+    </span>
+  );
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children(handle)}
+    </div>
+  );
+}
 
 const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
@@ -13,6 +54,21 @@ const SettingsPage: React.FC = () => {
   const [theme, toggleTheme] = useTheme();
 
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
+
+  // DnD sensors (pointer for desktop, touch for mobile)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+
+  function handleCatDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = categories.findIndex(c => c.id === active.id);
+    const newIndex = categories.findIndex(c => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    dispatch({ type: 'REORDER_CATEGORIES', payload: arrayMove(categories, oldIndex, newIndex) });
+  }
 
   // Toast feedback
   const [toast, setToast] = useState('');
@@ -504,73 +560,80 @@ const SettingsPage: React.FC = () => {
           </span>
         </div>
 
-        {state.categories.map(cat => (
-          <div key={cat.id} className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
-            {editingId === cat.id ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
-                <input
-                  autoFocus
-                  className="set-input"
-                  value={editingName}
-                  onChange={e => setEditingName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditingId(null); }}
-                  style={{ width: '100%', textAlign: 'right' }}
-                />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {CATEGORY_COLORS.map(c => (
-                    <button key={c} type="button" onClick={() => setEditingColor(c)}
-                      style={{
-                        width: 22, height: 22, borderRadius: '50%', background: c,
-                        border: 'none', cursor: 'pointer', flexShrink: 0,
-                        boxShadow: editingColor === c ? `0 0 0 2px var(--bg-primary), 0 0 0 4px ${c}` : 'none',
-                        transition: 'box-shadow 0.15s',
-                      }}
-                    />
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
-                  {/* Delete — available in edit mode only */}
-                  <button
-                    onClick={() => setConfirm({
-                      title: t.confirmDeleteCatTitle,
-                      body: <strong>"{editingName}"</strong>,
-                      onConfirm: () => {
-                        dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
-                        setEditingId(null);
-                        setConfirm(null);
-                      },
-                    })}
-                    style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}
-                  >
-                    <Trash2 size={12} /> {t.deleteLabel}
-                  </button>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setEditingId(null)}
-                      style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                      <X size={12} /> {t.cancel}
-                    </button>
-                    <button onClick={commitEdit}
-                      style={{ background: 'var(--purple)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                      <Check size={12} /> {t.save}
-                    </button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCatDragEnd}>
+          <SortableContext items={state.categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            {state.categories.map(cat => (
+              <SortableCatItem key={cat.id} id={cat.id}>
+                {handle => (
+                  <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
+                    {editingId === cat.id ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+                        <input
+                          autoFocus
+                          className="set-input"
+                          value={editingName}
+                          onChange={e => setEditingName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditingId(null); }}
+                          style={{ width: '100%', textAlign: 'right' }}
+                        />
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {CATEGORY_COLORS.map(c => (
+                            <button key={c} type="button" onClick={() => setEditingColor(c)}
+                              style={{
+                                width: 22, height: 22, borderRadius: '50%', background: c,
+                                border: 'none', cursor: 'pointer', flexShrink: 0,
+                                boxShadow: editingColor === c ? `0 0 0 2px var(--bg-primary), 0 0 0 4px ${c}` : 'none',
+                                transition: 'box-shadow 0.15s',
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
+                          <button
+                            onClick={() => setConfirm({
+                              title: t.confirmDeleteCatTitle,
+                              body: <strong>"{editingName}"</strong>,
+                              onConfirm: () => {
+                                dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
+                                setEditingId(null);
+                                setConfirm(null);
+                              },
+                            })}
+                            style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}
+                          >
+                            <Trash2 size={12} /> {t.deleteLabel}
+                          </button>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => setEditingId(null)}
+                              style={{ background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                              <X size={12} /> {t.cancel}
+                            </button>
+                            <button onClick={commitEdit}
+                              style={{ background: 'var(--purple)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                              <Check size={12} /> {t.save}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startEdit(cat.id, catName(cat.id, cat.name, cat.isRenamed), cat.color)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', textAlign: 'start' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {handle}
+                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                          <span className="set-lbl">{catName(cat.id, cat.name, cat.isRenamed)}</span>
+                        </div>
+                        <ChevronRight size={14} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
+                      </button>
+                    )}
                   </div>
-                </div>
-              </div>
-            ) : (
-              /* Tap whole row to enter edit mode */
-              <button
-                onClick={() => startEdit(cat.id, catName(cat.id, cat.name, cat.isRenamed), cat.color)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', textAlign: 'start' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-                  <span className="set-lbl">{catName(cat.id, cat.name, cat.isRenamed)}</span>
-                </div>
-                <ChevronRight size={14} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
-              </button>
-            )}
-          </div>
-        ))}
+                )}
+              </SortableCatItem>
+            ))}
+          </SortableContext>
+        </DndContext>
 
         <form onSubmit={handleAddCategory} style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <input
