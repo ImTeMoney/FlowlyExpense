@@ -17,6 +17,7 @@ export default defineConfig({
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
       workbox: {
         clientsClaim: true,
+        skipWaiting: true,
       },
       manifest: {
         name: 'Flowly',
