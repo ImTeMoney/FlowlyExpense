@@ -247,7 +247,7 @@ export interface Translations {
 }
 
 const he: Translations = {
-  appName: 'Finio',
+  appName: 'Flowly',
   commandCenter: 'מרכז פיקוד',
   budget: 'תקציב',
   spent: 'הוצאות',
@@ -263,7 +263,7 @@ const he: Translations = {
   noExpenses: 'אין עדיין הוצאות — נתחיל?',
   noExpensesHint: 'לחץ + כדי להוסיף הוצאה ראשונה',
   noExpensesCta: 'הוסף הוצאה ראשונה',
-  welcomeBanner: 'ברוך הבא ל-Finio! הוסף את ההוצאה הראשונה שלך כדי להתחיל.',
+  welcomeBanner: 'ברוך הבא ל-Flowly! הוסף את ההוצאה הראשונה שלך כדי להתחיל.',
   goToSettings: 'עבור להגדרות',
   of: 'מתוך',
   cat_groceries: 'קניות (סופר)',
@@ -478,7 +478,7 @@ const he: Translations = {
 };
 
 const en: Translations = {
-  appName: 'Finio',
+  appName: 'Flowly',
   commandCenter: 'Command Center',
   budget: 'Budget',
   spent: 'Spent',
@@ -494,7 +494,7 @@ const en: Translations = {
   noExpenses: 'No expenses yet — shall we start?',
   noExpensesHint: 'Tap + to add your first expense',
   noExpensesCta: 'Add your first expense',
-  welcomeBanner: 'Welcome to Finio! Add your first expense to get started.',
+  welcomeBanner: 'Welcome to Flowly! Add your first expense to get started.',
   goToSettings: 'Go to Settings',
   of: 'of',
   cat_groceries: 'Groceries',

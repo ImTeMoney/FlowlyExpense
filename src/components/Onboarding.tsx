@@ -67,7 +67,7 @@ function AppPreview({ he }: { he: boolean }) {
     <div className="ob-app-preview" dir={he ? 'rtl' : 'ltr'}>
       {/* Header bar */}
       <div className="ob-pv-topbar">
-        <span className="ob-pv-brand">Finio</span>
+        <span className="ob-pv-brand">Flowly</span>
         <span className="ob-pv-month">{he ? 'אפריל 2026' : 'Apr 2026'}</span>
       </div>
       {/* Stats row */}
@@ -309,11 +309,11 @@ export default function Onboarding({ onDone }: Props) {
       : (isSavings ? 'How much do you want to save per month?' : "What's your monthly budget?");
     const explain = he
       ? (isSavings
-          ? 'Finio יחסיר את היעד מהכנסותיך ויציג כמה מותר לבזבז החודש.'
-          : 'Finio יציג כמה נשאר מהתקציב ויתריע לפני שחורגים.')
+          ? 'Flowly יחסיר את היעד מהכנסותיך ויציג כמה מותר לבזבז החודש.'
+          : 'Flowly יציג כמה נשאר מהתקציב ויתריע לפני שחורגים.')
       : (isSavings
-          ? 'Finio subtracts this from your income to show how much you can safely spend each month.'
-          : 'Finio shows remaining budget and warns you before you overspend.');
+          ? 'Flowly subtracts this from your income to show how much you can safely spend each month.'
+          : 'Flowly shows remaining budget and warns you before you overspend.');
 
     return (
       <div className="ob-overlay" dir={dir}>
