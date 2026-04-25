@@ -7,10 +7,10 @@ import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
 
-// ── Side donut with % inside ──────────────────────────────────────────────────
+// ── Side donut with % inside + small context label ───────────────────────────
 
-function SideDonut({ pct, color }: { pct: number; color: string }) {
-  const size = 76, stroke = 9;
+function SideDonut({ pct, color, sublabel }: { pct: number; color: string; sublabel?: string }) {
+  const size = 80, stroke = 9;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const off = c * (1 - Math.max(0, Math.min(1, pct)));
@@ -19,7 +19,7 @@ function SideDonut({ pct, color }: { pct: number; color: string }) {
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
         <circle cx={size/2} cy={size/2} r={r} fill="none"
-          stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+          stroke="rgba(128,128,128,0.12)" strokeWidth={stroke} />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color}
           strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={`${c} ${c}`} strokeDashoffset={off}
@@ -27,12 +27,17 @@ function SideDonut({ pct, color }: { pct: number; color: string }) {
       </svg>
       <div style={{
         position: 'absolute', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        pointerEvents: 'none',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        pointerEvents: 'none', gap: 1,
       }}>
         <span style={{ fontSize: 14, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
           {label}
         </span>
+        {sublabel && (
+          <span style={{ fontSize: 9, fontWeight: 600, color, opacity: 0.65, lineHeight: 1, letterSpacing: '0.02em' }}>
+            {sublabel}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -128,29 +133,45 @@ export default function AnalyticsPage() {
   const hasTrend = weeklyTotals.some(w => w.total > 0);
 
   // ── Hero: donut data ──────────────────────────────────────────────────────
+  // Both modes use the same visual metaphor: ring fills as spending increases.
+  // Green = healthy, orange = caution, red = danger.
   const { moneyMode } = state;
-  let heroPct: number, heroColor: string;
+  let heroPct: number, heroColor: string, heroSublabel: string;
   let heroRemaining: string, heroRemainingColor: string;
 
   if (moneyMode === 'budget_based') {
     const budget    = monthlyBudget;
     const remaining = budget - spent;
-    heroPct            = budget > 0 ? Math.min(spent / budget, 1) : 0;
-    heroColor          = heroPct > 0.9 ? '#EF4444' : heroPct > 0.7 ? '#F59E0B' : '#8B5CF6';
-    heroRemaining      = budget > 0
-      ? remaining >= 0
-        ? (lang === 'he' ? `נשאר ${formatCurrency(remaining)}` : `${formatCurrency(remaining)} remaining`)
-        : (lang === 'he' ? `חרגת ב־${formatCurrency(Math.abs(remaining))}` : `Over by ${formatCurrency(Math.abs(remaining))}`)
-      : '';
-    heroRemainingColor = budget > 0 ? (remaining >= 0 ? '#22C55E' : '#EF4444') : 'var(--text-secondary)';
+    const overBudget = remaining < 0;
+    heroPct       = budget > 0 ? Math.min(spent / budget, 1) : 0;
+    heroColor     = heroPct >= 1 ? '#EF4444' : heroPct > 0.75 ? '#F59E0B' : '#22C55E';
+    heroSublabel  = lang === 'he' ? 'מהתקציב' : 'of budget';
+    heroRemaining = budget > 0
+      ? (overBudget
+          ? (lang === 'he' ? `חרגת ב־${formatCurrency(Math.abs(remaining))}` : `Over by ${formatCurrency(Math.abs(remaining))}`)
+          : (lang === 'he' ? `נשאר ${formatCurrency(remaining)} מהתקציב` : `${formatCurrency(remaining)} left in budget`))
+      : (lang === 'he' ? 'לא הוגדר תקציב' : 'no budget set');
+    heroRemainingColor = budget > 0 ? (overBudget ? '#EF4444' : '#22C55E') : 'var(--text-secondary)';
   } else {
-    const goal = savingsGoal;
-    heroPct            = goal > 0 ? Math.min(Math.max(0, savings / goal), 1) : (savings > 0 ? 0.5 : 0);
-    heroColor          = savings >= 0 ? (heroPct >= 1 ? '#22C55E' : '#8B5CF6') : '#EF4444';
-    heroRemaining      = savings >= 0
-      ? (lang === 'he' ? 'חסכת החודש' : 'saved this month')
-      : (lang === 'he' ? 'הוצאות עולות על הכנסות' : 'spending exceeds income');
-    heroRemainingColor = savings >= 0 ? '#22C55E' : '#EF4444';
+    // Savings mode: show burn rate (spent / income) — universally clear regardless of savings goal
+    const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
+    heroPct       = Math.min(Math.max(0, burnRate), 1);
+    heroColor     = burnRate >= 1 ? '#EF4444' : burnRate > 0.85 ? '#F59E0B' : '#22C55E';
+    heroSublabel  = lang === 'he' ? 'מההכנסות' : 'of income';
+    if (!income) {
+      heroRemaining      = lang === 'he' ? 'לא נרשמו הכנסות' : 'no income recorded';
+      heroRemainingColor = 'var(--text-muted)';
+    } else if (savings >= 0) {
+      heroRemaining      = lang === 'he'
+        ? `חסכת ${formatCurrency(savings)} החודש`
+        : `Saved ${formatCurrency(savings)} this month`;
+      heroRemainingColor = '#22C55E';
+    } else {
+      heroRemaining      = lang === 'he'
+        ? `גירעון של ${formatCurrency(Math.abs(savings))}`
+        : `Deficit of ${formatCurrency(Math.abs(savings))}`;
+      heroRemainingColor = '#EF4444';
+    }
   }
 
   const pmLabel = (pm: string) => (t as any)[`pm_${pm}`] ?? pm;
@@ -203,7 +224,7 @@ export default function AnalyticsPage() {
               {income > 0 && (
                 <div className="an-kpi-row">
                   <span className="an-kpi-lbl">{lang === 'he' ? 'חיסכון החודש' : 'Monthly savings'}</span>
-                  <span className="an-kpi-val" style={{ color: savings >= 0 ? '#8B5CF6' : '#F87171' }}>
+                  <span className="an-kpi-val" style={{ color: savings >= 0 ? '#22C55E' : '#F87171' }}>
                     {formatCurrency(Math.abs(savings))}
                   </span>
                 </div>
@@ -215,12 +236,12 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="an-donut-col">
-              <SideDonut pct={heroPct} color={heroColor} />
+              <SideDonut pct={heroPct} color={heroColor} sublabel={heroSublabel} />
             </div>
           </div>
           {heroRemaining && (
             <div className="an-card-subtitle" style={{ color: heroRemainingColor }}>
-              {`${Math.round(heroPct * 100)}% ${heroRemaining}`}
+              {heroRemaining}
             </div>
           )}
 
