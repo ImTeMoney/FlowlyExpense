@@ -148,6 +148,61 @@ const SettingsPage: React.FC = () => {
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
   const [newCatColor, setNewCatColor] = useState(CATEGORY_COLORS[4]);
 
+  // Full JSON backup/restore
+  const backupInputRef = useRef<HTMLInputElement>(null);
+
+  const BACKUP_STORAGE_KEYS = [
+    'expense_transactions',
+    'expense_recurring',
+    'expense_budget',
+    'expense_savings_goal',
+    'expense_categories_v2',
+    'expense_device_id',
+    'expense_main_currency',
+    'expense_money_mode',
+  ];
+
+  function exportBackup() {
+    const data: Record<string, unknown> = { _version: 1, _exportedAt: new Date().toISOString() };
+    for (const key of BACKUP_STORAGE_KEYS) {
+      const val = localStorage.getItem(key);
+      if (val !== null) {
+        try { data[key] = JSON.parse(val); } catch { data[key] = val; }
+      }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const d = new Date().toISOString().slice(0, 10);
+    a.download = `flowly_backup_${d}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function handleBackupFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (backupInputRef.current) backupInputRef.current.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string) as Record<string, unknown>;
+        if (!parsed._version) throw new Error('not a backup');
+        for (const key of BACKUP_STORAGE_KEYS) {
+          if (key in parsed) {
+            localStorage.setItem(key, JSON.stringify(parsed[key]));
+          }
+        }
+        showToast(t.backupImportSuccess);
+        setTimeout(() => window.location.reload(), 800);
+      } catch {
+        showToast(t.backupImportError);
+      }
+    };
+    reader.onerror = () => showToast(t.backupImportError);
+    reader.readAsText(file, 'utf-8');
+  }
+
   // CSV import
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -554,6 +609,24 @@ const SettingsPage: React.FC = () => {
         <div className="a-sec-title">
           <span className="title-text">{t.toolsTitle}</span>
         </div>
+        {/* Full JSON backup */}
+        <button className="export-btn primary" onClick={exportBackup} style={{ background: 'rgba(0,113,227,0.12)', borderColor: 'rgba(0,113,227,0.3)', color: 'var(--purple)' }}>
+          <Download size={13} />
+          {t.backupExport}
+        </button>
+        <input
+          ref={backupInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleBackupFileChange}
+        />
+        <button className="export-btn" onClick={() => backupInputRef.current?.click()} style={{ marginTop: 6 }}>
+          <Upload size={13} />
+          {t.backupImport}
+        </button>
+        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center', marginBottom: 10 }}>{t.backupImportNote}</p>
+
         <button
           className="export-btn"
           onClick={exportCSV}

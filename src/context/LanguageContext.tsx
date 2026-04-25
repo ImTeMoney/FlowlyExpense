@@ -244,6 +244,12 @@ export interface Translations {
   ocrFailed: string;
   ocrNoData: string;
   ocrNoKey: string;
+  // Full backup
+  backupExport: string;
+  backupImport: string;
+  backupImportNote: string;
+  backupImportSuccess: string;
+  backupImportError: string;
 }
 
 const he: Translations = {
@@ -475,6 +481,11 @@ const he: Translations = {
   ocrFailed:           'זיהוי אוטומטי נכשל — ניתן למלא ידנית',
   ocrNoData:           'לא זוהו נתונים — ניתן למלא ידנית',
   ocrNoKey:            'זיהוי אוטומטי לא מוגדר — מלא ידנית',
+  backupExport:        'גיבוי מלא (JSON)',
+  backupImport:        'שחזור מגיבוי (JSON)',
+  backupImportNote:    'משחזר את כל הנתונים — עסקאות, קטגוריות והגדרות',
+  backupImportSuccess: 'הנתונים שוחזרו בהצלחה',
+  backupImportError:   'קובץ גיבוי לא תקין',
 };
 
 const en: Translations = {
@@ -706,6 +717,11 @@ const en: Translations = {
   ocrFailed:           'Auto-detection failed — fill in manually.',
   ocrNoData:           'No data detected — fill in manually.',
   ocrNoKey:            'Auto-detection not configured — fill in manually.',
+  backupExport:        'Full Backup (JSON)',
+  backupImport:        'Restore from Backup (JSON)',
+  backupImportNote:    'Restores all data — transactions, categories and settings',
+  backupImportSuccess: 'Data restored successfully',
+  backupImportError:   'Invalid backup file',
 };
 
 interface LanguageContextProps {
