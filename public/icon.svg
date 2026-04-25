@@ -1,5 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="110" fill="#7c3aed"/>
-  <text x="256" y="340" font-family="Arial, sans-serif" font-size="300" font-weight="bold"
-        text-anchor="middle" fill="white">₪</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4DB8FF"/>
+      <stop offset="50%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#0047CC"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.20)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Gloss top highlight -->
+  <rect x="0" y="0" width="512" height="200" rx="112" fill="url(#shine)"/>
+
+  <!-- Three flowing parallel streams (inflow / main flow / outflow) -->
+  <!-- Top stream — thin, subtle -->
+  <path d="M 68 210 C 158 210 182 162 256 162 C 330 162 354 210 444 210"
+        stroke="white" stroke-width="28" stroke-linecap="round" fill="none" opacity="0.38"/>
+
+  <!-- Middle stream — main, bold -->
+  <path d="M 68 270 C 158 270 182 214 256 214 C 330 214 354 270 444 270"
+        stroke="white" stroke-width="48" stroke-linecap="round" fill="none" opacity="0.95"/>
+
+  <!-- Bottom stream — medium -->
+  <path d="M 68 338 C 158 338 182 294 256 294 C 330 294 354 338 444 338"
+        stroke="white" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.52"/>
+
+  <!-- Arrow chevron on right of main stream — suggests forward flow -->
+  <polyline points="416,246 444,270 416,294"
+            stroke="white" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.95"/>
 </svg>

@@ -556,7 +556,7 @@ export default function DashboardPage() {
       <div className="aether-header">
         <div className="header-row">
           <div>
-            <div className="header-brand">Finio</div>
+            <div className="header-brand">Flowly</div>
             <div className="header-month">{todayFullLabel()}</div>
           </div>
           <div className="header-actions">
