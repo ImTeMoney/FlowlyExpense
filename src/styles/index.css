@@ -21,21 +21,21 @@
   /* Dark mode: deep cool navy — calm, not purple-black */
   --bg:           #1C2035;
   --bg-raised:    #232840;
-  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.05) 100%);
+  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.05) 100%);
   --bg-input:     rgba(255, 255, 255, 0.09);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-hi:     rgba(255, 255, 255, 0.22);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-hi:     rgba(255, 255, 255, 0.26);
   --text:         #FFFFFF;
   --text-secondary: rgba(235,235,245,0.72);
   --text-muted:   rgba(235,235,245,0.48);
   --text-dim:     rgba(235,235,245,0.26);
-  --nav-bg:       rgba(26, 30, 50, 0.60);
-  --header-bg:    rgba(24, 28, 46, 0.55);
-  --modal-bg:     rgba(28, 32, 52, 0.90);
+  --nav-bg:       rgba(22, 26, 46, 0.68);
+  --header-bg:    rgba(20, 24, 44, 0.62);
+  --modal-bg:     rgba(24, 28, 50, 0.92);
   --scrollbar:    rgba(255,255,255,0.08);
-  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(0,0,0,0.10);
-  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.14);
-  --glass-shadow: 0 4px 24px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.12);
+  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(0,0,0,0.12);
+  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.18);
+  --glass-shadow: 0 4px 20px rgba(0,0,0,0.28), 0 1px 4px rgba(0,0,0,0.14);
   --bg-primary:   var(--bg);
   --glass-bg:     var(--bg-card);
 
@@ -59,24 +59,25 @@
   --success:     #34C759;
   --success-dim: rgba(52,199,89,0.10);
 
-  /* Light mode: clean almost-white, very subtle cool tint */
-  --bg:           #EEF3FF;
+  /* Light mode: translucent glass over soft blue-lavender base */
+  --bg:           #E8F0FF;
   --bg-raised:    #FFFFFF;
-  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.60) 100%);
-  --bg-input:     rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(255, 255, 255, 0.88);
-  --glass-hi:     rgba(255, 255, 255, 0.98);
+  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.42) 100%);
+  --bg-input:     rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-hi:     rgba(255, 255, 255, 0.95);
   /* Apple text hierarchy */
   --text:         #1C1C1E;
   --text-secondary: #48484A;
   --text-muted:   #8E8E93;
   --text-dim:     #AEAEB2;
-  --nav-bg:       rgba(235, 240, 255, 0.65);
-  --header-bg:    rgba(232, 237, 252, 0.62);
-  --modal-bg:     rgba(242, 246, 255, 0.94);
+  --nav-bg:       rgba(220, 232, 255, 0.68);
+  --header-bg:    rgba(218, 230, 255, 0.65);
+  --modal-bg:     rgba(235, 244, 255, 0.92);
   --scrollbar:    rgba(0,0,0,0.08);
-  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(0,0,0,0.04);
-  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.92);
+  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,1.0), inset 0 -1px 0 rgba(0,0,0,0.04);
+  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.95);
+  --glass-shadow: 0 8px 32px rgba(120,160,230,0.18), 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* background now on html::before (fixed layer) */
@@ -105,12 +106,14 @@ html::before {
   pointer-events: none;
 }
 html[data-theme="light"]::before {
-  /* Light: almost white with soft sky-blue glow at top — like iOS wallpaper */
+  /* Light: iOS 26 — layered blue/teal/lavender blobs over soft base */
   background:
-    radial-gradient(ellipse 130% 55% at 50% -8%,  rgba(160,200,255,0.50) 0%, transparent 55%),
-    radial-gradient(ellipse 80%  45% at 0%  95%,  rgba(140,180,255,0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 60%  40% at 100% 80%,  rgba(180,210,255,0.18) 0%, transparent 55%),
-    #EEF3FF;
+    radial-gradient(ellipse 140% 60% at 50% -10%, rgba(140,190,255,0.60) 0%, transparent 52%),
+    radial-gradient(ellipse 70%  55% at 0%   90%, rgba(120,170,255,0.32) 0%, transparent 58%),
+    radial-gradient(ellipse 60%  45% at 100% 75%, rgba(160,200,255,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse 50%  40% at 75%  45%, rgba(190,215,255,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 45%  35% at 25%  55%, rgba(180,210,240,0.14) 0%, transparent 60%),
+    #E8F0FF;
 }
 
 body {
@@ -146,7 +149,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .app-main {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 501px) {
@@ -170,20 +173,30 @@ input, select, textarea { font-family: inherit; color: inherit; }
    ===================================================== */
 .bottom-nav {
   position: fixed;
-  bottom: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 500px;
+  width: calc(100% - 32px);
+  max-width: 468px;
   background: var(--nav-bg);
-  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  border-top: 1px solid var(--glass-border);
-  box-shadow: 0 -1px 0 rgba(255,255,255,0.1), 0 -8px 32px rgba(0,0,0,0.28);
+  backdrop-filter: blur(40px) saturate(220%) brightness(114%);
+  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(114%);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,0.55),
+    0 8px 32px rgba(0,0,0,0.18),
+    0 2px 8px rgba(0,0,0,0.10);
   display: flex;
-  height: calc(64px + env(safe-area-inset-bottom));
-  padding: 0 24px env(safe-area-inset-bottom);
+  height: 64px;
+  padding: 0 16px;
   z-index: 100;
+}
+[data-theme="light"] .bottom-nav {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,0.95),
+    0 8px 32px rgba(100,140,220,0.20),
+    0 2px 8px rgba(0,0,0,0.07);
 }
 
 .nav-tab {
@@ -214,8 +227,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   top: 0;
   z-index: 50;
   background: var(--header-bg);
-  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.15);
   padding: calc(env(safe-area-inset-top) + 14px) 16px 16px;
@@ -298,9 +311,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 8px;
   border: 1px solid var(--glass-border);
   background: var(--bg-card);
-  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  box-shadow: var(--glass-inset-sm), 0 2px 8px rgba(0,0,0,0.15);
+  backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  box-shadow: var(--glass-inset-sm), var(--glass-shadow);
 }
 .smart-status-card.good    { border-color: rgba(34,197,94,0.22);  background: rgba(34,197,94,0.05); }
 .smart-status-card.caution { border-color: rgba(245,158,11,0.22); background: rgba(245,158,11,0.05); }
@@ -338,8 +351,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 12px 14px;
   margin-bottom: 8px;
   display: flex; gap: 12px; align-items: flex-start;
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
   box-shadow: var(--glass-inset-sm);
 }
 .insight-card.spike_week,
@@ -514,9 +527,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 12px 8px;
   text-align: center;
   transition: border-color 0.2s;
-  box-shadow: var(--glass-inset-sm);
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  box-shadow: var(--glass-inset-sm), var(--glass-shadow);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
 }
 
 .stat-chip-lbl {
@@ -546,34 +559,36 @@ input, select, textarea { font-family: inherit; color: inherit; }
    ===================================================== */
 .fab {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom) + 78px);
+  /* float above dock: safe-area + dock-bottom(12) + dock-height(64) + gap(14) */
+  bottom: calc(env(safe-area-inset-bottom) + 90px);
   left: 50%;
   margin-left: -27px;
   width: 54px;
   height: 54px;
   border-radius: var(--r-full);
-  /* Glass capsule — light tint with Apple blue icon */
-  background: linear-gradient(145deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.15) 100%);
-  backdrop-filter: blur(20px) saturate(180%) brightness(108%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(108%);
-  border: 1px solid rgba(255,255,255,0.45);
+  /* Glass bubble: neutral glass with blue icon */
+  background: linear-gradient(145deg, rgba(255,255,255,0.35) 0%, rgba(200,220,255,0.18) 100%);
+  backdrop-filter: blur(32px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(110%);
+  border: 1px solid rgba(255,255,255,0.55);
   color: var(--purple);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 101;
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.65),
-    0 6px 24px rgba(0,0,0,0.14),
+    inset 0 1.5px 0 rgba(255,255,255,0.75),
+    0 8px 28px rgba(0,0,0,0.16),
     0 2px 8px rgba(0,0,0,0.10);
   transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s;
 }
 [data-theme="light"] .fab {
   color: #0071E3;
-  background: linear-gradient(145deg, rgba(255,255,255,0.88) 0%, rgba(235,243,255,0.72) 100%);
+  background: linear-gradient(145deg, rgba(255,255,255,0.80) 0%, rgba(210,232,255,0.60) 100%);
+  border: 1px solid rgba(255,255,255,0.88);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.98),
-    0 6px 28px rgba(0,113,227,0.14),
+    inset 0 1.5px 0 rgba(255,255,255,1.0),
+    0 8px 32px rgba(0,113,227,0.20),
     0 2px 8px rgba(0,0,0,0.08);
 }
 
@@ -665,8 +680,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
   box-shadow: var(--glass-inset), 0 -8px 40px rgba(0,0,0,0.4);
 }
 
@@ -849,9 +864,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   border-radius: var(--r-md);
   margin-bottom: 6px;
   transition: background 0.15s, border-color 0.15s;
-  box-shadow: var(--glass-inset-sm), 0 1px 4px rgba(0,0,0,0.15);
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  box-shadow: var(--glass-inset-sm), var(--glass-shadow);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
 }
 .txn-item:hover { background: var(--bg-input); border-color: var(--glass-hi); }
 
@@ -975,8 +990,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: var(--text);
   z-index: 300;
   white-space: nowrap;
-  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
   box-shadow: var(--glass-inset-sm), 0 4px 20px rgba(0,0,0,0.18);
   animation: toastIn 0.2s ease;
   pointer-events: none;
@@ -1038,8 +1053,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   padding: 20px;
   width: min(300px, 88vw);
   animation: confirmPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
   box-shadow: var(--glass-inset), 0 20px 60px rgba(0,0,0,0.5);
 }
 .mpicker-year-nav {
@@ -1139,8 +1154,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(108%);
   box-shadow: var(--glass-inset), 0 4px 20px rgba(0,0,0,0.2);
 }
 .grow-hero-card::before {
@@ -1338,8 +1353,8 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   padding: 20px;
   margin-bottom: 12px;
   position: relative; overflow: hidden;
-  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
+  backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(108%);
   box-shadow: var(--glass-inset), 0 4px 20px rgba(0,0,0,0.2);
 }
 .bcard::before {
@@ -1447,8 +1462,9 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   border-radius: var(--r-lg);
   padding: 18px;
   margin-bottom: 12px;
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  box-shadow: var(--glass-inset-sm), var(--glass-shadow);
 }
 .a-sec-title {
   font-size: 13px; font-weight: 700;
@@ -2610,8 +2626,8 @@ select.sm-in option { background: var(--modal-bg); }
   border-radius: var(--r-xl);
   padding: 24px 20px 20px;
   animation: confirmPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  backdrop-filter: blur(24px) saturate(300%) brightness(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(300%) brightness(112%);
+  backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
   box-shadow: var(--glass-inset), 0 20px 60px rgba(0,0,0,0.5);
 }
 
@@ -2882,8 +2898,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: 14px;
   padding: 16px;
   text-align: start;
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
   box-shadow: var(--glass-inset-sm);
 }
 
@@ -3092,8 +3108,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex-direction: column;
   gap: 4px;
   text-align: start;
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
 }
 .ob-goal-explain-label {
   font-size: 10px;
@@ -3603,8 +3619,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-sm);
   overflow: hidden;
   transition: border-color 0.15s;
-  backdrop-filter: blur(14px) saturate(280%) brightness(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(280%) brightness(110%);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
   box-shadow: var(--glass-inset-sm);
 }
 .adv-card.adv-card-active {
@@ -3831,12 +3847,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-md);
   padding: 16px;
   margin-bottom: 6px;
-  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  box-shadow: var(--glass-inset), 0 2px 12px rgba(0,0,0,0.2);
+  backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  box-shadow: var(--glass-inset), var(--glass-shadow);
 }
 [data-theme="light"] .an-summary-card {
-  background: linear-gradient(135deg, rgba(10,132,255,0.07) 0%, rgba(59,130,246,0.05) 100%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(210,232,255,0.45) 100%);
 }
 .an-donut-col { flex-shrink: 0; }
 
@@ -3896,9 +3912,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-radius: var(--r-md);
   padding: 14px 16px 8px;
   margin-bottom: 12px;
-  backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  -webkit-backdrop-filter: blur(18px) saturate(290%) brightness(111%);
-  box-shadow: var(--glass-inset), 0 2px 12px rgba(0,0,0,0.2);
+  backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(108%);
+  box-shadow: var(--glass-inset), var(--glass-shadow);
 }
 .an-cat-card-header {
   display: flex;
