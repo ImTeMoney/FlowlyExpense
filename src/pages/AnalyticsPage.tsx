@@ -214,18 +214,26 @@ export default function AnalyticsPage() {
               {income > 0 && (
                 <div className="an-kpi-row">
                   <span className="an-kpi-lbl">{t.income}</span>
-                  <span className="an-kpi-val" style={{ color: '#22C55E' }}>{formatCurrency(income)}</span>
+                  <span className="an-kpi-val" style={{ color: '#30D158' }}>{formatCurrency(income)}</span>
                 </div>
               )}
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'הוצאות' : 'Expenses'}</span>
-                <span className="an-kpi-val" style={{ color: '#F87171' }}>{formatCurrency(spent)}</span>
+                <span className="an-kpi-val" style={{ color: '#FF453A' }}>{formatCurrency(spent)}</span>
               </div>
               {income > 0 && (
                 <div className="an-kpi-row">
-                  <span className="an-kpi-lbl">{lang === 'he' ? 'חיסכון החודש' : 'Monthly savings'}</span>
-                  <span className="an-kpi-val" style={{ color: savings >= 0 ? '#22C55E' : '#F87171' }}>
-                    {formatCurrency(Math.abs(savings))}
+                  <span className="an-kpi-lbl">
+                    {savings >= 0
+                      ? (lang === 'he' ? 'חיסכון החודש' : 'Saved this month')
+                      : (lang === 'he' ? 'גירעון החודש' : 'Deficit this month')}
+                  </span>
+                  <span className="an-kpi-val" style={{
+                    color: savings >= 0 ? '#30D158' : '#FF9F0A',
+                  }}>
+                    {savings >= 0
+                      ? formatCurrency(savings)
+                      : `−${formatCurrency(Math.abs(savings))}`}
                   </span>
                 </div>
               )}
