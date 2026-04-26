@@ -4,7 +4,7 @@ import { useLang } from '../context/LanguageContext';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type InsightType = 'spike_week' | 'spike_cat' | 'opportunity' | 'all_clear' | 'over_budget';
+export type InsightType = 'spike_week' | 'spike_cat' | 'opportunity' | 'all_clear' | 'over_budget' | 'repeat_merchant' | 'cat_dominance' | 'saving_tip';
 export type InsightIcon = 'zap' | 'piggy' | 'check' | 'alert';
 export type Urgency     = 'good' | 'caution' | 'warning' | 'neutral';
 
@@ -154,6 +154,9 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     // Nothing to analyse yet
     if (monthTxns.length === 0) return { statusCard, insights };
 
+    const expenseTxns = monthTxns.filter(tx => !tx.isIncome);
+    const totalSpent  = spent; // alias
+
     // ── 1. Week-over-week spike ───────────────────────────────────────────────
     const dayOfWeek      = now.getDay(); // 0 = Sun
     const startThisWeek  = new Date(now); startThisWeek.setDate(now.getDate() - dayOfWeek); startThisWeek.setHours(0,0,0,0);
@@ -180,11 +183,47 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       });
     }
 
-    // ── 2. Category spike vs last month ──────────────────────────────────────
+    // ── 2. Repeat merchant (same description ≥ 2 times) ──────────────────────
+    if (insights.length < 2) {
+      const descMap = new Map<string, { total: number; count: number }>();
+      for (const tx of expenseTxns) {
+        const key = tx.description.trim().toLowerCase();
+        if (!key) continue;
+        const prev = descMap.get(key) ?? { total: 0, count: 0 };
+        descMap.set(key, { total: prev.total + tx.amount, count: prev.count + 1 });
+      }
+      let topDesc = '', topEntry = { total: 0, count: 0 };
+      for (const [desc, entry] of descMap.entries()) {
+        if (entry.count >= 2 && entry.total > topEntry.total) {
+          topDesc = desc;
+          topEntry = entry;
+        }
+      }
+      // Find original casing
+      const origDesc = expenseTxns.find(tx => tx.description.trim().toLowerCase() === topDesc)?.description.trim() ?? topDesc;
+      if (topDesc && topEntry.total > 100) {
+        insights.push({
+          id:    'repeat_merchant',
+          type:  'repeat_merchant',
+          icon:  'zap',
+          line1: iHe
+            ? `קנית ב"${origDesc}" ${topEntry.count} פעמים החודש`
+            : `"${origDesc}" — ${topEntry.count} purchases this month`,
+          line2: iHe
+            ? `סה״כ ${formatCurrency(Math.round(topEntry.total))} (${formatCurrency(Math.round(topEntry.total / topEntry.count))} ממוצע לקנייה)`
+            : `Total ${formatCurrency(Math.round(topEntry.total))} · avg ${formatCurrency(Math.round(topEntry.total / topEntry.count))}/purchase`,
+          line3: iHe
+            ? 'שקול לאחד קניות כדי לקבל עסקאות טובות יותר'
+            : 'Consider consolidating purchases for better deals',
+        });
+      }
+    }
+
+    // ── 3. Category spike vs last month ──────────────────────────────────────
     if (insights.length < 2 && lmSpent > 0) {
       const thisByCat = new Map<string, number>();
       const lastByCat = new Map<string, number>();
-      monthTxns.filter(tx => !tx.isIncome).forEach(tx => thisByCat.set(tx.categoryId, (thisByCat.get(tx.categoryId) ?? 0) + tx.amount));
+      expenseTxns.forEach(tx => thisByCat.set(tx.categoryId, (thisByCat.get(tx.categoryId) ?? 0) + tx.amount));
       lastMoTxns.filter(tx => !tx.isIncome).forEach(tx => lastByCat.set(tx.categoryId, (lastByCat.get(tx.categoryId) ?? 0) + tx.amount));
 
       let topCatId = '', topRatio = 0, topDelta = 0;
@@ -205,14 +244,70 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
           icon:  'zap',
           line1: iHe ? `${resolvedCatName} — יותר מהחודש שעבר` : `${resolvedCatName} up vs last month`,
           line2: iHe
-            ? `כ־${formatCurrency(Math.round(topDelta))} יותר מהחודש שעבר`
-            : `About ${formatCurrency(Math.round(topDelta))} more than last month`,
+            ? `כ־${formatCurrency(Math.round(topDelta))} יותר — עלייה של ${Math.round((topRatio - 1) * 100)}%`
+            : `About ${formatCurrency(Math.round(topDelta))} more — ${Math.round((topRatio - 1) * 100)}% increase`,
           line3: iHe ? 'זה הגורם העיקרי לשינוי החודש' : 'That\'s the main driver of change this month',
         });
       }
     }
 
-    // ── 3. Surplus opportunity ────────────────────────────────────────────────
+    // ── 4. Category dominance (>40% of total spend) ───────────────────────────
+    if (insights.length < 2 && totalSpent > 200) {
+      const byCat = new Map<string, number>();
+      expenseTxns.forEach(tx => byCat.set(tx.categoryId, (byCat.get(tx.categoryId) ?? 0) + tx.amount));
+      let domCatId = '', domAmt = 0;
+      for (const [catId, amt] of byCat.entries()) {
+        if (amt > domAmt) { domAmt = amt; domCatId = catId; }
+      }
+      const domPct = totalSpent > 0 ? domAmt / totalSpent : 0;
+      if (domCatId && domPct >= 0.38) {
+        const cat = categories.find(c => c.id === domCatId);
+        const resolvedCatName = catName(domCatId, cat?.name ?? domCatId, cat?.isRenamed);
+        insights.push({
+          id:    'cat_dominance',
+          type:  'cat_dominance',
+          icon:  'alert',
+          line1: iHe
+            ? `${resolvedCatName} = ${Math.round(domPct * 100)}% מסך ההוצאות החודש`
+            : `${resolvedCatName} is ${Math.round(domPct * 100)}% of total spending`,
+          line2: iHe
+            ? `${formatCurrency(Math.round(domAmt))} מתוך ${formatCurrency(Math.round(totalSpent))} סה״כ`
+            : `${formatCurrency(Math.round(domAmt))} out of ${formatCurrency(Math.round(totalSpent))} total`,
+          line3: iHe
+            ? `פיזור הוצאות יותר מאוזן יעזור לשמור על יציבות`
+            : `More balanced spending helps maintain stability`,
+        });
+      }
+    }
+
+    // ── 5. Saving tip — if in deficit, name the top category to cut ──────────
+    if (insights.length < 2 && income > 0 && spent > income) {
+      const deficit = spent - income;
+      const byCat = new Map<string, number>();
+      expenseTxns.forEach(tx => byCat.set(tx.categoryId, (byCat.get(tx.categoryId) ?? 0) + tx.amount));
+      let topCatId = '', topAmt = 0;
+      for (const [catId, amt] of byCat.entries()) {
+        if (amt > topAmt) { topAmt = amt; topCatId = catId; }
+      }
+      if (topCatId) {
+        const cat = categories.find(c => c.id === topCatId);
+        const resolvedCatName = catName(topCatId, cat?.name ?? topCatId, cat?.isRenamed);
+        const cutNeeded = Math.round(deficit);
+        const cutPct    = topAmt > 0 ? Math.round((cutNeeded / topAmt) * 100) : 0;
+        insights.push({
+          id:    'saving_tip',
+          type:  'saving_tip',
+          icon:  'piggy',
+          line1: iHe ? `כדי לאזן: הפחת ${formatCurrency(cutNeeded)} מ${resolvedCatName}` : `To break even: cut ${formatCurrency(cutNeeded)} from ${resolvedCatName}`,
+          line2: iHe
+            ? `זה ${cutPct}% פחות מהסכום שהוצאת שם החודש`
+            : `That's a ${cutPct}% reduction in ${resolvedCatName} spending`,
+          line3: iHe ? 'אפילו חלק מזה ישפר משמעותית את הגירעון' : 'Even a partial cut will meaningfully reduce the deficit',
+        });
+      }
+    }
+
+    // ── 6. Surplus opportunity ────────────────────────────────────────────────
     if (insights.length < 2 && income > 0 && income > spent) {
       const surplus         = income - spent;
       const projectedSpend  = todayDay > 0 ? spent * (totalDays / todayDay) : spent;
@@ -233,7 +328,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       }
     }
 
-    // ── 4. All clear ─────────────────────────────────────────────────────────
+    // ── 7. All clear ─────────────────────────────────────────────────────────
     if (insights.length === 0) {
       insights.push({
         id:    'all_clear',
