@@ -130,11 +130,31 @@ export default function DashboardPage() {
   // Standalone viewer triggered from the transaction list
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
 
-  // Lock body scroll when any modal is open (prevents iOS touch-drag bleed)
+  // Lock body scroll when any modal is open.
+  // On iOS, overflow:hidden alone doesn't stop rubber-band bounce on fixed elements.
+  // position:fixed + saved scroll-top is the reliable cross-browser fix.
   useEffect(() => {
     const anyOpen = showModal || !!splitTx || !!confirm;
-    document.body.style.overflow = anyOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (anyOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflowY = 'scroll';
+    } else {
+      const top = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+      if (top) window.scrollTo(0, -parseInt(top, 10));
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+    };
   }, [showModal, splitTx, confirm]);
 
   // FAB hint ring — shown once after onboarding completes
