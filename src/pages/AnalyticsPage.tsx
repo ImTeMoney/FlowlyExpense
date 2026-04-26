@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp } from 'lucide-react';
-import { useExpense, RecurringExpense } from '../context/ExpenseContext';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check } from 'lucide-react';
+import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
@@ -123,6 +123,40 @@ export default function AnalyticsPage() {
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
   const [splitRec, setSplitRec] = useState<RecurringExpense | null>(null);
   const [splitRecN, setSplitRecN] = useState(12);
+  const [editRec, setEditRec] = useState<RecurringExpense | null>(null);
+  const [editRecDesc, setEditRecDesc] = useState('');
+  const [editRecAmount, setEditRecAmount] = useState('');
+  const [editRecDay, setEditRecDay] = useState('');
+  const [editRecCat, setEditRecCat] = useState('');
+  const [editRecPm, setEditRecPm] = useState<PaymentMethod | ''>('');
+
+  function openEditRec(r: RecurringExpense) {
+    setEditRec(r);
+    setEditRecDesc(r.description);
+    setEditRecAmount(String(r.amount));
+    setEditRecDay(String(r.dayOfMonth));
+    setEditRecCat(r.categoryId);
+    setEditRecPm(r.paymentMethod ?? '');
+  }
+
+  function saveEditRec() {
+    if (!editRec) return;
+    const amt = parseFloat(editRecAmount);
+    const day = parseInt(editRecDay);
+    if (!editRecDesc.trim() || isNaN(amt) || amt <= 0 || isNaN(day) || day < 1 || day > 28) return;
+    dispatch({
+      type: 'UPDATE_RECURRING',
+      payload: {
+        ...editRec,
+        description: editRecDesc.trim(),
+        amount: amt,
+        dayOfMonth: day,
+        categoryId: editRecCat,
+        paymentMethod: (editRecPm || undefined) as PaymentMethod | undefined,
+      },
+    });
+    setEditRec(null);
+  }
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
 
@@ -388,6 +422,14 @@ export default function AnalyticsPage() {
                       )}
                       <button
                         className="rec-del"
+                        onClick={() => openEditRec(r)}
+                        aria-label="Edit"
+                        style={{ color: 'var(--purple)' }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        className="rec-del"
                         onClick={() => setConfirm({
                           title: t.confirmDeleteRecTitle,
                           body: (
@@ -456,6 +498,78 @@ export default function AnalyticsPage() {
             }}>
               {t.save}
             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {editRec && createPortal(
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditRec(null)}>
+          <div className="modal-sheet">
+            <div className="modal-handle" />
+            <div className="modal-title">
+              <span>{lang === 'he' ? 'עריכת הוצאה קבועה' : 'Edit recurring expense'}</span>
+              <button className="modal-close" onClick={() => setEditRec(null)}><X size={14} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 0 16px' }}>
+              <input
+                className="set-input"
+                value={editRecDesc}
+                onChange={e => setEditRecDesc(e.target.value)}
+                placeholder={lang === 'he' ? 'תיאור' : 'Description'}
+                style={{ textAlign: 'right' }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="set-input"
+                  type="number"
+                  inputMode="decimal"
+                  value={editRecAmount}
+                  onChange={e => setEditRecAmount(e.target.value)}
+                  placeholder={lang === 'he' ? 'סכום' : 'Amount'}
+                  style={{ flex: 2 }}
+                />
+                <input
+                  className="set-input"
+                  type="number"
+                  inputMode="numeric"
+                  value={editRecDay}
+                  onChange={e => setEditRecDay(e.target.value)}
+                  placeholder={lang === 'he' ? 'יום' : 'Day'}
+                  min={1} max={28}
+                  style={{ flex: 1, textAlign: 'center' }}
+                />
+              </div>
+              {!editRec.isIncome && (
+                <select
+                  className="set-input"
+                  value={editRecCat}
+                  onChange={e => setEditRecCat(e.target.value)}
+                  style={{ textAlign: 'right' }}
+                >
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{catName(c.id, c.name, c.isRenamed)}</option>
+                  ))}
+                </select>
+              )}
+              {!editRec.isIncome && (
+                <select
+                  className="set-input"
+                  value={editRecPm}
+                  onChange={e => setEditRecPm(e.target.value as PaymentMethod)}
+                  style={{ textAlign: 'right' }}
+                >
+                  <option value="">{lang === 'he' ? '— אמצעי תשלום —' : '— Payment method —'}</option>
+                  {PAYMENT_METHODS.map(pm => (
+                    <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                  ))}
+                </select>
+              )}
+              <button className="submit-btn" onClick={saveEditRec} style={{ marginTop: 4 }}>
+                <Check size={15} />
+                {lang === 'he' ? 'שמור שינויים' : 'Save changes'}
+              </button>
+            </div>
           </div>
         </div>,
         document.body

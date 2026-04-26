@@ -3727,9 +3727,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 /* Stronger selected pm-chip */
 .pm-chip.selected {
-  font-weight: 600;
-  transform: scale(1.03);
-  box-shadow: 0 0 0 2px currentColor;
+  font-weight: 700;
+  opacity: 1 !important;
+  transform: scale(1.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 .pm-chip.selected span { color: inherit; }
 
