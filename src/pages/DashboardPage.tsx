@@ -250,11 +250,11 @@ export default function DashboardPage() {
     navigate('/', { replace: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Draft autosave while modal is open ───────────────────────────────────────
+  // ── Draft autosave while modal is open (new transactions only) ──────────────
   useEffect(() => {
-    if (!showModal) return;
+    if (!showModal || editingTx) return; // never overwrite draft with edit-mode data
     writeDraft({ amount, desc, date, payMethod, catId });
-  }, [amount, desc, date, payMethod, catId, showModal]);
+  }, [amount, desc, date, payMethod, catId, showModal, editingTx]);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimer) clearTimeout(toastTimer);
@@ -327,6 +327,7 @@ export default function DashboardPage() {
       deleteReceipt(stagedReceiptIdRef.current);
       stagedReceiptIdRef.current = null;
     }
+    if (editingTx) clearDraft(); // edit session must not pollute new-tx draft
     setEditingTx(null);
     setShowModal(false);
   }
