@@ -74,6 +74,8 @@ export function parseExpenseText(raw: string): ParsedExpenseText {
   const amountPatterns: RegExp[] = [
     // Hebrew: "על סך 129.90 ₪" / "בסך 129.90 ₪"
     /(?:על\s+)?(?:ב)?סך\s+([\d,]+\.?\d*)\s*[₪]/i,
+    // Apple Pay iOS notification: "₪1,185.00" or "ILS 93.00"
+    /ILS\s+([\d,]+\.?\d*)/i,
     // "129.90 ₪" or "₪ 129.90"
     /([\d,]+\.?\d*)\s*₪/,
     /₪\s*([\d,]+\.?\d*)/,
@@ -96,10 +98,14 @@ export function parseExpenseText(raw: string): ParsedExpenseText {
   // ── Merchant / description ───────────────────────────────────────────────────
   // Each entry: [pattern, captureGroup]
   const merchantPatterns: Array<[RegExp, number]> = [
+    // Apple Pay iOS: "Seedance\n₪93.00" — first line before amount
+    [/^([A-Za-zא-ת][^\n₪\d]{1,40}?)\s*\n/m, 1],
     // "חיוב ב-FOX על סך"
     [/חיוב\s+ב-([^\s,₪\d][^\n,₪]{0,40}?)(?:\s+על|\s+ב?סך|\s*$)/i, 1],
+    // ביט: "שלחת/קיבלת X ₪ ל/מ-Name"
+    [/(?:שלחת|קיבלת|העברת)\s+[\d,]+\.?\d*\s*₪\s+(?:ל|מ)-([^\n,₪\d]{2,40}?)(?:\s*$|,)/im, 1],
     // "ב-SUPER-PHARM" standalone
-    [/\bב-([A-Za-z][A-Za-z0-9\s\-&'.]{1,39}?)(?:\s+על|\s+ב?סך|\s*,|\s*₪|\s*$)/i, 1],
+    [/\bב-([A-Za-zא-ת][A-Za-z0-9א-תa-z\s\-&'.]{1,39}?)(?:\s+על|\s+ב?סך|\s*,|\s*₪|\s*$)/i, 1],
     // "שילמת X ₪ ל-Aroma"
     [/ל-([^\s,₪\d][^\n,₪]{1,40}?)(?:\s+ב(?:אמצעות|עד|יום)|\s*,|\s*₪|\s*$)/i, 1],
     // "Payment at Aroma" / "charged at Amazon"

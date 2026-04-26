@@ -204,7 +204,20 @@ export default function DashboardPage() {
 
   // ── URL param prefill — opens modal automatically when deep-linked ───────────
   // e.g. /?amount=42.90&merchant=Aroma&method=applepay&date=2026-04-13
+  // Also handles Web Share Target: /?text=<notification text>
   useEffect(() => {
+    // ── Web Share Target: ?text= (shared from Wallet / bank notification) ─────
+    const pText = searchParams.get('text') ?? searchParams.get('title') ?? '';
+    if (pText.trim()) {
+      const parsed = parseExpenseText(pText);
+      if (parsed.amount && parsed.amount > 0) setAmount(String(parsed.amount));
+      if (parsed.desc)                        setDesc(parsed.desc);
+      if (parsed.payMethod)                   setPayMethod(parsed.payMethod as PaymentMethod);
+      setShowModal(true);
+      navigate('/', { replace: true });
+      return;
+    }
+
     const pAmount   = searchParams.get('amount')   ?? '';
     const pMerchant = searchParams.get('merchant') ?? searchParams.get('desc') ?? '';
     const pNote     = searchParams.get('note')     ?? '';
