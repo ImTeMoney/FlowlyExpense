@@ -954,8 +954,10 @@ export default function DashboardPage() {
                           onClick={() => setPayMethod(pm)}
                           style={selected ? {
                             borderColor: PM_COLOR[pm],
-                            background: `${PM_COLOR[pm]}1A`,
-                          } : undefined}
+                            borderWidth: 2,
+                            background: `${PM_COLOR[pm]}33`,
+                            color: PM_COLOR[pm],
+                          } : { opacity: 0.6 }}
                         >
                           <PIcon size={16} color={selected ? PM_COLOR[pm] : 'var(--text-muted)'} />
                           <span>{(t as any)[`pm_${pm}`]}</span>

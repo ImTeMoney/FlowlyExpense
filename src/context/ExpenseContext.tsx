@@ -103,6 +103,7 @@ type Action =
   | { type: 'DELETE_TRANSACTION';        payload: string }
   | { type: 'DELETE_INSTALLMENT_GROUP';  payload: string }   // groupId
   | { type: 'ADD_RECURRING';             payload: RecurringExpense }
+  | { type: 'UPDATE_RECURRING';          payload: RecurringExpense }
   | { type: 'DELETE_RECURRING';          payload: string }
   | { type: 'SET_BUDGET';                payload: number }
   | { type: 'SET_SAVINGS_GOAL';          payload: number }
@@ -382,6 +383,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'ADD_RECURRING':
         setRecurringExpenses(prev => [...prev, { ...action.payload, id: generateId() }]);
+        break;
+
+      case 'UPDATE_RECURRING':
+        setRecurringExpenses(prev => prev.map(r => r.id === action.payload.id ? action.payload : r));
         break;
 
       case 'DELETE_RECURRING':
