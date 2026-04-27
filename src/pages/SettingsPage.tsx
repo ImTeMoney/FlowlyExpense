@@ -246,7 +246,8 @@ const SettingsPage: React.FC = () => {
         if (!parsed._version) throw new Error('not a backup');
         for (const key of BACKUP_STORAGE_KEYS) {
           if (key in parsed) {
-            localStorage.setItem(key, JSON.stringify(parsed[key]));
+            const v = parsed[key];
+            localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v));
           }
         }
         showToast(t.backupImportSuccess);
