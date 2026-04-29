@@ -11,6 +11,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-container">
+      <div className="morph-blob morph-blob-1" aria-hidden="true" />
+      <div className="morph-blob morph-blob-2" aria-hidden="true" />
       <main className="app-main">{children}</main>
       <nav className="bottom-nav" aria-label="Main navigation">
         <button
