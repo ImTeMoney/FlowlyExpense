@@ -4141,3 +4141,431 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .adv-card--green.adv-card-active { border-color: #22C55E; }
 .adv-card--green.adv-card-active .adv-card-header { background: rgba(34,197,94,0.07); }
 .adv-card-toggle--green.on { background: #22C55E; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2050 LIQUID GLASS — additive layer, no existing rules removed
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Animated Aurora Background ─────────────────────────────────────────── */
+@property --aurora-hue {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 220deg;
+}
+@property --aurora-x1 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+@keyframes aurora-drift {
+  0%   { --aurora-hue: 220deg; --aurora-x1: 50%; }
+  33%  { --aurora-hue: 260deg; --aurora-x1: 35%; }
+  66%  { --aurora-hue: 200deg; --aurora-x1: 65%; }
+  100% { --aurora-hue: 220deg; --aurora-x1: 50%; }
+}
+html::before { animation: aurora-drift 45s ease-in-out infinite; }
+
+/* Secondary aurora blobs */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+}
+[data-theme="dark"] body::before, body::before {
+  width: 340px; height: 340px;
+  background: radial-gradient(circle, rgba(120,80,255,0.22) 0%, transparent 70%);
+  bottom: 15%; left: -100px;
+  opacity: 0.6;
+  animation: blob-drift1 60s ease-in-out infinite;
+}
+[data-theme="dark"] body::after, body::after {
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(40,160,255,0.18) 0%, transparent 70%);
+  top: 30%; right: -80px;
+  opacity: 0.5;
+  animation: blob-drift1 40s ease-in-out infinite reverse;
+}
+@keyframes blob-drift1 {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-40px) scale(1.08); }
+}
+
+/* ── Morphing Background Shapes ─────────────────────────────────────────── */
+@keyframes morph-blob {
+  0%   { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  25%  { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  50%  { border-radius: 50% 50% 50% 50% / 40% 70% 30% 60%; }
+  75%  { border-radius: 70% 30% 50% 50% / 30% 40% 70% 60%; }
+  100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+}
+.morph-blob {
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  animation: morph-blob 30s ease-in-out infinite;
+}
+.morph-blob-1 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(80,140,255,0.9) 0%, transparent 70%);
+  opacity: 0.04;
+  top: -80px; right: -60px;
+}
+.morph-blob-2 {
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(160,80,255,0.9) 0%, transparent 70%);
+  opacity: 0.035;
+  bottom: 20%; left: -80px;
+  animation-delay: -15s;
+}
+
+/* ── Holographic Card Sheen ─────────────────────────────────────────────── */
+@property --holo-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes holo-rotate { to { --holo-angle: 360deg; } }
+.holo-card { position: relative; overflow: hidden; }
+.holo-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: conic-gradient(
+    from var(--holo-angle),
+    transparent 0%,
+    rgba(255,255,255,0.04) 15%,
+    rgba(140,200,255,0.07) 30%,
+    rgba(200,140,255,0.05) 45%,
+    transparent 60%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  border-radius: inherit;
+  animation: holo-rotate 10s linear infinite;
+}
+
+/* ── Chromatic Glass Edges ──────────────────────────────────────────────── */
+.chromatic-edge {
+  filter:
+    drop-shadow(0.5px 0 0 rgba(255,80,80,0.14))
+    drop-shadow(-0.5px 0 0 rgba(80,140,255,0.14));
+}
+
+/* ── Deep Glass Specular Top Line ───────────────────────────────────────── */
+.smart-status-card,
+.grow-hero-card,
+.an-summary-card {
+  position: relative;
+  isolation: isolate;
+}
+.smart-status-card::before,
+.grow-hero-card::before,
+.an-summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 12px; right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,0.55) 30%,
+    rgba(255,255,255,0.80) 50%,
+    rgba(255,255,255,0.55) 70%,
+    transparent 100%
+  );
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Neon Accent Glows ──────────────────────────────────────────────────── */
+.neon-amount {
+  filter: brightness(1.18);
+  font-feature-settings: "tnum", "kern";
+  letter-spacing: -0.02em;
+}
+.neon-amount.positive {
+  color: var(--success);
+  text-shadow: 0 0 12px rgba(48,209,88,0.5), 0 0 28px rgba(48,209,88,0.25);
+}
+.neon-amount.negative {
+  color: var(--danger);
+  text-shadow: 0 0 12px rgba(255,69,58,0.45), 0 0 24px rgba(255,69,58,0.20);
+}
+
+/* ── Shimmer Sweep (once on mount) ──────────────────────────────────────── */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(250%) skewX(-15deg); }
+}
+.shimmer-on-load { overflow: hidden; }
+.shimmer-on-load::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,0.12) 50%,
+    transparent 70%
+  );
+  animation: shimmer-sweep 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Spring Micro-animations ────────────────────────────────────────────── */
+.submit-btn, .fab, .cat-chip {
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.22s ease,
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+.submit-btn:active { transform: scale(0.96); }
+.fab:active        { transform: scale(0.94); }
+.cat-chip:active   { transform: scale(0.93); }
+
+@keyframes txn-pop-in {
+  from { opacity: 0; transform: scale(0.92) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.txn-item:first-child {
+  animation: txn-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Typography Upgrade ─────────────────────────────────────────────────── */
+.grow-hero-val,
+.bcard-hero-val,
+.txn-amt,
+.an-kpi-val,
+.ring-amount {
+  font-feature-settings: "tnum", "kern";
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEW FEATURE STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Streak Chip ────────────────────────────────────────────────────────── */
+.streak-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  background: rgba(255,159,10,0.12);
+  border: 1px solid rgba(255,159,10,0.28);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 6px;
+  align-self: flex-start;
+}
+.streak-count { font-size: 15px; }
+.streak-label { font-weight: 500; opacity: 0.85; }
+
+/* ── Spending Forecast Card ─────────────────────────────────────────────── */
+.forecast-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(24px) saturate(180%) brightness(108%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(108%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--glass-inset-sm), var(--glass-shadow);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.forecast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.forecast-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.forecast-confidence { font-size: 10px; letter-spacing: 2px; }
+.forecast-confidence.high   { color: var(--success); }
+.forecast-confidence.medium { color: var(--gold); }
+.forecast-confidence.low    { color: var(--text-dim); }
+.forecast-amount { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); margin-bottom: 2px; }
+.forecast-range  { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.forecast-bar-wrap {}
+.forecast-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.07);
+  display: flex;
+  overflow: hidden;
+  gap: 1px;
+  margin-bottom: 5px;
+}
+.forecast-bar-spent { background: var(--purple); border-radius: 3px 0 0 3px; transition: width 0.6s ease; }
+.forecast-bar-recur { background: rgba(160,80,255,0.7); transition: width 0.6s ease; }
+.forecast-bar-var   { background: rgba(255,255,255,0.2); border-radius: 0 3px 3px 0; transition: width 0.6s ease; }
+.forecast-bar-legend { display: flex; gap: 10px; }
+.forecast-bar-legend span { font-size: 9px; font-weight: 600; color: var(--text-dim); }
+.fbl-spent::before { content: '●'; color: var(--purple); margin-right: 3px; }
+.fbl-recur::before { content: '●'; color: rgba(160,80,255,0.9); margin-right: 3px; }
+.fbl-var::before   { content: '●'; color: rgba(255,255,255,0.3); margin-right: 3px; }
+
+/* ── Debt Tracker ───────────────────────────────────────────────────────── */
+.debt-tracker-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--glass-inset-sm), var(--glass-shadow);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.debt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.debt-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.debt-add-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,113,227,0.15); border: 1px solid rgba(0,113,227,0.25);
+  color: var(--purple); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.debt-add-btn:hover { background: rgba(0,113,227,0.25); }
+.debt-totals { display: flex; gap: 8px; margin-bottom: 12px; }
+.debt-total-pill { flex: 1; padding: 8px 10px; border-radius: var(--r-sm); text-align: center; }
+.debt-total-pill.owes-me { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+.debt-total-pill.i-owe   { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); }
+.debt-total-lbl { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; }
+.debt-total-val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.debt-total-pill.owes-me .debt-total-val { color: #22C55E; }
+.debt-total-pill.i-owe   .debt-total-val { color: #EF4444; }
+.debt-add-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border); }
+.debt-direction-toggle { display: flex; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--glass-border); }
+.debt-dir-btn { flex: 1; padding: 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-muted); border: none; transition: background 0.15s, color 0.15s; }
+.debt-dir-btn.active-owes { background: rgba(34,197,94,0.15); color: #22C55E; }
+.debt-dir-btn.active-iowe { background: rgba(239,68,68,0.15); color: #EF4444; }
+.debt-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.debt-list.settled { margin-top: 8px; opacity: 0.55; }
+.debt-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.04); border: 1px solid transparent;
+}
+.debt-item.owes-me { border-color: rgba(34,197,94,0.15); }
+.debt-item.i-owe   { border-color: rgba(239,68,68,0.15); }
+.debt-item.settled { opacity: 0.5; }
+.debt-item-info { flex: 1; min-width: 0; }
+.debt-item-name { display: block; font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.debt-item-note { display: block; font-size: 10px; color: var(--text-dim); }
+.debt-item-date { display: block; font-size: 10px; color: var(--text-dim); }
+.debt-item-amt { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); flex-shrink: 0; }
+.debt-settle-btn, .debt-delete-btn {
+  width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 1px solid transparent; flex-shrink: 0; transition: background 0.15s;
+}
+.debt-settle-btn { background: rgba(34,197,94,0.12); color: #22C55E; }
+.debt-settle-btn:hover { background: rgba(34,197,94,0.25); }
+.debt-delete-btn { background: rgba(255,69,58,0.1); color: var(--danger); }
+.debt-delete-btn:hover { background: rgba(255,69,58,0.2); }
+.debt-empty { font-size: 12px; color: var(--text-dim); text-align: center; padding: 8px 0; margin: 0; }
+.debt-show-settled {
+  display: flex; align-items: center; gap: 4px; margin-top: 8px;
+  font-size: 11px; color: var(--text-dim); cursor: pointer;
+  background: transparent; border: none; padding: 4px 0;
+}
+
+/* ── Calendar Heatmap ───────────────────────────────────────────────────── */
+.cal-heatmap { width: 100%; }
+.cal-dow-row { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 4px; }
+.cal-dow-lbl { font-size: 9px; font-weight: 700; color: var(--text-dim); text-align: center; text-transform: uppercase; }
+.cal-grid    { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 600; color: var(--text-dim);
+  cursor: pointer;
+  transition: transform 0.12s, filter 0.12s;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.cal-day:hover { transform: scale(1.12); filter: brightness(1.3); border-color: rgba(255,255,255,0.15); }
+.cal-day.today { border-color: var(--purple); color: var(--purple); font-weight: 800; }
+.cal-day.empty { cursor: default; opacity: 0.2; pointer-events: none; }
+.cal-day.selected { transform: scale(1.15); box-shadow: 0 0 10px rgba(10,132,255,0.4); border-color: var(--purple); }
+
+.cal-day-detail {
+  margin-top: 10px; padding: 10px 12px;
+  background: rgba(255,255,255,0.04); border-radius: var(--r-sm); border: 1px solid var(--glass-border);
+}
+.cal-day-detail-title { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+.cal-day-detail-empty { font-size: 12px; color: var(--text-dim); margin: 0; }
+.cal-day-detail-list  { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.cal-day-detail-item  { display: flex; align-items: center; gap: 7px; }
+.cal-day-detail-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cal-day-detail-desc  { flex: 1; font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-day-detail-amt   { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* ── Category Budget UI ─────────────────────────────────────────────────── */
+.an-cb-budget-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 1px 7px; border-radius: var(--r-full);
+  font-variant-numeric: tabular-nums; line-height: 1.6;
+}
+.an-cb-budget-badge.ok   { background: rgba(34,197,94,0.14);  color: #22C55E; }
+.an-cb-budget-badge.warn { background: rgba(245,158,11,0.14); color: #F59E0B; }
+.an-cb-budget-badge.over { background: rgba(239,68,68,0.14);  color: #EF4444; }
+
+.an-cb-budget-marker {
+  position: absolute;
+  top: -2px; bottom: -2px;
+  width: 2px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 2px;
+  pointer-events: none;
+}
+[data-theme="light"] .an-cb-budget-marker { background: rgba(0,0,0,0.4); }
+
+.an-budget-btn {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: transparent; border: 1px solid transparent; color: var(--text-dim);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s, color 0.15s; flex-shrink: 0;
+}
+.an-budget-btn:hover { background: rgba(0,113,227,0.15); color: var(--purple); border-color: rgba(0,113,227,0.25); }
+
+.an-budget-edit-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 6px; padding: 6px 0;
+}
+.an-budget-input { flex: 1; font-size: 13px; padding: 6px 10px; height: 34px; }
+.an-budget-save, .an-budget-clear {
+  width: 32px; height: 32px; border-radius: var(--r-sm); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; border: none;
+}
+.an-budget-save  { background: rgba(34,197,94,0.2); color: #22C55E; }
+.an-budget-clear { background: rgba(255,69,58,0.15); color: var(--danger); }
+
+/* ── Subscription Health Card ───────────────────────────────────────────── */
+.sub-health-card {
+  padding: 12px 14px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+  margin-bottom: 10px;
+}
+.sub-health-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.sub-health-total { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); }
+.sub-health-sub   { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+.sub-health-chips { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.sub-health-chip  { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+.sub-health-chip.ent  { background: rgba(139,92,246,0.15); color: #8B5CF6; }
+.sub-health-chip.util { background: rgba(14,165,233,0.15); color: #0EA5E9; }
+.sub-health-chip.other{ background: rgba(148,163,184,0.15); color: #94A3B8; }
+
+/* ── Smart Bill Predictor ───────────────────────────────────────────────── */
+.rec-due-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; padding: 1px 6px;
+  border-radius: 4px; font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.rec-due-badge.soon   { background: rgba(245,158,11,0.15); color: #F59E0B; }
+.rec-due-badge.urgent { background: rgba(239,68,68,0.18);  color: #EF4444; }
+.rec-annual-note { font-size: 10px; color: var(--text-dim); font-variant-numeric: tabular-nums; }

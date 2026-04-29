@@ -6,6 +6,25 @@ import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'check' | 'transfer' | 'bit' | 'applepay' | 'standing_order';
 export type MoneyMode = 'savings_based' | 'budget_based';
 
+export type CategoryBudgets = Record<string, number>; // catId → monthly budget amount
+
+export interface DebtEntry {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+  note?: string;
+  direction: 'owes_me' | 'i_owe';
+  settled: boolean;
+  settledDate?: string;
+}
+
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  lastCheckedDate: string; // YYYY-MM-DD
+}
+
 export const PAYMENT_METHODS: PaymentMethod[] = [
   'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay', 'standing_order',
 ];
@@ -96,6 +115,9 @@ export interface AppState {
   dashboardFilter: DashboardFilter;
   mainCurrency: string;
   moneyMode: MoneyMode;
+  categoryBudgets: CategoryBudgets;
+  debts: DebtEntry[];
+  streakData: StreakData;
 }
 
 type Action =
@@ -118,7 +140,13 @@ type Action =
   | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] }   // append imported rows
   | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } }
   | { type: 'UPDATE_TRANSACTION';        payload: Transaction }
-  | { type: 'REORDER_CATEGORIES';        payload: Category[] };
+  | { type: 'REORDER_CATEGORIES';        payload: Category[] }
+  | { type: 'SET_CATEGORY_BUDGET';       payload: { catId: string; amount: number } }
+  | { type: 'CLEAR_CATEGORY_BUDGET';     payload: string }
+  | { type: 'ADD_DEBT';                  payload: DebtEntry }
+  | { type: 'SETTLE_DEBT';               payload: string }
+  | { type: 'DELETE_DEBT';               payload: string }
+  | { type: 'UPDATE_STREAK';             payload: StreakData };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -144,14 +172,17 @@ export const CATEGORY_COLORS = [
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
 const STORAGE_KEYS = {
-  TRANSACTIONS:    'expense_transactions',
-  RECURRING:       'expense_recurring',
-  BUDGET:          'expense_budget',
-  SAVINGS_GOAL:    'expense_savings_goal',
-  CATEGORIES:      'expense_categories_v2',
-  DEVICE_ID:       'expense_device_id',
-  MAIN_CURRENCY:   'expense_main_currency',
-  MONEY_MODE:      'expense_money_mode',
+  TRANSACTIONS:      'expense_transactions',
+  RECURRING:         'expense_recurring',
+  BUDGET:            'expense_budget',
+  SAVINGS_GOAL:      'expense_savings_goal',
+  CATEGORIES:        'expense_categories_v2',
+  DEVICE_ID:         'expense_device_id',
+  MAIN_CURRENCY:     'expense_main_currency',
+  MONEY_MODE:        'expense_money_mode',
+  CATEGORY_BUDGETS:  'expense_category_budgets',
+  DEBTS:             'expense_debts',
+  STREAKS:           'expense_streaks',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -260,6 +291,16 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     return savedGoal > 0 ? 'savings_based' : 'budget_based';
   });
 
+  const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgets>(() =>
+    loadFromStorage<CategoryBudgets>(STORAGE_KEYS.CATEGORY_BUDGETS, {})
+  );
+  const [debts, setDebts] = useState<DebtEntry[]>(() =>
+    loadFromStorage<DebtEntry[]>(STORAGE_KEYS.DEBTS, [])
+  );
+  const [streakData, setStreakData] = useState<StreakData>(() =>
+    loadFromStorage<StreakData>(STORAGE_KEYS.STREAKS, { currentStreak: 0, longestStreak: 0, lastCheckedDate: '' })
+  );
+
   const deviceId = useMemo(() => getDeviceId(), []);
 
   // Rate: 1 ILS → mainCurrency  (1.0 when mainCurrency === 'ILS')
@@ -290,6 +331,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.MONEY_MODE, moneyMode);
   }, [moneyMode]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.CATEGORY_BUDGETS, categoryBudgets); }, [categoryBudgets]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.DEBTS, debts); }, [debts]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.STREAKS, streakData); }, [streakData]);
 
   // Cross-tab sync: when another tab writes to localStorage, mirror the change here
   useEffect(() => {
@@ -325,6 +369,35 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Streak: check yesterday's spend vs daily budget quota; update streak counter
+  useEffect(() => {
+    if (monthlyBudget <= 0) return;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm   = String(today.getMonth() + 1).padStart(2, '0');
+    const dd   = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const yesterday = new Date(Date.now() - 86400000);
+    const yy2 = yesterday.getFullYear();
+    const mm2  = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const dd2  = String(yesterday.getDate()).padStart(2, '0');
+    const yesterdayStr = `${yy2}-${mm2}-${dd2}`;
+
+    if (streakData.lastCheckedDate === todayStr) return; // already checked today
+
+    const daysInMonth = new Date(yyyy, today.getMonth() + 1, 0).getDate();
+    const dailyQuota = monthlyBudget / daysInMonth;
+    const yesterdaySpend = transactions
+      .filter(t => !t.isIncome && t.date === yesterdayStr)
+      .reduce((s, t) => s + t.amount, 0);
+
+    const underBudget = yesterdaySpend <= dailyQuota;
+    const newStreak = underBudget ? streakData.currentStreak + 1 : 0;
+    const newLongest = Math.max(streakData.longestStreak, newStreak);
+    setStreakData({ currentStreak: newStreak, longestStreak: newLongest, lastCheckedDate: todayStr });
+  }, [transactions, monthlyBudget]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-post recurring expenses whenever the recurring list changes.
   // Using `recurringExpenses` as a dependency (instead of []) means newly added
@@ -457,6 +530,35 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setTransactions(prev => prev.map(t => t.id === action.payload.id ? action.payload : t));
         break;
 
+      case 'SET_CATEGORY_BUDGET':
+        setCategoryBudgets(prev => ({ ...prev, [action.payload.catId]: action.payload.amount }));
+        break;
+
+      case 'CLEAR_CATEGORY_BUDGET':
+        setCategoryBudgets(prev => { const n = { ...prev }; delete n[action.payload]; return n; });
+        break;
+
+      case 'ADD_DEBT': {
+        const newDebt: DebtEntry = { ...action.payload, id: generateId() };
+        setDebts(prev => [newDebt, ...prev]);
+        break;
+      }
+
+      case 'SETTLE_DEBT':
+        setDebts(prev => prev.map(d => d.id === action.payload
+          ? { ...d, settled: true, settledDate: new Date().toISOString().slice(0, 10) }
+          : d
+        ));
+        break;
+
+      case 'DELETE_DEBT':
+        setDebts(prev => prev.filter(d => d.id !== action.payload));
+        break;
+
+      case 'UPDATE_STREAK':
+        setStreakData(action.payload);
+        break;
+
       case 'UPDATE_TRANSACTION_RECEIPT':
         setTransactions(prev => prev.map(tx => {
           if (tx.id !== action.payload.id) return tx;
@@ -481,7 +583,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     dashboardFilter,
     mainCurrency,
     moneyMode,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode]);
+    categoryBudgets,
+    debts,
+    streakData,
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, streakData]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;
@@ -545,3 +650,18 @@ export const useExpense = () => {
   if (!ctx) throw new Error('useExpense must be used within ExpenseProvider');
   return ctx;
 };
+
+export function getCategoryBudgetPct(
+  catId: string,
+  spent: number,
+  budgets: CategoryBudgets
+): { budget: number; pct: number; status: 'none' | 'ok' | 'warn' | 'over' } {
+  const budget = budgets[catId] ?? 0;
+  if (!budget) return { budget: 0, pct: 0, status: 'none' };
+  const pct = spent / budget;
+  return {
+    budget,
+    pct,
+    status: pct >= 1 ? 'over' : pct >= 0.8 ? 'warn' : 'ok',
+  };
+}

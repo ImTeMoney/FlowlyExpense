@@ -12,7 +12,10 @@ import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchange
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
+import { useSpendingForecast } from '../hooks/useSpendingForecast';
+import { useTilt } from '../hooks/useTilt';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
+import DebtTracker from '../components/DebtTracker';
 import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
 import ReceiptAttachment, { ReceiptViewerById } from '../components/ReceiptAttachment';
 import { deleteReceipt } from '../services/receiptStorage';
@@ -87,9 +90,11 @@ function groupByDate(txns: Transaction[]) {
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, todayFullLabel, catName } = useLang();
-  const { categories, recurringExpenses, transactions, mainCurrency } = state;
+  const { categories, recurringExpenses, transactions, mainCurrency, monthlyBudget, streakData } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
+  const forecast = useSpendingForecast(transactions, recurringExpenses);
+  const tilt = useTilt(5);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -617,8 +622,18 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Streak chip */}
+      {streakData.currentStreak > 1 && monthlyBudget > 0 && (
+        <div className="streak-chip">
+          <span>🔥</span>
+          <span className="streak-count">{streakData.currentStreak}</span>
+          <span className="streak-label">{lang === 'he' ? 'ימים תחת תקציב' : 'days on track'}</span>
+        </div>
+      )}
+
       {/* Smart status card */}
-      <div className={`smart-status-card ${statusCard.urgency}`}>
+      <div className={`smart-status-card ${statusCard.urgency} shimmer-on-load holo-card`}
+        ref={tilt.ref} onPointerMove={tilt.onPointerMove} onPointerLeave={tilt.onPointerLeave}>
         <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
         <div className="smart-status-headline">{statusCard.headline}</div>
         <div className="smart-status-subline">{statusCard.subline}</div>
@@ -631,6 +646,44 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Spending forecast card */}
+      {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
+        <div className="forecast-card">
+          <div className="forecast-header">
+            <span className="forecast-title">{lang === 'he' ? 'תחזית לסוף החודש' : 'Month-end forecast'}</span>
+            <span className={`forecast-confidence ${forecast.confidence}`}>
+              {forecast.confidence === 'high' ? '●●●' : forecast.confidence === 'medium' ? '●●○' : '●○○'}
+            </span>
+          </div>
+          <div className="forecast-amount">{formatCurrency(Math.round(forecast.forecastTotal))}</div>
+          <div className="forecast-range">
+            ±{formatCurrency(Math.round((forecast.confidenceHigh - forecast.confidenceLow) / 2))}
+            {' · '}{lang === 'he' ? `${forecast.daysLeft} ימים נותרו` : `${forecast.daysLeft} days left`}
+          </div>
+          <div className="forecast-bar-wrap">
+            <div className="forecast-bar-track">
+              {forecast.forecastTotal > 0 && (() => {
+                const total = forecast.forecastTotal;
+                const spentPct = Math.min(((forecast.forecastTotal - forecast.knownRecurring - forecast.projectedVariable) / total) * 100, 100);
+                const recurPct = Math.min((forecast.knownRecurring / total) * 100, 100 - spentPct);
+                return (
+                  <>
+                    <div className="forecast-bar-spent" style={{ width: `${spentPct}%` }} />
+                    <div className="forecast-bar-recur" style={{ width: `${recurPct}%` }} />
+                    <div className="forecast-bar-var" style={{ width: `${Math.min(100 - spentPct - recurPct, 100)}%` }} />
+                  </>
+                );
+              })()}
+            </div>
+            <div className="forecast-bar-legend">
+              <span className="fbl-spent">{lang === 'he' ? 'שולם' : 'Spent'}</span>
+              <span className="fbl-recur">{lang === 'he' ? 'קבועות' : 'Recurring'}</span>
+              <span className="fbl-var">{lang === 'he' ? 'משתנה' : 'Variable'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Insight cards */}
       {insights.map(ins => {
@@ -653,6 +706,9 @@ export default function DashboardPage() {
           </div>
         );
       })}
+
+      {/* Debt tracker */}
+      <DebtTracker />
 
       {/* Transaction feed */}
       <div className="txn-section">
@@ -680,7 +736,7 @@ export default function DashboardPage() {
                     r.description === tx.description && r.isIncome === !!tx.isIncome
                   );
                   return (
-                    <div key={tx.id} className="txn-item">
+                    <div key={tx.id} className="txn-item chromatic-edge">
                       <div
                         className="txn-icon"
                         style={{

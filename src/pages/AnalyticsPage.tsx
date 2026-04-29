@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check } from 'lucide-react';
-import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod } from '../context/ExpenseContext';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target } from 'lucide-react';
+import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
+import CalendarHeatmap from '../components/CalendarHeatmap';
 
 // ── Side donut with % inside + small context label ───────────────────────────
 
@@ -49,7 +50,7 @@ export default function AnalyticsPage() {
   const { state, dispatch, formatCurrency } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
   const navigate = useNavigate();
-  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal } = state;
+  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, categoryBudgets } = state;
 
   // Month navigation
   const now = new Date();
@@ -120,6 +121,9 @@ export default function AnalyticsPage() {
 
   // UI state
   const [showAllCats, setShowAllCats] = useState(false);
+  const [selectedDay, setSelectedDay]   = useState<string | undefined>();
+  const [budgetEditId, setBudgetEditId] = useState<string | null>(null);
+  const [budgetEditVal, setBudgetEditVal] = useState('');
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
   const [splitRec, setSplitRec] = useState<RecurringExpense | null>(null);
   const [splitRecN, setSplitRecN] = useState(12);
@@ -210,6 +214,26 @@ export default function AnalyticsPage() {
 
   const pmLabel = (pm: string) => (t as any)[`pm_${pm}`] ?? pm;
 
+  // Smart bill predictor: days until next occurrence for each recurring item
+  const recurringWithDue = useMemo(() => {
+    const todayDay = now.getDate();
+    return recurringExpenses.map(r => {
+      let daysUntil = r.dayOfMonth - todayDay;
+      if (daysUntil < 0) daysUntil += daysInMonth; // next month occurrence
+      return { ...r, daysUntil, annualCost: r.amount * 12 };
+    }).sort((a, b) => a.daysUntil - b.daysUntil);
+  }, [recurringExpenses, now, daysInMonth]);
+
+  // Subscription health totals
+  const subHealth = useMemo(() => {
+    const expenses = recurringExpenses.filter(r => !r.isIncome);
+    const total = expenses.reduce((s, r) => s + r.amount, 0);
+    const streaming = expenses.filter(r => r.categoryId === 'cat_entertainment').reduce((s, r) => s + r.amount, 0);
+    const utilities = expenses.filter(r => ['cat_utilities', 'cat_rent'].includes(r.categoryId)).reduce((s, r) => s + r.amount, 0);
+    const other = total - streaming - utilities;
+    return { total, annualCost: total * 12, streaming, utilities, other };
+  }, [recurringExpenses]);
+
   return (
     <div className="page analytics-page">
 
@@ -299,6 +323,9 @@ export default function AnalyticsPage() {
                 const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
                 const isRecurringCat = recurringExpenses.some(r => r.categoryId === cat.id && !r.isIncome);
                 const isSingleTx = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).length === 1;
+                const budgetInfo = getCategoryBudgetPct(cat.id, total, categoryBudgets);
+                const budgetMarkerPct = budgetInfo.budget > 0 ? Math.min((budgetInfo.budget / maxCat) * 100, 100) : null;
+                const isEditingBudget = budgetEditId === cat.id;
                 return (
                   <div key={cat.id} className="an-cb-item">
                     <div className="an-cb-row">
@@ -314,11 +341,60 @@ export default function AnalyticsPage() {
                       </div>
                       <div className="an-cb-amount-side">
                         <span className="an-cb-amt">{formatCurrency(total)}</span>
-                        <span className="an-cb-pct">{pctOfTotal}%</span>
+                        {budgetInfo.status !== 'none' ? (
+                          <span className={`an-cb-budget-badge ${budgetInfo.status}`}>
+                            {Math.round(budgetInfo.pct * 100)}%
+                          </span>
+                        ) : (
+                          <span className="an-cb-pct">{pctOfTotal}%</span>
+                        )}
+                        <button
+                          className="an-budget-btn"
+                          onClick={() => {
+                            if (isEditingBudget) { setBudgetEditId(null); return; }
+                            setBudgetEditId(cat.id);
+                            setBudgetEditVal(budgetInfo.budget > 0 ? String(budgetInfo.budget) : '');
+                          }}
+                          title={lang === 'he' ? 'קבע תקציב לקטגוריה' : 'Set category budget'}
+                        >
+                          <Target size={12} />
+                        </button>
                       </div>
                     </div>
-                    <div className="an-cb-bar-row">
+                    {isEditingBudget && (
+                      <div className="an-budget-edit-row">
+                        <input
+                          className="aether-input an-budget-input"
+                          type="number"
+                          inputMode="decimal"
+                          placeholder={lang === 'he' ? 'תקציב חודשי' : 'Monthly budget'}
+                          value={budgetEditVal}
+                          onChange={e => setBudgetEditVal(e.target.value)}
+                          autoFocus
+                        />
+                        <button className="an-budget-save" onClick={() => {
+                          const v = parseFloat(budgetEditVal);
+                          if (!isNaN(v) && v > 0) dispatch({ type: 'SET_CATEGORY_BUDGET', payload: { catId: cat.id, amount: v } });
+                          else dispatch({ type: 'CLEAR_CATEGORY_BUDGET', payload: cat.id });
+                          setBudgetEditId(null);
+                        }}>
+                          <Check size={13} />
+                        </button>
+                        {budgetInfo.budget > 0 && (
+                          <button className="an-budget-clear" onClick={() => {
+                            dispatch({ type: 'CLEAR_CATEGORY_BUDGET', payload: cat.id });
+                            setBudgetEditId(null);
+                          }}>
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="an-cb-bar-row" style={{ position: 'relative' }}>
                       <div className="an-cb-bar-fill" style={{ width: `${(total / maxCat) * 100}%`, background: cat.color }} />
+                      {budgetMarkerPct !== null && (
+                        <div className="an-cb-budget-marker" style={{ left: `${budgetMarkerPct}%` }} />
+                      )}
                     </div>
                   </div>
                 );
@@ -380,17 +456,74 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* ── Recurring — only when non-empty ── */}
+          {/* ── Calendar heatmap ── */}
+          {hasData && (
+            <div className="an-section">
+              <div className="an-section-title">{lang === 'he' ? 'מפת חום יומית' : 'Daily heatmap'}</div>
+              <CalendarHeatmap
+                transactions={monthTxns}
+                year={year}
+                month={month - 1}
+                onDaySelect={d => setSelectedDay(prev => prev === d ? undefined : d)}
+                selectedDay={selectedDay}
+              />
+              {selectedDay && (
+                <div className="cal-day-detail">
+                  <div className="cal-day-detail-title">{selectedDay}</div>
+                  {monthTxns.filter(tx => tx.date === selectedDay && !tx.isIncome).length === 0 ? (
+                    <p className="cal-day-detail-empty">{lang === 'he' ? 'אין הוצאות ביום זה' : 'No expenses this day'}</p>
+                  ) : (
+                    <ul className="cal-day-detail-list">
+                      {monthTxns.filter(tx => tx.date === selectedDay && !tx.isIncome).map(tx => {
+                        const cat = categories.find(c => c.id === tx.categoryId);
+                        return (
+                          <li key={tx.id} className="cal-day-detail-item">
+                            <span className="cal-day-detail-dot" style={{ background: cat?.color ?? 'var(--purple)' }} />
+                            <span className="cal-day-detail-desc">{tx.description}</span>
+                            <span className="cal-day-detail-amt">{formatCurrency(tx.amount)}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Recurring / Subscription health ── */}
           {recurringExpenses.length > 0 && (
             <div className="an-section">
               <div className="an-section-title">{t.recurringExpenses}</div>
+              {subHealth.total > 0 && (
+                <div className="sub-health-card">
+                  <div className="sub-health-main">
+                    <div>
+                      <div className="sub-health-total">{formatCurrency(subHealth.total)}</div>
+                      <div className="sub-health-sub">{lang === 'he' ? `לחודש · ${formatCurrency(subHealth.annualCost)} לשנה` : `/mo · ${formatCurrency(subHealth.annualCost)}/yr`}</div>
+                    </div>
+                    <div className="sub-health-chips">
+                      {subHealth.streaming > 0 && <span className="sub-health-chip ent">{lang === 'he' ? 'בידור' : 'Ent.'} {formatCurrency(subHealth.streaming)}</span>}
+                      {subHealth.utilities > 0 && <span className="sub-health-chip util">{lang === 'he' ? 'שירותים' : 'Utils'} {formatCurrency(subHealth.utilities)}</span>}
+                      {subHealth.other > 0 && <span className="sub-health-chip other">{lang === 'he' ? 'אחר' : 'Other'} {formatCurrency(subHealth.other)}</span>}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="rec-list">
-                {recurringExpenses.map(r => {
+                {recurringWithDue.map(r => {
                   const cat  = categories.find(c => c.id === r.categoryId);
                   const Icon = r.isIncome ? TrendingUp : (CAT_ICON[r.categoryId] ?? Package);
                   const badgeLabel = r.totalInstallments
                     ? `${r.postedCount ?? 0}/${r.totalInstallments}`
                     : t.monthlyBadge;
+                  const dueLabel = r.daysUntil === 0
+                    ? (lang === 'he' ? 'היום!' : 'Today!')
+                    : r.daysUntil === 1
+                      ? (lang === 'he' ? 'מחר' : 'Tomorrow')
+                      : (lang === 'he' ? `בעוד ${r.daysUntil} ימים` : `In ${r.daysUntil} days`);
+                  const dueUrgent = r.daysUntil <= 2;
+                  const dueSoon   = !dueUrgent && r.daysUntil <= 5;
                   return (
                     <div key={r.id} className="rec-item">
                       <div className="rec-icon" style={{ color: r.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)') }}>
@@ -400,11 +533,15 @@ export default function AnalyticsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <div className="rec-name" style={{ marginBottom: 0 }}>{r.description}</div>
                           <span className="rec-badge">{badgeLabel}</span>
+                          {(dueUrgent || dueSoon) && !r.isIncome && (
+                            <span className={`rec-due-badge${dueUrgent ? ' urgent' : ' soon'}`}>{dueLabel}</span>
+                          )}
                         </div>
                         <div className="rec-meta">
-                          {t.day} {r.dayOfMonth}
+                          {!r.isIncome && !dueUrgent && !dueSoon ? `${t.day} ${r.dayOfMonth}` : dueLabel}
                           {!r.isIncome && cat ? ` · ${catName(cat.id, cat.name, cat.isRenamed)}` : ''}
                           {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
+                          {!r.isIncome && <span className="rec-annual-note"> · {formatCurrency(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
                         </div>
                       </div>
                       <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>

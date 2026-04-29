@@ -216,6 +216,9 @@ const SettingsPage: React.FC = () => {
     'expense_device_id',
     'expense_main_currency',
     'expense_money_mode',
+    'expense_category_budgets',
+    'expense_debts',
+    'expense_streaks',
   ];
 
   function exportBackup() {
