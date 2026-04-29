@@ -4384,10 +4384,15 @@ body::before, body::after {
   margin-bottom: 4px;
 }
 .forecast-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.forecast-confidence { font-size: 10px; letter-spacing: 2px; }
-.forecast-confidence.high   { color: var(--success); }
-.forecast-confidence.medium { color: var(--gold); }
-.forecast-confidence.low    { color: var(--text-dim); }
+.forecast-confidence {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 9px; border-radius: var(--r-full);
+  letter-spacing: 0;
+}
+.forecast-confidence.high   { background: rgba(48,209,88,0.12);  color: #30D158; }
+.forecast-confidence.medium { background: rgba(255,159,10,0.12); color: var(--gold); }
+.forecast-confidence.low    { background: rgba(255,255,255,0.08); color: var(--text-dim); }
+.forecast-subtitle { font-size: 11px; color: var(--text-muted); margin-top: -4px; margin-bottom: 8px; }
 .forecast-amount { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); margin-bottom: 2px; }
 .forecast-range  { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
 .forecast-bar-wrap {}

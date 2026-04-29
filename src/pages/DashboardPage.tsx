@@ -653,10 +653,15 @@ export default function DashboardPage() {
           <div className="forecast-header">
             <span className="forecast-title">{lang === 'he' ? 'תחזית לסוף החודש' : 'Month-end forecast'}</span>
             <span className={`forecast-confidence ${forecast.confidence}`}>
-              {forecast.confidence === 'high' ? '●●●' : forecast.confidence === 'medium' ? '●●○' : '●○○'}
+              {lang === 'he'
+                ? forecast.confidence === 'high' ? 'תחזית מדויקת' : forecast.confidence === 'medium' ? 'תחזית בינונית' : 'תחזית משוערת'
+                : forecast.confidence === 'high' ? 'High accuracy' : forecast.confidence === 'medium' ? 'Medium accuracy' : 'Estimated'}
             </span>
           </div>
           <div className="forecast-amount">{formatCurrency(Math.round(forecast.forecastTotal))}</div>
+          <div className="forecast-subtitle">
+            {lang === 'he' ? 'הוצאות צפויות עד סוף החודש' : 'Expected total spending by month-end'}
+          </div>
           <div className="forecast-range">
             ±{formatCurrency(Math.round((forecast.confidenceHigh - forecast.confidenceLow) / 2))}
             {' · '}{lang === 'he' ? `${forecast.daysLeft} ימים נותרו` : `${forecast.daysLeft} days left`}
