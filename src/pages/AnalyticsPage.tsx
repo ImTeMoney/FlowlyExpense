@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target } from 'lucide-react';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { CAT_ICON } from '../components/CategoryPicker';
@@ -163,6 +163,7 @@ export default function AnalyticsPage() {
   }
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
+  const [showTxnList, setShowTxnList] = useState(false);
 
   const hasData = monthTxns.length > 0;
   const CAT_LIMIT = 7;
@@ -487,6 +488,35 @@ export default function AnalyticsPage() {
                     </ul>
                   )}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ── All transactions for selected month ── */}
+          {monthTxns.length > 0 && (
+            <div className="an-section">
+              <button className="an-section-title an-txn-toggle" onClick={() => setShowTxnList(v => !v)}>
+                <span>{lang === 'he' ? `עסקאות (${monthTxns.length})` : `Transactions (${monthTxns.length})`}</span>
+                <ChevronDown size={14} style={{ transform: showTxnList ? 'rotate(180deg)' : undefined, transition: '0.2s' }} />
+              </button>
+              {showTxnList && (
+                <ul className="an-txn-list">
+                  {[...monthTxns].sort((a, b) => b.date.localeCompare(a.date)).map(tx => {
+                    const cat = categories.find(c => c.id === tx.categoryId);
+                    return (
+                      <li key={tx.id} className="an-txn-item">
+                        <span className="an-txn-icon">{cat ? (CAT_ICON[cat.id] ?? '📦') : '📦'}</span>
+                        <div className="an-txn-info">
+                          <span className="an-txn-desc">{tx.description}</span>
+                          <span className="an-txn-date">{tx.date}</span>
+                        </div>
+                        <span className={`an-txn-amt${tx.isIncome ? ' income' : ''}`}>
+                          {tx.isIncome ? '+' : '−'}{formatCurrency(tx.amount)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           )}

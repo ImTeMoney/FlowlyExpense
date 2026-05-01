@@ -424,6 +424,15 @@ export default function DashboardPage() {
               ...receiptPayload,
             },
       });
+      if (!keepInstallments && editingTx.installments) {
+        const groupId = editingTx.installments.groupId;
+        transactions
+          .filter(t => t.installments?.groupId === groupId && t.id !== editingTx.id)
+          .forEach(t => {
+            if (t.receiptId) deleteReceipt(t.receiptId);
+            dispatch({ type: 'DELETE_TRANSACTION', payload: t.id });
+          });
+      }
       stagedReceiptIdRef.current = null;
       if (isRecurring && !recurringExpenses.some(r => r.description === baseDesc && r.isIncome === isIncome)) {
         dispatch({ type: 'ADD_RECURRING', payload: {
