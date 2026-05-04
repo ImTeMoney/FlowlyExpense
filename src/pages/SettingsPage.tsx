@@ -162,14 +162,21 @@ const SettingsPage: React.FC = () => {
     showToast(t.savedSettings);
   }
 
-  // CSV export (current month)
+  // CSV export with date range
   const now = new Date();
-  const ms  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthTxns = transactions.filter(tx => tx.date.startsWith(ms));
+  const todayStr      = now.toISOString().slice(0, 10);
+  const firstOfMonth  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const [csvFrom, setCsvFrom] = useState(firstOfMonth);
+  const [csvTo,   setCsvTo]   = useState(todayStr);
+
+  const csvTxns = useMemo(() =>
+    transactions.filter(tx => tx.date >= csvFrom && tx.date <= csvTo),
+    [transactions, csvFrom, csvTo]
+  );
 
   function exportCSV() {
     const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method']];
-    monthTxns.forEach(tx => {
+    csvTxns.forEach(tx => {
       const cat    = categories.find(c => c.id === tx.categoryId)?.name ?? '';
       const pmName = tx.paymentSplits && tx.paymentSplits.length > 0
         ? tx.paymentSplits.map(s => `${(t as any)[`pm_${s.paymentMethod}`] ?? s.paymentMethod}:${s.amount}`).join('+')
@@ -179,7 +186,7 @@ const SettingsPage: React.FC = () => {
     const csv = rows.map(r => r.join(',')).join('\n');
     const a   = document.createElement('a');
     a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
-    a.download = `finio_${ms}.csv`;
+    a.download = `flowly_${csvFrom}_to_${csvTo}.csv`;
     a.click();
   }
 
@@ -694,13 +701,27 @@ const SettingsPage: React.FC = () => {
         </button>
         <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center', marginBottom: 10 }}>{t.backupImportNote}</p>
 
+        <div className="csv-range-row">
+          <input
+            type="date" className="csv-range-input"
+            value={csvFrom} max={csvTo}
+            onChange={e => setCsvFrom(e.target.value)}
+          />
+          <span className="csv-range-sep">→</span>
+          <input
+            type="date" className="csv-range-input"
+            value={csvTo} min={csvFrom} max={todayStr}
+            onChange={e => setCsvTo(e.target.value)}
+          />
+        </div>
         <button
           className="export-btn"
           onClick={exportCSV}
-          disabled={monthTxns.length === 0}
+          disabled={csvTxns.length === 0}
+          style={{ marginTop: 6 }}
         >
           <Download size={13} />
-          {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
+          {lang === 'he' ? `ייצוא CSV (${csvTxns.length} עסקאות)` : `Export CSV (${csvTxns.length} transactions)`}
         </button>
 
         {/* Hidden file input for CSV import */}

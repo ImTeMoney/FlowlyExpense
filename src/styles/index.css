@@ -1651,6 +1651,16 @@ select.sm-in option { background: var(--modal-bg); }
 .export-btn:hover:not(:disabled) { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
 .export-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
+.csv-range-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.csv-range-input {
+  flex: 1; padding: 8px 10px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-primary); font-size: 13px; font-family: inherit;
+  text-align: center; min-width: 0;
+}
+.csv-range-input:focus { outline: none; border-color: var(--purple); }
+.csv-range-sep { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+
 /* Profile card */
 .profile-card {
   background: linear-gradient(135deg, var(--purple-dim) 0%, var(--gold-dim) 100%);
