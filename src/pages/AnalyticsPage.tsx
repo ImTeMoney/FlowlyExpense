@@ -183,19 +183,19 @@ export default function AnalyticsPage() {
     const remaining = budget - spent;
     const overBudget = remaining < 0;
     heroPct       = budget > 0 ? Math.min(spent / budget, 1) : 0;
-    heroColor     = heroPct >= 1 ? '#EF4444' : heroPct > 0.75 ? '#F59E0B' : '#22C55E';
+    heroColor     = heroPct >= 1 ? '#FF3B30' : heroPct > 0.75 ? '#FF9F0A' : '#8B5CF6';
     heroSublabel  = lang === 'he' ? 'מהתקציב' : 'of budget';
     heroRemaining = budget > 0
       ? (overBudget
           ? (lang === 'he' ? `חרגת ב־${formatCurrency(Math.abs(remaining))}` : `Over by ${formatCurrency(Math.abs(remaining))}`)
           : (lang === 'he' ? `נשאר ${formatCurrency(remaining)} מהתקציב` : `${formatCurrency(remaining)} left in budget`))
       : (lang === 'he' ? 'לא הוגדר תקציב' : 'no budget set');
-    heroRemainingColor = budget > 0 ? (overBudget ? '#EF4444' : '#22C55E') : 'var(--text-secondary)';
+    heroRemainingColor = budget > 0 ? (overBudget ? '#FF3B30' : '#8B5CF6') : 'var(--text-secondary)';
   } else {
     // Savings mode: show burn rate (spent / income) — universally clear regardless of savings goal
     const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
     heroPct       = Math.min(Math.max(0, burnRate), 1);
-    heroColor     = burnRate >= 1 ? '#EF4444' : burnRate > 0.85 ? '#F59E0B' : '#22C55E';
+    heroColor     = burnRate >= 1 ? '#FF3B30' : burnRate > 0.85 ? '#FF9F0A' : '#8B5CF6';
     heroSublabel  = lang === 'he' ? 'מההכנסות' : 'of income';
     if (!income) {
       heroRemaining      = lang === 'he' ? 'לא נרשמו הכנסות' : 'no income recorded';
@@ -204,12 +204,12 @@ export default function AnalyticsPage() {
       heroRemaining      = lang === 'he'
         ? `חסכת ${formatCurrency(savings)} החודש`
         : `Saved ${formatCurrency(savings)} this month`;
-      heroRemainingColor = '#22C55E';
+      heroRemainingColor = '#8B5CF6';
     } else {
       heroRemaining      = lang === 'he'
         ? `גירעון של ${formatCurrency(Math.abs(savings))}`
         : `Deficit of ${formatCurrency(Math.abs(savings))}`;
-      heroRemainingColor = '#EF4444';
+      heroRemainingColor = '#FF3B30';
     }
   }
 
@@ -281,7 +281,7 @@ export default function AnalyticsPage() {
               )}
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'הוצאות' : 'Expenses'}</span>
-                <span className="an-kpi-val" style={{ color: '#FF453A' }}>{formatCurrency(spent)}</span>
+                <span className="an-kpi-val" style={{ color: '#FF3B30' }}>{formatCurrency(spent)}</span>
               </div>
               {income > 0 && (
                 <div className="an-kpi-row">
@@ -291,7 +291,7 @@ export default function AnalyticsPage() {
                       : (lang === 'he' ? 'גירעון החודש' : 'Deficit this month')}
                   </span>
                   <span className="an-kpi-val" style={{
-                    color: savings >= 0 ? '#30D158' : '#FF9F0A',
+                    color: savings >= 0 ? '#8B5CF6' : '#FF3B30',
                   }}>
                     {savings >= 0
                       ? formatCurrency(savings)
