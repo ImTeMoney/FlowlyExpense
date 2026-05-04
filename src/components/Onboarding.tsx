@@ -122,80 +122,89 @@ function ReactiveRing({ amount, isSavings, currency }: {
 // ── Add-expense tutorial preview ──────────────────────────────────────────────
 
 function AddExpensePreview({ he }: { he: boolean }) {
-  const [step, setStep] = useState(0);
-  const steps = [
-    {
-      hint: he ? '① לחץ + בתחתית המסך' : '① Tap + at the bottom',
-      content: (
-        <div className="ob-add-mock-screen">
-          <div className="ob-add-mock-txns">
-            {['#22C55E','#8B5CF6','#F59E0B'].map((c, i) => (
-              <div key={i} className="ob-add-mock-row">
-                <div className="ob-add-mock-dot" style={{ background: c }} />
-                <div className="ob-add-mock-bar" style={{ width: `${[70,50,85][i]}%` }} />
-              </div>
-            ))}
-          </div>
-          <div className="ob-add-mock-fab ob-pulse">
-            <Plus size={22} color="#fff" strokeWidth={2.5} />
-          </div>
-        </div>
-      ),
-    },
-    {
-      hint: he ? '② הכנס סכום וקטגוריה' : '② Enter amount & category',
-      content: (
-        <div className="ob-add-mock-form">
-          <div className="ob-add-mock-amount">
-            <span className="ob-add-mock-sym">₪</span>
-            <span className="ob-add-mock-num">250</span>
-          </div>
-          <div className="ob-add-mock-cats">
-            {[['🛒','#22C55E'],['🍕','#F59E0B'],['⚡','#8B5CF6'],['☕','#EC4899']].map(([ic, bg], i) => (
-              <div key={i} className={`ob-add-mock-cat${i === 0 ? ' selected' : ''}`} style={i === 0 ? { background: bg as string, borderColor: bg as string } : {}}>
-                {ic}
-              </div>
-            ))}
-          </div>
-          <div className="ob-add-mock-desc-bar" />
-        </div>
-      ),
-    },
-    {
-      hint: he ? '③ לחץ "שמור" — זהו!' : '③ Tap "Save" — done!',
-      content: (
-        <div className="ob-add-mock-form">
-          <div className="ob-add-mock-amount" style={{ opacity: 0.6 }}>
-            <span className="ob-add-mock-sym">₪</span>
-            <span className="ob-add-mock-num">250</span>
-          </div>
-          <div className="ob-add-mock-saved">
-            <div className="ob-add-mock-check">
-              <Check size={28} color="#22C55E" strokeWidth={2.5} />
-            </div>
-            <span style={{ color: '#22C55E', fontWeight: 700, fontSize: 15 }}>
-              {he ? 'נשמר!' : 'Saved!'}
-            </span>
-          </div>
-        </div>
-      ),
-    },
-  ];
-  const cur = steps[step];
+  const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let t1: ReturnType<typeof setTimeout>, t2: ReturnType<typeof setTimeout>, t3: ReturnType<typeof setTimeout>;
+    function cycle() {
+      t1 = setTimeout(() => setOpen(true), 900);
+      t2 = setTimeout(() => setSaved(true), 2800);
+      t3 = setTimeout(() => { setOpen(false); setSaved(false); setTimeout(cycle, 1000); }, 3800);
+    }
+    cycle();
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  const txns = he
+    ? [['#22C55E','קניות סופר','₪340'],['#8B5CF6','שכירות','₪3,500'],['#F59E0B','דלק','₪180']]
+    : [['#22C55E','Groceries','$95'],['#8B5CF6','Rent','$1,200'],['#F59E0B','Fuel','$55']];
+
   return (
-    <div className="ob-add-preview">
-      <div className="ob-add-preview-card">
-        {cur.content}
-      </div>
-      <div className="ob-add-hint">{cur.hint}</div>
-      <div className="ob-add-step-dots">
-        {steps.map((_, i) => (
-          <button key={i} className={`ob-add-step-dot${i === step ? ' active' : ''}`} onClick={() => setStep(i)} />
-        ))}
-      </div>
-      <div className="ob-add-nav">
-        <button className="ob-add-nav-btn" disabled={step === 0} onClick={() => setStep(s => s - 1)}>‹</button>
-        <button className="ob-add-nav-btn" disabled={step === steps.length - 1} onClick={() => setStep(s => s + 1)}>›</button>
+    <div className="ob-phone-wrap">
+      <div className="ob-phone-frame" dir={he ? 'rtl' : 'ltr'}>
+        {/* App header */}
+        <div className="ob-phone-header">
+          <span className="ob-phone-month">{he ? 'אפריל 2026' : 'Apr 2026'}</span>
+          <span className="ob-phone-brand">Flowly</span>
+        </div>
+
+        {/* Transaction rows */}
+        <div className="ob-phone-txns">
+          {txns.map(([color, name, amt], i) => (
+            <div key={i} className="ob-phone-txn">
+              <div className="ob-phone-txn-dot" style={{ background: color as string }} />
+              <span className="ob-phone-txn-name">{name}</span>
+              <span className="ob-phone-txn-amt">{amt}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* FAB */}
+        <button
+          className={`ob-phone-fab${!open ? ' ob-phone-fab-pulse' : ''}`}
+          onClick={() => { setOpen(v => !v); if (open) setSaved(false); }}
+        >
+          <Plus
+            size={20}
+            strokeWidth={2.5}
+            style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 0.22s cubic-bezier(0.22,1,0.36,1)' }}
+          />
+        </button>
+
+        {/* Bottom nav mock */}
+        <div className="ob-phone-nav">
+          {['🏠','📊','🌱','⚙️'].map((ic, i) => (
+            <div key={i} className={`ob-phone-nav-tab${i === 0 ? ' active' : ''}`}>{ic}</div>
+          ))}
+        </div>
+
+        {/* Sheet slides up from bottom */}
+        <div className={`ob-phone-sheet${open ? ' open' : ''}`}>
+          <div className="ob-phone-sheet-handle" />
+          {saved ? (
+            <div className="ob-phone-sheet-saved">
+              <div className="ob-phone-sheet-check"><Check size={20} strokeWidth={2.5} /></div>
+              <span>{he ? 'נשמר!' : 'Saved!'}</span>
+            </div>
+          ) : (
+            <>
+              <div className="ob-phone-sheet-amount">
+                <span className="ob-phone-sheet-sym">₪</span>
+                <span className="ob-phone-sheet-num">250</span>
+              </div>
+              <div className="ob-phone-sheet-cats">
+                {[['🛒','#22C55E'],['🍕','#F59E0B'],['⚡','#8B5CF6'],['☕','#EC4899']].map(([ic, bg], i) => (
+                  <div key={i} className={`ob-phone-sheet-cat${i === 0 ? ' sel' : ''}`}
+                    style={i === 0 ? { background: (bg as string) + '28', borderColor: bg as string } : {}}>
+                    {ic}
+                  </div>
+                ))}
+              </div>
+              <div className="ob-phone-sheet-savebtn">{he ? 'שמור' : 'Save'}</div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -473,16 +482,14 @@ export default function Onboarding({ onDone }: Props) {
 
   return (
     <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen ob-screen-visual" key={4}>
+      <div className="ob-screen ob-screen-add" key={4}>
+        <h1 className="ob-title ob-title-sm" style={{ marginBottom: 4 }}>
+          {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
+        </h1>
+        <p className="ob-sub" style={{ marginBottom: 12 }}>
+          {he ? 'לחץ + → הכנס סכום וקטגוריה → שמור' : 'Tap + → amount & category → save'}
+        </p>
         <AddExpensePreview he={he} />
-        <div className="ob-visual-text">
-          <h1 className="ob-title ob-title-sm">{he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}</h1>
-          <p className="ob-sub">
-            {he
-              ? 'לחץ על + בתחתית, הכנס סכום וקטגוריה, ושמור. זהו.'
-              : 'Tap +, enter amount & category, save. That\'s it.'}
-          </p>
-        </div>
       </div>
       <div className="ob-bottom">
         {dots}
