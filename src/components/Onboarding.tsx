@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { TrendingUp, Wallet, Plus, ChevronRight, X, Check } from 'lucide-react';
-import { CURRENCY_SYMBOL } from '../services/exchangeRate';
+import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import type { MoneyMode } from '../context/ExpenseContext';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -119,30 +119,83 @@ function ReactiveRing({ amount, isSavings, currency }: {
   );
 }
 
-// ── Launch screen preview ─────────────────────────────────────────────────────
+// ── Add-expense tutorial preview ──────────────────────────────────────────────
 
-function LaunchPreview() {
-  return (
-    <div className="ob-launch-preview">
-      <div className="ob-launch-mock">
-        {/* Fake transaction rows */}
-        {[70, 50, 85].map((w, i) => (
-          <div key={i} className="ob-launch-mock-row">
-            <div className="ob-launch-mock-dot" style={{
-              background: ['#22C55E','#8B5CF6','#F59E0B'][i],
-            }} />
-            <div className="ob-launch-mock-bar" style={{ width: `${w}%` }} />
+function AddExpensePreview({ he }: { he: boolean }) {
+  const [step, setStep] = useState(0);
+  const steps = [
+    {
+      hint: he ? '① לחץ + בתחתית המסך' : '① Tap + at the bottom',
+      content: (
+        <div className="ob-add-mock-screen">
+          <div className="ob-add-mock-txns">
+            {['#22C55E','#8B5CF6','#F59E0B'].map((c, i) => (
+              <div key={i} className="ob-add-mock-row">
+                <div className="ob-add-mock-dot" style={{ background: c }} />
+                <div className="ob-add-mock-bar" style={{ width: `${[70,50,85][i]}%` }} />
+              </div>
+            ))}
           </div>
-        ))}
-        {/* FAB button in mock */}
-        <div className="ob-launch-fab-mock">
-          <Plus size={20} color="#fff" strokeWidth={2.5} />
+          <div className="ob-add-mock-fab ob-pulse">
+            <Plus size={22} color="#fff" strokeWidth={2.5} />
+          </div>
         </div>
+      ),
+    },
+    {
+      hint: he ? '② הכנס סכום וקטגוריה' : '② Enter amount & category',
+      content: (
+        <div className="ob-add-mock-form">
+          <div className="ob-add-mock-amount">
+            <span className="ob-add-mock-sym">₪</span>
+            <span className="ob-add-mock-num">250</span>
+          </div>
+          <div className="ob-add-mock-cats">
+            {[['🛒','#22C55E'],['🍕','#F59E0B'],['⚡','#8B5CF6'],['☕','#EC4899']].map(([ic, bg], i) => (
+              <div key={i} className={`ob-add-mock-cat${i === 0 ? ' selected' : ''}`} style={i === 0 ? { background: bg as string, borderColor: bg as string } : {}}>
+                {ic}
+              </div>
+            ))}
+          </div>
+          <div className="ob-add-mock-desc-bar" />
+        </div>
+      ),
+    },
+    {
+      hint: he ? '③ לחץ "שמור" — זהו!' : '③ Tap "Save" — done!',
+      content: (
+        <div className="ob-add-mock-form">
+          <div className="ob-add-mock-amount" style={{ opacity: 0.6 }}>
+            <span className="ob-add-mock-sym">₪</span>
+            <span className="ob-add-mock-num">250</span>
+          </div>
+          <div className="ob-add-mock-saved">
+            <div className="ob-add-mock-check">
+              <Check size={28} color="#22C55E" strokeWidth={2.5} />
+            </div>
+            <span style={{ color: '#22C55E', fontWeight: 700, fontSize: 15 }}>
+              {he ? 'נשמר!' : 'Saved!'}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+  ];
+  const cur = steps[step];
+  return (
+    <div className="ob-add-preview">
+      <div className="ob-add-preview-card">
+        {cur.content}
       </div>
-      {/* Arrow pointing up to FAB */}
-      <div className="ob-launch-arrow-wrap">
-        <div className="ob-launch-arrow-line" />
-        <div className="ob-launch-arrow-head" />
+      <div className="ob-add-hint">{cur.hint}</div>
+      <div className="ob-add-step-dots">
+        {steps.map((_, i) => (
+          <button key={i} className={`ob-add-step-dot${i === step ? ' active' : ''}`} onClick={() => setStep(i)} />
+        ))}
+      </div>
+      <div className="ob-add-nav">
+        <button className="ob-add-nav-btn" disabled={step === 0} onClick={() => setStep(s => s - 1)}>‹</button>
+        <button className="ob-add-nav-btn" disabled={step === steps.length - 1} onClick={() => setStep(s => s + 1)}>›</button>
       </div>
     </div>
   );
@@ -150,7 +203,7 @@ function LaunchPreview() {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const TOTAL = 4;
+const TOTAL = 5;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
@@ -162,6 +215,7 @@ export default function Onboarding({ onDone }: Props) {
 
   const [step, setStep]               = useState(0);
   const [selectedMode, setSelectedMode] = useState<MoneyMode | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
   const [goalAmount, setGoalAmount]   = useState('');
   const goalInputRef                  = useRef<HTMLInputElement>(null);
 
@@ -184,6 +238,11 @@ export default function Onboarding({ onDone }: Props) {
       else dispatch({ type: 'SET_BUDGET', payload: val });
     }
     advance();
+  }
+
+  function pickCurrency(c: string) {
+    setSelectedCurrency(c);
+    dispatch({ type: 'SET_MAIN_CURRENCY', payload: c });
   }
 
   function handleLaunch() {
@@ -363,18 +422,65 @@ export default function Onboarding({ onDone }: Props) {
     );
   }
 
-  // ── Step 3: Launch ────────────────────────────────────────────────────────
+  // ── Step 3: Currency picker ───────────────────────────────────────────────
+
+  if (step === 3) return (
+    <div className="ob-overlay" dir={dir}>
+      <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
+        <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
+      </button>
+      <div className="ob-screen" key={3}>
+        <h1 className="ob-title ob-title-sm">
+          {he ? 'באיזה מטבע אתה מנהל?' : 'What currency do you use?'}
+        </h1>
+        <p className="ob-sub ob-mode-intro">
+          {he
+            ? 'זה יהיה מטבע הניהול הראשי שלך. ניתן להוסיף הוצאות במטבע אחר — הן יומרו אוטומטית.'
+            : 'This will be your primary management currency. Expenses in other currencies are auto-converted.'}
+        </p>
+        <div className="ob-currency-list">
+          {CURRENCIES.map(c => {
+            const sym  = CURRENCY_SYMBOL[c];
+            const name = he ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c];
+            const active = selectedCurrency === c;
+            return (
+              <button
+                key={c}
+                className={`ob-currency-card${active ? ' ob-currency-selected' : ''}`}
+                onClick={() => pickCurrency(c)}
+              >
+                <span className="ob-currency-sym">{sym}</span>
+                <div className="ob-currency-info">
+                  <span className="ob-currency-code">{c}</span>
+                  <span className="ob-currency-name">{name}</span>
+                </div>
+                {active && <Check size={16} className="ob-currency-check" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="ob-bottom">
+        {dots}
+        <button className="ob-btn-primary" onClick={advance}>
+          {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 4: Add expense tutorial ─────────────────────────────────────────
 
   return (
     <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen ob-screen-visual" key={3}>
-        <LaunchPreview />
+      <div className="ob-screen ob-screen-visual" key={4}>
+        <AddExpensePreview he={he} />
         <div className="ob-visual-text">
-          <h1 className="ob-title ob-title-sm">{he ? 'הכל מוכן!' : "You're all set!"}</h1>
+          <h1 className="ob-title ob-title-sm">{he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}</h1>
           <p className="ob-sub">
             {he
-              ? 'לחץ על + כדי לרשום את ההוצאה הראשונה שלך.'
-              : 'Tap + to log your first expense.'}
+              ? 'לחץ על + בתחתית, הכנס סכום וקטגוריה, ושמור. זהו.'
+              : 'Tap +, enter amount & category, save. That\'s it.'}
           </p>
         </div>
       </div>

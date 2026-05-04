@@ -3384,6 +3384,86 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 4px 8px;
 }
 
+/* ── Onboarding: currency picker ── */
+.ob-currency-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px; }
+.ob-currency-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: 14px;
+  background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.1);
+  cursor: pointer; text-align: start; transition: all 0.18s;
+}
+.ob-currency-card:hover { background: rgba(255,255,255,0.09); }
+.ob-currency-card.ob-currency-selected {
+  border-color: var(--purple);
+  background: rgba(139,92,246,0.12);
+}
+.ob-currency-sym { font-size: 24px; font-weight: 700; color: var(--text-primary); width: 32px; text-align: center; flex-shrink: 0; }
+.ob-currency-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.ob-currency-code { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.ob-currency-name { font-size: 12px; color: var(--text-muted); }
+.ob-currency-check { color: var(--purple); flex-shrink: 0; }
+
+/* ── Onboarding: add-expense tutorial ── */
+.ob-add-preview { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.ob-add-preview-card {
+  width: 100%; max-width: 280px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px; padding: 20px; min-height: 160px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ob-add-hint { font-size: 14px; font-weight: 600; color: var(--text-secondary); text-align: center; }
+.ob-add-step-dots { display: flex; gap: 6px; }
+.ob-add-step-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); border: none; cursor: pointer; padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+.ob-add-step-dot.active { background: var(--purple); transform: scale(1.3); }
+.ob-add-nav { display: flex; gap: 16px; }
+.ob-add-nav-btn {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 50%; width: 36px; height: 36px; font-size: 20px;
+  color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.ob-add-nav-btn:disabled { opacity: 0.25; cursor: default; }
+.ob-add-nav-btn:not(:disabled):hover { background: rgba(255,255,255,0.14); }
+
+/* mock screen (step 0 of add-expense) */
+.ob-add-mock-screen { width: 100%; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.ob-add-mock-txns { display: flex; flex-direction: column; gap: 8px; }
+.ob-add-mock-row { display: flex; align-items: center; gap: 8px; }
+.ob-add-mock-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.ob-add-mock-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.12); }
+.ob-add-mock-fab {
+  align-self: center; margin-top: 12px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--purple); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(139,92,246,0.5);
+}
+@keyframes ob-pulse { 0%,100%{box-shadow:0 4px 16px rgba(139,92,246,0.5)} 50%{box-shadow:0 4px 28px rgba(139,92,246,0.85)} }
+.ob-pulse { animation: ob-pulse 1.4s ease-in-out infinite; }
+
+/* mock form (steps 1-2 of add-expense) */
+.ob-add-mock-form { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.ob-add-mock-amount { display: flex; align-items: baseline; gap: 4px; }
+.ob-add-mock-sym { font-size: 20px; font-weight: 700; color: var(--text-muted); }
+.ob-add-mock-num { font-size: 36px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ob-add-mock-cats { display: flex; gap: 8px; }
+.ob-add-mock-cat {
+  width: 38px; height: 38px; border-radius: 10px; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.1);
+  transition: all 0.15s;
+}
+.ob-add-mock-cat.selected { border-color: transparent; color: #fff; }
+.ob-add-mock-desc-bar { width: 80%; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+.ob-add-mock-saved { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ob-add-mock-check {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(34,197,94,0.15); display: flex; align-items: center; justify-content: center;
+}
+
 /* =====================================================
    RECEIPT ATTACHMENT
    ===================================================== */
