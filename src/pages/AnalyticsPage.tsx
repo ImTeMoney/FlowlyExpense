@@ -269,6 +269,9 @@ export default function AnalyticsPage() {
         <>
           {/* ── Summary card ── */}
           <div className="an-summary-card">
+            <div className="an-donut-col">
+              <SideDonut pct={heroPct} color={heroColor} sublabel={heroSublabel} />
+            </div>
             <div className="an-kpis">
               {income > 0 && (
                 <div className="an-kpi-row">
@@ -299,11 +302,8 @@ export default function AnalyticsPage() {
               <div className="an-kpi-divider" />
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'ממוצע יומי' : 'Daily avg'}</span>
-                <span className="an-kpi-val" style={{ fontSize: 13, fontWeight: 600 }}>{formatCurrency(dailyAvg)}</span>
+                <span className="an-kpi-val an-kpi-val-sm">{formatCurrency(dailyAvg)}</span>
               </div>
-            </div>
-            <div className="an-donut-col">
-              <SideDonut pct={heroPct} color={heroColor} sublabel={heroSublabel} />
             </div>
           </div>
           {heroRemaining && (
