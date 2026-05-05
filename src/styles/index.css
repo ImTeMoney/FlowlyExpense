@@ -3406,6 +3406,15 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 /* ── Onboarding: add-expense tutorial ── */
 /* ── Onboarding: phone screen mock (step 4) ── */
 .ob-screen-add { padding-top: 16px; }
+.ob-add-steps { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 16px; }
+.ob-add-step {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+}
+.ob-add-step-num {
+  font-size: 18px; font-weight: 800; color: var(--purple);
+  flex-shrink: 0; width: 28px; text-align: center;
+}
 .ob-phone-wrap { width: 100%; display: flex; justify-content: center; }
 .ob-phone-frame {
   position: relative; width: 240px; height: 300px;

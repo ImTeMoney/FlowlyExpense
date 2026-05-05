@@ -123,18 +123,7 @@ function ReactiveRing({ amount, isSavings, currency }: {
 
 function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
   const [open, setOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    let t1: ReturnType<typeof setTimeout>, t2: ReturnType<typeof setTimeout>, t3: ReturnType<typeof setTimeout>;
-    function cycle() {
-      t1 = setTimeout(() => setOpen(true), 900);
-      t2 = setTimeout(() => setSaved(true), 2800);
-      t3 = setTimeout(() => { setOpen(false); setSaved(false); setTimeout(cycle, 1000); }, 3800);
-    }
-    cycle();
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []);
+  const saved = false;
 
   const s = currSym;
   const txns = he
@@ -217,9 +206,9 @@ const TOTAL = 5;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
-  const { lang }              = useLang();
-  const { dispatch, state }   = useExpense();
-  const he                    = lang !== 'en';
+  const { lang, t }            = useLang();
+  const { dispatch, state }    = useExpense();
+  const he                     = lang !== 'en';
   const dir                   = he ? 'rtl' : 'ltr';
   const currencySymbol        = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
 
@@ -241,10 +230,8 @@ export default function Onboarding({ onDone }: Props) {
   function pickMode(modeId: MoneyMode) {
     setSelectedMode(modeId);
     dispatch({ type: 'SET_MONEY_MODE', payload: modeId });
-    // Pre-fill goal from whichever state value matches the new mode
     const stored = modeId === 'budget_based' ? state.monthlyBudget : state.savingsGoal;
     if (stored > 0) setGoalAmount(String(stored));
-    setTimeout(advance, 160);
   }
 
   function saveGoalAndAdvance() {
@@ -320,58 +307,46 @@ export default function Onboarding({ onDone }: Props) {
       </button>
       <div className="ob-screen" key={1}>
         <h1 className="ob-title ob-title-sm">
-          {he ? 'איך אתה מנהל כסף?' : "What's your money style?"}
+          {he ? 'איך תרצה לנהל את הכסף?' : 'How do you want to manage money?'}
         </h1>
         <p className="ob-sub ob-mode-intro">
           {he
             ? 'בחר את הגישה שמתאימה לך — המערכת תתאים את עצמה.'
             : 'Pick the approach that fits you — the app adapts to match.'}
         </p>
-        <div className="ob-modes">
-          {([
-            {
-              id:     'savings_based' as MoneyMode,
-              icon:   <TrendingUp size={22} color="#22C55E" />,
-              bg:     'rgba(34,197,94,0.15)',
-              accent: '#22C55E',
-              title:  he ? 'אני רוצה לחסוך יותר'         : 'I want to save more',
-              desc:   he
-                ? 'קובע יעד חיסכון חודשי. המערכת מחשבת כמה מותר לבזבז לפי ההכנסות שלך.'
-                : 'Set a monthly savings target. The app calculates your safe-to-spend from your income.',
-              tag:    he ? 'מעקב הכנסות + הוצאות + חיסכון' : 'Tracks income · expenses · savings',
-            },
-            {
-              id:     'budget_based' as MoneyMode,
-              icon:   <Wallet size={22} color="#F59E0B" />,
-              bg:     'rgba(245,158,11,0.15)',
-              accent: '#F59E0B',
-              title:  he ? 'יש לי תקציב חודשי קבוע'      : 'I have a fixed monthly budget',
-              desc:   he
-                ? 'קובע כמה מותר לבזבז החודש. מקבל התראה לפני חריגה — ללא מעקב הכנסות.'
-                : 'Set how much you want to spend. Get warned before overspending — no income tracking.',
-              tag:    he ? 'מעקב הוצאות מול תקציב בלבד'   : 'Tracks spending against your cap',
-            },
-          ] as const).map(m => (
-            <button
-              key={m.id}
-              className={`ob-mode-card ob-mode-btn${selectedMode === m.id ? ' ob-mode-selected' : ''}`}
-              onClick={() => pickMode(m.id)}
-            >
-              <div className="ob-mode-icon-wrap" style={{ background: m.bg }}>{m.icon}</div>
-              <div className="ob-mode-text">
-                <div className="ob-mode-title">{m.title}</div>
-                <div className="ob-mode-desc">{m.desc}</div>
-                <div className="ob-mode-tag" style={{ color: m.accent }}>{m.tag}</div>
-              </div>
-              <ChevronRight size={14} className="ob-mode-chevron" />
-            </button>
-          ))}
+
+        {/* Segmented control — identical to Settings */}
+        <div className="mode-seg-ctrl" style={{ width: '100%', marginBottom: 10 }}>
+          <button
+            className={`mode-seg-btn${selectedMode === 'savings_based' ? ' active' : ''}`}
+            onClick={() => pickMode('savings_based')}
+          >
+            <TrendingUp size={14} />
+            <span>{t.modeTrackSavings}</span>
+          </button>
+          <button
+            className={`mode-seg-btn${selectedMode === 'budget_based' ? ' active' : ''}`}
+            onClick={() => pickMode('budget_based')}
+          >
+            <Wallet size={14} />
+            <span>{t.modeTrackBudget}</span>
+          </button>
         </div>
-        <p className="ob-sub">
-          {he ? 'ניתן לשנות בכל עת בפרופיל.' : 'Change this any time in Profile.'}
+
+        <p className="mode-seg-desc" style={{ textAlign: he ? 'right' : 'left', padding: '0 2px' }}>
+          {selectedMode === 'savings_based' ? t.modeTrackSavingsDesc : t.modeTrackBudgetDesc}
+        </p>
+
+        <p className="ob-sub" style={{ marginTop: 16 }}>
+          {he ? 'ניתן לשנות בכל עת בהגדרות.' : 'Change this any time in Settings.'}
         </p>
       </div>
-      <div className="ob-bottom ob-bottom-dots-only">{dots}</div>
+      <div className="ob-bottom">
+        {dots}
+        <button className="ob-btn-primary" onClick={advance}>
+          {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
+        </button>
+      </div>
     </div>
   );
 
@@ -493,10 +468,12 @@ export default function Onboarding({ onDone }: Props) {
         <h1 className="ob-title ob-title-sm" style={{ marginBottom: 4 }}>
           {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
         </h1>
-        <p className="ob-sub" style={{ marginBottom: 12 }}>
-          {he ? 'לחץ + → הכנס סכום וקטגוריה → שמור' : 'Tap + → amount & category → save'}
-        </p>
         <AddExpensePreview he={he} currSym={currencySymbol} />
+        <div className="ob-add-steps">
+          <div className="ob-add-step"><span className="ob-add-step-num">①</span><span>{he ? 'לחץ על + בתחתית המסך' : 'Tap + at the bottom'}</span></div>
+          <div className="ob-add-step"><span className="ob-add-step-num">②</span><span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span></div>
+          <div className="ob-add-step"><span className="ob-add-step-num">③</span><span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span></div>
+        </div>
       </div>
       <div className="ob-bottom">
         {dots}
