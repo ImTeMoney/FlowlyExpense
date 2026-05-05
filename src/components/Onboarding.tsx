@@ -315,27 +315,30 @@ export default function Onboarding({ onDone }: Props) {
             : 'Pick the approach that fits you — the app adapts to match.'}
         </p>
 
-        {/* Segmented control — identical to Settings */}
-        <div className="mode-seg-ctrl" style={{ width: '100%', marginBottom: 10 }}>
+        <div className="ob-modes">
           <button
-            className={`mode-seg-btn${selectedMode === 'savings_based' ? ' active' : ''}`}
+            className={`ob-mode-btn ob-mode-card${selectedMode === 'savings_based' ? ' ob-mode-selected' : ''}`}
             onClick={() => pickMode('savings_based')}
           >
-            <TrendingUp size={14} />
-            <span>{t.modeTrackSavings}</span>
+            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}><TrendingUp size={20} /></div>
+            <div className="ob-mode-text">
+              <div className="ob-mode-title">{t.modeTrackSavings}</div>
+              <div className="ob-mode-desc">{t.modeTrackSavingsDesc}</div>
+            </div>
+            {selectedMode === 'savings_based' && <Check size={16} style={{ color: 'var(--purple)', flexShrink: 0 }} />}
           </button>
           <button
-            className={`mode-seg-btn${selectedMode === 'budget_based' ? ' active' : ''}`}
+            className={`ob-mode-btn ob-mode-card${selectedMode === 'budget_based' ? ' ob-mode-selected' : ''}`}
             onClick={() => pickMode('budget_based')}
           >
-            <Wallet size={14} />
-            <span>{t.modeTrackBudget}</span>
+            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}><Wallet size={20} /></div>
+            <div className="ob-mode-text">
+              <div className="ob-mode-title">{t.modeTrackBudget}</div>
+              <div className="ob-mode-desc">{t.modeTrackBudgetDesc}</div>
+            </div>
+            {selectedMode === 'budget_based' && <Check size={16} style={{ color: 'var(--purple)', flexShrink: 0 }} />}
           </button>
         </div>
-
-        <p className="mode-seg-desc" style={{ textAlign: he ? 'right' : 'left', padding: '0 2px' }}>
-          {selectedMode === 'savings_based' ? t.modeTrackSavingsDesc : t.modeTrackBudgetDesc}
-        </p>
 
         <p className="ob-sub" style={{ marginTop: 16 }}>
           {he ? 'ניתן לשנות בכל עת בהגדרות.' : 'Change this any time in Settings.'}

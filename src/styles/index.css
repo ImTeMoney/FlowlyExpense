@@ -1655,7 +1655,7 @@ select.sm-in option { background: var(--modal-bg); }
 .csv-range-input {
   flex: 1; padding: 8px 10px; border-radius: var(--r-sm);
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-  color: var(--text-primary); font-size: 13px; font-family: inherit;
+  color: var(--text); font-size: 13px; font-family: inherit;
   text-align: center; min-width: 0;
 }
 .csv-range-input:focus { outline: none; border-color: var(--purple); }
@@ -2888,7 +2888,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-title {
   font-size: 24px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text);
   margin: 0 0 12px;
   line-height: 1.25;
 }
@@ -3397,9 +3397,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-color: var(--purple);
   background: rgba(139,92,246,0.12);
 }
-.ob-currency-sym { font-size: 24px; font-weight: 700; color: var(--text-primary); width: 32px; text-align: center; flex-shrink: 0; }
+.ob-currency-sym { font-size: 24px; font-weight: 700; color: var(--text); width: 32px; text-align: center; flex-shrink: 0; }
 .ob-currency-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.ob-currency-code { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.ob-currency-code { font-size: 15px; font-weight: 700; color: var(--text); }
 .ob-currency-name { font-size: 12px; color: var(--text-muted); }
 .ob-currency-check { color: var(--purple); flex-shrink: 0; }
 
@@ -3415,7 +3415,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   font-size: 20px; font-weight: 800; color: var(--purple);
 }
 .ob-add-step span:last-child {
-  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  font-size: 12px; font-weight: 600; color: var(--text);
   text-align: center; line-height: 1.4;
 }
 .ob-phone-wrap { width: 100%; display: flex; justify-content: center; }
@@ -3439,7 +3439,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-phone-txn { display: flex; align-items: center; gap: 8px; }
 .ob-phone-txn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .ob-phone-txn-name { flex: 1; font-size: 11px; color: var(--text-secondary); }
-.ob-phone-txn-amt { font-size: 11px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ob-phone-txn-amt { font-size: 11px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 
 /* bottom nav */
 .ob-phone-nav {
@@ -3488,7 +3488,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .ob-phone-sheet-amount { display: flex; align-items: baseline; gap: 3px; }
 .ob-phone-sheet-sym { font-size: 16px; font-weight: 700; color: var(--text-muted); }
-.ob-phone-sheet-num { font-size: 30px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ob-phone-sheet-num { font-size: 30px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 .ob-phone-sheet-cats { display: flex; gap: 7px; }
 .ob-phone-sheet-cat {
   width: 32px; height: 32px; border-radius: 8px; font-size: 15px;
@@ -3552,7 +3552,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.receipt-attach-btn:hover { border-color: var(--purple); color: var(--text-primary); }
+.receipt-attach-btn:hover { border-color: var(--purple); color: var(--text); }
 .receipt-attach-btn:disabled { opacity: 0.5; cursor: default; }
 
 .receipt-preview {
@@ -3590,7 +3590,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .receipt-info-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3616,7 +3616,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   cursor: pointer;
   transition: background 0.15s;
 }
-.receipt-act-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.receipt-act-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 .receipt-act-danger { color: var(--danger); border-color: rgba(239,68,68,0.25); }
 .receipt-act-danger:hover { background: rgba(239,68,68,0.1); }
 
@@ -4774,7 +4774,7 @@ body::before, body::after {
 .an-txn-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.04); border-radius: 10px; }
 .an-txn-icon { font-size: 18px; flex-shrink: 0; }
 .an-txn-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.an-txn-desc { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-txn-desc { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .an-txn-date { font-size: 11px; color: var(--text-muted); }
 .an-txn-amt { font-size: 13px; font-weight: 600; color: var(--danger); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .an-txn-amt.income { color: var(--success); }
