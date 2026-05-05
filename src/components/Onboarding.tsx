@@ -121,7 +121,7 @@ function ReactiveRing({ amount, isSavings, currency }: {
 
 // ── Add-expense tutorial preview ──────────────────────────────────────────────
 
-function AddExpensePreview({ he }: { he: boolean }) {
+function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -136,9 +136,10 @@ function AddExpensePreview({ he }: { he: boolean }) {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
+  const s = currSym;
   const txns = he
-    ? [['#22C55E','קניות סופר','₪340'],['#8B5CF6','שכירות','₪3,500'],['#F59E0B','דלק','₪180']]
-    : [['#22C55E','Groceries','$95'],['#8B5CF6','Rent','$1,200'],['#F59E0B','Fuel','$55']];
+    ? [['#22C55E','קניות סופר',`${s}340`],['#8B5CF6','שכירות',`${s}3,500`],['#F59E0B','דלק',`${s}180`]]
+    : [['#22C55E','Groceries',`${s}95`],['#8B5CF6','Rent',`${s}1,200`],['#F59E0B','Fuel',`${s}55`]];
 
   return (
     <div className="ob-phone-wrap">
@@ -190,7 +191,7 @@ function AddExpensePreview({ he }: { he: boolean }) {
           ) : (
             <>
               <div className="ob-phone-sheet-amount">
-                <span className="ob-phone-sheet-sym">₪</span>
+                <span className="ob-phone-sheet-sym">{currSym}</span>
                 <span className="ob-phone-sheet-num">250</span>
               </div>
               <div className="ob-phone-sheet-cats">
@@ -223,9 +224,12 @@ export default function Onboarding({ onDone }: Props) {
   const currencySymbol        = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
 
   const [step, setStep]               = useState(0);
-  const [selectedMode, setSelectedMode] = useState<MoneyMode | null>(null);
+  const [selectedMode, setSelectedMode] = useState<MoneyMode>(() => state.moneyMode);
   const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
-  const [goalAmount, setGoalAmount]   = useState('');
+  const [goalAmount, setGoalAmount]   = useState(() => {
+    const val = state.moneyMode === 'budget_based' ? state.monthlyBudget : state.savingsGoal;
+    return val > 0 ? String(val) : '';
+  });
   const goalInputRef                  = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -237,6 +241,9 @@ export default function Onboarding({ onDone }: Props) {
   function pickMode(modeId: MoneyMode) {
     setSelectedMode(modeId);
     dispatch({ type: 'SET_MONEY_MODE', payload: modeId });
+    // Pre-fill goal from whichever state value matches the new mode
+    const stored = modeId === 'budget_based' ? state.monthlyBudget : state.savingsGoal;
+    if (stored > 0) setGoalAmount(String(stored));
     setTimeout(advance, 160);
   }
 
@@ -489,7 +496,7 @@ export default function Onboarding({ onDone }: Props) {
         <p className="ob-sub" style={{ marginBottom: 12 }}>
           {he ? 'לחץ + → הכנס סכום וקטגוריה → שמור' : 'Tap + → amount & category → save'}
         </p>
-        <AddExpensePreview he={he} />
+        <AddExpensePreview he={he} currSym={currencySymbol} />
       </div>
       <div className="ob-bottom">
         {dots}
