@@ -574,9 +574,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       }
 
       case 'SETTLE_DEBT': {
-        // Create the transaction only now — debt is confirmed
-        const settling = debts.find(d => d.id === action.payload);
-        if (settling) {
+        setDebts(prev => {
+          const settling = prev.find(d => d.id === action.payload);
+          if (!settling) return prev;
           const txId = generateId();
           const settledTx: Transaction = {
             id: txId,
@@ -586,21 +586,23 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
             description: `חוב — ${settling.name}`,
             isIncome: settling.direction === 'owes_me',
           };
-          setTransactions(prev => [settledTx, ...prev]);
-          setDebts(prev => prev.map(d => d.id === action.payload
+          setTransactions(tPrev => [settledTx, ...tPrev]);
+          return prev.map(d => d.id === action.payload
             ? { ...d, settled: true, settledDate: settledTx.date, transactionId: txId }
             : d
-          ));
-        }
+          );
+        });
         break;
       }
 
       case 'DELETE_DEBT': {
-        const toDelete = debts.find(d => d.id === action.payload);
-        if (toDelete?.transactionId) {
-          setTransactions(prev => prev.filter(t => t.id !== toDelete.transactionId));
-        }
-        setDebts(prev => prev.filter(d => d.id !== action.payload));
+        setDebts(prev => {
+          const toDelete = prev.find(d => d.id === action.payload);
+          if (toDelete?.transactionId) {
+            setTransactions(tPrev => tPrev.filter(t => t.id !== toDelete.transactionId));
+          }
+          return prev.filter(d => d.id !== action.payload);
+        });
         break;
       }
 
