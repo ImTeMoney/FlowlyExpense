@@ -734,12 +734,16 @@ export default function DashboardPage() {
           </div>
         ) : (
           Array.from(grouped.entries()).map(([dateKey, txns]) => {
-            const dayTotal = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+            const dayIncome  = txns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+            const dayExpense = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+            const dayNet = dayIncome - dayExpense;
             return (
               <div key={dateKey} className="date-group">
                 <div className="dg-header">
                   <span className="dg-label">{formatDateGroup(dateKey)}</span>
-                  <span className="dg-total">{formatCurrency(dayTotal)}</span>
+                  <span className="dg-total" style={{ color: dayNet > 0 ? 'var(--green)' : dayNet < 0 ? 'var(--red)' : 'var(--text-muted)' }}>
+                    {dayNet > 0 ? '+' : ''}{formatCurrency(dayNet)}
+                  </span>
                 </div>
                 {txns.map(tx => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
