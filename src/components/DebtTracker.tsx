@@ -7,7 +7,8 @@ function generateId(): string {
   return '_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-const EMPTY_FORM = { name: '', amount: '', date: new Date().toISOString().slice(0, 10), note: '', direction: 'owes_me' as const };
+type DebtForm = { name: string; amount: string; date: string; note: string; direction: 'owes_me' | 'i_owe' };
+const EMPTY_FORM: DebtForm = { name: '', amount: '', date: new Date().toISOString().slice(0, 10), note: '', direction: 'owes_me' };
 
 export default function DebtTracker() {
   const { state, dispatch } = useExpense();
@@ -53,10 +54,9 @@ export default function DebtTracker() {
     const amt = parseFloat(editForm.amount);
     if (!editForm.name.trim() || isNaN(amt) || amt <= 0) return;
     dispatch({
-      type: 'ADD_DEBT',
+      type: 'UPDATE_DEBT',
       payload: { ...d, name: editForm.name.trim(), amount: amt, date: editForm.date, note: editForm.note.trim() || undefined, direction: editForm.direction },
     });
-    dispatch({ type: 'DELETE_DEBT', payload: d.id });
     setEditId(null);
   }
 
@@ -180,15 +180,49 @@ export default function DebtTracker() {
       {showSettled && (
         <ul className="debt-list settled">
           {settled.map(d => (
-            <li key={d.id} className="debt-item settled">
-              <div className="debt-item-info">
-                <span className="debt-item-name">{d.name}</span>
-                {d.settledDate && <span className="debt-item-date">{he ? `נסגר ${d.settledDate}` : `Settled ${d.settledDate}`}</span>}
-              </div>
-              <span className="debt-item-amt">{formatAmt(d.amount)}</span>
-              <button className="debt-delete-btn" onClick={() => setConfirmDeleteId(d.id)}>
-                <Trash2 size={13} />
-              </button>
+            <li key={d.id}>
+              {editId === d.id ? (
+                <div className="debt-edit-form">
+                  <div className="debt-direction-toggle">
+                    <button type="button" className={`debt-dir-btn${editForm.direction === 'owes_me' ? ' active-owes' : ''}`}
+                      onClick={() => setEditForm(f => ({ ...f, direction: 'owes_me' }))}>{he ? 'חייבים לי' : 'Owes me'}</button>
+                    <button type="button" className={`debt-dir-btn${editForm.direction === 'i_owe' ? ' active-iowe' : ''}`}
+                      onClick={() => setEditForm(f => ({ ...f, direction: 'i_owe' }))}>{he ? 'אני חייב' : 'I owe'}</button>
+                  </div>
+                  <input className="aether-input" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder={he ? 'שם' : 'Name'} autoFocus />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input className="aether-input" type="number" value={editForm.amount} style={{ flex: 1 }}
+                      onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} placeholder={he ? 'סכום' : 'Amount'} />
+                    <input className="aether-input" type="date" value={editForm.date} style={{ flex: 1 }}
+                      onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
+                  </div>
+                  <input className="aether-input" value={editForm.note} onChange={e => setEditForm(f => ({ ...f, note: e.target.value }))}
+                    placeholder={he ? 'הערה' : 'Note'} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="debt-settle-btn" style={{ flex: 1, borderRadius: 8, width: 'auto' }} onClick={() => saveEdit(d)}>
+                      <Check size={13} /> {he ? 'שמור' : 'Save'}
+                    </button>
+                    <button className="debt-delete-btn" style={{ flex: 1, borderRadius: 8, width: 'auto' }} onClick={() => setEditId(null)}>
+                      <X size={13} /> {he ? 'ביטול' : 'Cancel'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="debt-item settled">
+                  <div className="debt-item-info">
+                    <span className="debt-item-name">{d.name}</span>
+                    {d.settledDate && <span className="debt-item-date">{he ? `נסגר ${d.settledDate}` : `Settled ${d.settledDate}`}</span>}
+                  </div>
+                  <span className="debt-item-amt">{formatAmt(d.amount)}</span>
+                  <button className="debt-edit-btn" onClick={() => openEdit(d)} title={he ? 'ערוך' : 'Edit'}>
+                    <Pencil size={13} />
+                  </button>
+                  <button className="debt-delete-btn" onClick={() => setConfirmDeleteId(d.id)}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

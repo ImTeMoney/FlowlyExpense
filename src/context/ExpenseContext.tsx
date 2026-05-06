@@ -17,6 +17,7 @@ export interface DebtEntry {
   direction: 'owes_me' | 'i_owe';
   settled: boolean;
   settledDate?: string;
+  transactionId?: string;
 }
 
 export interface StreakData {
@@ -144,6 +145,7 @@ type Action =
   | { type: 'SET_CATEGORY_BUDGET';       payload: { catId: string; amount: number } }
   | { type: 'CLEAR_CATEGORY_BUDGET';     payload: string }
   | { type: 'ADD_DEBT';                  payload: DebtEntry }
+  | { type: 'UPDATE_DEBT';               payload: DebtEntry }
   | { type: 'SETTLE_DEBT';               payload: string }
   | { type: 'DELETE_DEBT';               payload: string }
   | { type: 'UPDATE_STREAK';             payload: StreakData };
@@ -539,8 +541,30 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
 
       case 'ADD_DEBT': {
-        const newDebt: DebtEntry = { ...action.payload, id: generateId() };
+        const txId = generateId();
+        const debtTx: Transaction = {
+          id: txId,
+          amount: action.payload.amount,
+          categoryId: 'cat_other',
+          date: action.payload.date,
+          description: action.payload.name,
+          isIncome: action.payload.direction === 'owes_me',
+        };
+        const newDebt: DebtEntry = { ...action.payload, id: generateId(), transactionId: txId };
+        setTransactions(prev => [debtTx, ...prev]);
         setDebts(prev => [newDebt, ...prev]);
+        break;
+      }
+
+      case 'UPDATE_DEBT': {
+        const d = action.payload;
+        setDebts(prev => prev.map(e => e.id === d.id ? d : e));
+        if (d.transactionId) {
+          setTransactions(prev => prev.map(t => t.id === d.transactionId
+            ? { ...t, amount: d.amount, description: d.name, date: d.date, isIncome: d.direction === 'owes_me' }
+            : t
+          ));
+        }
         break;
       }
 
@@ -551,9 +575,14 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         ));
         break;
 
-      case 'DELETE_DEBT':
+      case 'DELETE_DEBT': {
+        const toDelete = debts.find(d => d.id === action.payload);
+        if (toDelete?.transactionId) {
+          setTransactions(prev => prev.filter(t => t.id !== toDelete.transactionId));
+        }
         setDebts(prev => prev.filter(d => d.id !== action.payload));
         break;
+      }
 
       case 'UPDATE_STREAK':
         setStreakData(action.payload);
