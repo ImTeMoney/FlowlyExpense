@@ -409,10 +409,10 @@ export default function Onboarding({ onDone }: Props) {
           {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
         </h1>
         <AddExpensePreview he={he} currSym={currencySymbol} />
-        <div className="ob-add-steps">
-          <div className="ob-add-step"><span className="ob-add-step-num">①</span><span>{he ? 'לחץ על + בתחתית המסך' : 'Tap + at the bottom'}</span></div>
-          <div className="ob-add-step"><span className="ob-add-step-num">②</span><span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span></div>
-          <div className="ob-add-step"><span className="ob-add-step-num">③</span><span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span></div>
+        <div className="ob-add-steps" dir="ltr">
+          <div className="ob-add-step"><span className="ob-add-step-num">1</span><span>{he ? 'לחץ על +' : 'Tap +'}</span></div>
+          <div className="ob-add-step"><span className="ob-add-step-num">2</span><span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span></div>
+          <div className="ob-add-step"><span className="ob-add-step-num">3</span><span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span></div>
         </div>
       </div>
       <div className="ob-bottom">
