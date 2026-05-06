@@ -4591,6 +4591,22 @@ body::before, body::after {
 .fbl-recur::before { content: '●'; color: rgba(160,80,255,0.9); margin-right: 3px; }
 .fbl-var::before   { content: '●'; color: rgba(255,255,255,0.3); margin-right: 3px; }
 
+/* ── Debt mode iOS toggle ── */
+.debt-mode-toggle {
+  position: relative; width: 44px; height: 26px; border-radius: 13px;
+  background: var(--glass-border); border: none; cursor: pointer;
+  transition: background 0.2s; flex-shrink: 0; padding: 0;
+}
+.debt-mode-toggle.on { background: var(--success); }
+.debt-mode-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
+  display: block;
+}
+.debt-mode-toggle.on .debt-mode-thumb { transform: translateX(18px); }
+
 /* ── Debt Tracker ───────────────────────────────────────────────────────── */
 .debt-tracker-card {
   background: var(--bg-card);

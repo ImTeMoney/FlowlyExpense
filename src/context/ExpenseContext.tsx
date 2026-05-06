@@ -119,6 +119,7 @@ export interface AppState {
   categoryBudgets: CategoryBudgets;
   debts: DebtEntry[];
   streakData: StreakData;
+  debtModeEnabled: boolean;
 }
 
 type Action =
@@ -148,6 +149,7 @@ type Action =
   | { type: 'UPDATE_DEBT';               payload: DebtEntry }
   | { type: 'SETTLE_DEBT';               payload: string }
   | { type: 'DELETE_DEBT';               payload: string }
+  | { type: 'SET_DEBT_MODE';             payload: boolean }
   | { type: 'UPDATE_STREAK';             payload: StreakData };
 
 // ── Static built-in categories ────────────────────────────────────────────────
@@ -173,6 +175,9 @@ export const CATEGORY_COLORS = [
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
+export const DEBT_CATEGORY_ID = 'cat_debt';
+export const DEBT_CATEGORY: Category = { id: DEBT_CATEGORY_ID, name: 'חוב', color: '#6366f1' };
+
 const STORAGE_KEYS = {
   TRANSACTIONS:      'expense_transactions',
   RECURRING:         'expense_recurring',
@@ -185,6 +190,7 @@ const STORAGE_KEYS = {
   CATEGORY_BUDGETS:  'expense_category_budgets',
   DEBTS:             'expense_debts',
   STREAKS:           'expense_streaks',
+  DEBT_MODE:         'expense_debt_mode',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -299,6 +305,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [debts, setDebts] = useState<DebtEntry[]>(() =>
     loadFromStorage<DebtEntry[]>(STORAGE_KEYS.DEBTS, [])
   );
+  const [debtModeEnabled, setDebtModeEnabled] = useState<boolean>(() =>
+    localStorage.getItem(STORAGE_KEYS.DEBT_MODE) === 'true'
+  );
   const [streakData, setStreakData] = useState<StreakData>(() =>
     loadFromStorage<StreakData>(STORAGE_KEYS.STREAKS, { currentStreak: 0, longestStreak: 0, lastCheckedDate: '' })
   );
@@ -335,6 +344,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   }, [moneyMode]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.CATEGORY_BUDGETS, categoryBudgets); }, [categoryBudgets]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.DEBTS, debts); }, [debts]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.DEBT_MODE, String(debtModeEnabled)); }, [debtModeEnabled]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.STREAKS, streakData); }, [streakData]);
 
   // Cross-tab sync: when another tab writes to localStorage, mirror the change here
@@ -545,7 +555,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         const debtTx: Transaction = {
           id: txId,
           amount: action.payload.amount,
-          categoryId: 'cat_other',
+          categoryId: DEBT_CATEGORY_ID,
           date: action.payload.date,
           description: action.payload.name,
           isIncome: action.payload.direction === 'owes_me',
@@ -584,6 +594,17 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
       }
 
+      case 'SET_DEBT_MODE': {
+        setDebtModeEnabled(action.payload);
+        if (action.payload) {
+          // Ensure cat_debt exists when enabling
+          setCategories(prev =>
+            prev.some(c => c.id === DEBT_CATEGORY_ID) ? prev : [...prev, DEBT_CATEGORY]
+          );
+        }
+        break;
+      }
+
       case 'UPDATE_STREAK':
         setStreakData(action.payload);
         break;
@@ -614,8 +635,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     moneyMode,
     categoryBudgets,
     debts,
+    debtModeEnabled,
     streakData,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, streakData]);
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, debtModeEnabled, streakData]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;

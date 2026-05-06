@@ -53,7 +53,7 @@ const SettingsPage: React.FC = () => {
   const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
 
-  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
+  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode, debtModeEnabled } = state;
 
   // DnD sensors (pointer for desktop, touch for mobile)
   const sensors = useSensors(
@@ -493,6 +493,25 @@ const SettingsPage: React.FC = () => {
         </div>
         <p className="mode-seg-desc">
           {moneyMode === 'savings_based' ? t.modeTrackSavingsDesc : t.modeTrackBudgetDesc}
+        </p>
+      </div>
+
+      {/* ── Debt Mode ── */}
+      <div className="a-sec">
+        <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="title-text">{lang === 'he' ? 'מצב חובות' : 'Debt Mode'}</span>
+          <button
+            className={`debt-mode-toggle${debtModeEnabled ? ' on' : ''}`}
+            onClick={() => dispatch({ type: 'SET_DEBT_MODE', payload: !debtModeEnabled })}
+            aria-label={lang === 'he' ? 'הפעל/כבה מצב חובות' : 'Toggle debt mode'}
+          >
+            <span className="debt-mode-thumb" />
+          </button>
+        </div>
+        <p className="mode-seg-desc" style={{ marginTop: 6 }}>
+          {lang === 'he'
+            ? 'עקוב אחרי חובות שנתת או קיבלת. כשפעיל, חוב יירשם גם כהוצאה/הכנסה.'
+            : 'Track debts you gave or received. When on, each debt is also recorded as an expense/income.'}
         </p>
       </div>
 

@@ -212,6 +212,7 @@ export default function DebtTracker() {
                 <div className="debt-item settled">
                   <div className="debt-item-info">
                     <span className="debt-item-name">{d.name}</span>
+                    {d.note && <span className="debt-item-note">{d.note}</span>}
                     {d.settledDate && <span className="debt-item-date">{he ? `נסגר ${d.settledDate}` : `Settled ${d.settledDate}`}</span>}
                   </div>
                   <span className="debt-item-amt">{formatAmt(d.amount)}</span>

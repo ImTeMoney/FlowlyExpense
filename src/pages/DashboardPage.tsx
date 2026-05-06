@@ -90,7 +90,7 @@ function groupByDate(txns: Transaction[]) {
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, todayFullLabel, catName } = useLang();
-  const { categories, recurringExpenses, transactions, mainCurrency, monthlyBudget, streakData } = state;
+  const { categories, recurringExpenses, transactions, mainCurrency, monthlyBudget, streakData, debtModeEnabled } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
   const forecast = useSpendingForecast(transactions, recurringExpenses);
@@ -721,8 +721,8 @@ export default function DashboardPage() {
         );
       })}
 
-      {/* Debt tracker */}
-      <DebtTracker />
+      {/* Debt tracker — visible only when debt mode is enabled */}
+      {debtModeEnabled && <DebtTracker />}
 
       {/* Transaction feed */}
       <div className="txn-section">
