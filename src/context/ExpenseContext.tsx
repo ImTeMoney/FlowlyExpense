@@ -557,7 +557,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
           amount: action.payload.amount,
           categoryId: DEBT_CATEGORY_ID,
           date: action.payload.date,
-          description: action.payload.name,
+          description: `חוב — ${action.payload.name}`,
           isIncome: action.payload.direction === 'owes_me',
         };
         const newDebt: DebtEntry = { ...action.payload, id: generateId(), transactionId: txId };
@@ -571,7 +571,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setDebts(prev => prev.map(e => e.id === d.id ? d : e));
         if (d.transactionId) {
           setTransactions(prev => prev.map(t => t.id === d.transactionId
-            ? { ...t, amount: d.amount, description: d.name, date: d.date, isIncome: d.direction === 'owes_me' }
+            ? { ...t, amount: d.amount, description: `חוב — ${d.name}`, date: d.date, isIncome: d.direction === 'owes_me' }
             : t
           ));
         }

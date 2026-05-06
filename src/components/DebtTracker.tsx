@@ -212,6 +212,9 @@ export default function DebtTracker() {
                 <div className="debt-item settled">
                   <div className="debt-item-info">
                     <span className="debt-item-name">{d.name}</span>
+                    <span className={`debt-item-dir-tag ${d.direction === 'owes_me' ? 'owes-me' : 'i-owe'}`}>
+                      {d.direction === 'owes_me' ? (he ? 'חייב לי' : 'Owes me') : (he ? 'אני חייב' : 'I owe')}
+                    </span>
                     {d.note && <span className="debt-item-note">{d.note}</span>}
                     {d.settledDate && <span className="debt-item-date">{he ? `נסגר ${d.settledDate}` : `Settled ${d.settledDate}`}</span>}
                   </div>
