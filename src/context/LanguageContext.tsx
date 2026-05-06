@@ -351,9 +351,9 @@ const he: Translations = {
   // Money mode selector
   moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
-  modeTrackSavingsDesc: 'עוקב אחרי הכנסות, הוצאות וחיסכון.',
+  modeTrackSavingsDesc: 'רשום הכנסות והוצאות וראה כמה כסף נשאר לך באמת.',
   modeTrackBudget: 'מעקב תקציב',
-  modeTrackBudgetDesc: 'עוקב אחרי הוצאות ביחס לתקציב חודשי.',
+  modeTrackBudgetDesc: 'קבע תקציב ושלוט בהוצאות שלך לאורך החודש.',
   // Financial goals section
   financialGoals: 'יעד חודשי',
   savingsGoalLabel: 'יעד חיסכון',
@@ -587,9 +587,9 @@ const en: Translations = {
   // Money mode selector
   moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',
-  modeTrackSavingsDesc: 'Tracks income, expenses and savings.',
+  modeTrackSavingsDesc: 'Log income and expenses to see exactly how much you have left.',
   modeTrackBudget: 'Budget Tracking',
-  modeTrackBudgetDesc: 'Tracks expenses against a monthly budget.',
+  modeTrackBudgetDesc: 'Set a budget and control your spending throughout the month.',
   // Financial goals section
   financialGoals: 'Monthly Goal',
   savingsGoalLabel: 'Savings Goal',
