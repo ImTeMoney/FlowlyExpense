@@ -3440,62 +3440,75 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   font-size: 12px; font-weight: 500; color: var(--text-secondary);
   text-align: center; line-height: 1.45;
 }
+/* lang toggle — top-left on intro screen */
+.ob-lang-toggle {
+  position: absolute; top: 20px; inset-inline-start: 20px;
+  background: rgba(255,255,255,0.10); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; transition: background 0.15s;
+}
+.ob-lang-toggle:hover { background: rgba(255,255,255,0.16); }
+
+/* ── Phone mock — always light-UI regardless of app theme ── */
 .ob-phone-wrap { width: 100%; display: flex; justify-content: center; }
 .ob-phone-frame {
   position: relative; width: 240px; height: 300px;
-  background: var(--bg-card); border: 1px solid var(--glass-border);
+  background: #F8F9FB;
+  border: 1px solid rgba(0,0,0,0.09);
   border-radius: 22px; overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 /* header */
 .ob-phone-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 14px 6px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 11px 14px 7px; border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: #fff;
 }
-.ob-phone-month { font-size: 11px; color: var(--text-muted); }
-.ob-phone-brand { font-size: 12px; font-weight: 700; color: var(--purple); letter-spacing: 0.04em; }
+.ob-phone-month { font-size: 11px; font-weight: 500; color: #8E8E93; }
+.ob-phone-brand { font-size: 13px; font-weight: 800; color: #0A84FF; letter-spacing: 0.01em; }
 
 /* transaction rows */
-.ob-phone-txns { padding: 8px 14px; display: flex; flex-direction: column; gap: 9px; }
-.ob-phone-txn { display: flex; align-items: center; gap: 8px; }
+.ob-phone-txns { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+.ob-phone-txn { display: flex; align-items: center; gap: 9px; }
 .ob-phone-txn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.ob-phone-txn-name { flex: 1; font-size: 11px; color: var(--text-secondary); }
-.ob-phone-txn-amt { font-size: 11px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.ob-phone-txn-name { flex: 1; font-size: 12px; font-weight: 500; color: #1C1C1E; }
+.ob-phone-txn-amt { font-size: 12px; font-weight: 700; color: #1C1C1E; font-variant-numeric: tabular-nums; }
 
 /* bottom nav */
 .ob-phone-nav {
   position: absolute; bottom: 0; left: 0; right: 0; height: 44px;
-  background: rgba(255,255,255,0.04); border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.95); border-top: 1px solid rgba(0,0,0,0.07);
   display: flex; align-items: center; justify-content: space-around;
+  backdrop-filter: blur(8px);
 }
-.ob-phone-nav-tab { font-size: 16px; opacity: 0.35; }
+.ob-phone-nav-tab { font-size: 16px; opacity: 0.28; }
 .ob-phone-nav-tab.active { opacity: 1; }
 
-/* FAB — matches real .fab style */
+/* FAB */
 .ob-phone-fab {
   position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%);
   width: 42px; height: 42px; border-radius: 50%;
-  background: linear-gradient(145deg, rgba(255,255,255,0.35) 0%, rgba(200,220,255,0.18) 100%);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.55);
-  color: var(--purple); display: flex; align-items: center; justify-content: center;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 6px 20px rgba(0,0,0,0.18);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.10);
+  color: #0A84FF; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.9);
   cursor: pointer; transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s;
   z-index: 2;
 }
 .ob-phone-fab:active { transform: translateX(-50%) scale(0.94); }
 @keyframes ob-phone-fab-pulse {
-  0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 0 0 0 rgba(139,92,246,0.5), 0 6px 20px rgba(0,0,0,0.18); }
-  60%     { box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 0 0 10px rgba(139,92,246,0), 0 6px 20px rgba(0,0,0,0.18); }
+  0%,100% { box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 0 rgba(10,132,255,0.35), inset 0 1px 0 rgba(255,255,255,0.9); }
+  60%     { box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 10px rgba(10,132,255,0), inset 0 1px 0 rgba(255,255,255,0.9); }
 }
 .ob-phone-fab-pulse { animation: ob-phone-fab-pulse 1.6s ease-out infinite; }
 
-/* sheet slides up */
+/* sheet slides up — always light */
 .ob-phone-sheet {
   position: absolute; left: 0; right: 0; bottom: 0;
-  background: var(--modal-bg, rgba(18,18,28,0.96));
-  border-top: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.98);
+  border-top: 1px solid rgba(0,0,0,0.08);
   border-radius: 14px 14px 0 0;
   padding: 8px 14px 16px;
   transform: translateY(100%);
@@ -3506,21 +3519,21 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-phone-sheet.open { transform: translateY(0); }
 .ob-phone-sheet-handle {
   width: 32px; height: 3px; border-radius: 2px;
-  background: rgba(255,255,255,0.2); margin-bottom: 2px;
+  background: rgba(0,0,0,0.12); margin-bottom: 2px;
 }
 .ob-phone-sheet-amount { display: flex; align-items: baseline; gap: 3px; }
-.ob-phone-sheet-sym { font-size: 16px; font-weight: 700; color: var(--text-muted); }
-.ob-phone-sheet-num { font-size: 30px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.ob-phone-sheet-sym { font-size: 16px; font-weight: 700; color: #8E8E93; }
+.ob-phone-sheet-num { font-size: 30px; font-weight: 800; color: #1C1C1E; font-variant-numeric: tabular-nums; }
 .ob-phone-sheet-cats { display: flex; gap: 7px; }
 .ob-phone-sheet-cat {
   width: 32px; height: 32px; border-radius: 8px; font-size: 15px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);
+  background: #F2F2F7; border: 1.5px solid rgba(0,0,0,0.08);
 }
-.ob-phone-sheet-cat.sel { border-color: #22C55E; }
+.ob-phone-sheet-cat.sel { border-color: #22C55E; background: rgba(34,197,94,0.10); }
 .ob-phone-sheet-savebtn {
-  width: 100%; padding: 8px; border-radius: 10px;
-  background: var(--purple); color: #fff;
+  width: 100%; padding: 9px; border-radius: 10px;
+  background: #0A84FF; color: #fff;
   font-size: 13px; font-weight: 700; text-align: center;
 }
 .ob-phone-sheet-saved {

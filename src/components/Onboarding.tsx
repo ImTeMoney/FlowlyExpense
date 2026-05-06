@@ -190,7 +190,7 @@ const TOTAL = 4;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
-  const { lang, t }            = useLang();
+  const { lang, t, toggleLang } = useLang();
   const { dispatch, state }    = useExpense();
   const he                     = lang !== 'en';
   const dir                   = he ? 'rtl' : 'ltr';
@@ -209,12 +209,15 @@ export default function Onboarding({ onDone }: Props) {
 
   function pickMode(modeId: MoneyMode) {
     setSelectedMode(modeId);
-    dispatch({ type: 'SET_MONEY_MODE', payload: modeId });
+    // Don't dispatch to context during selection — only on Continue.
+    // Dispatching on every click caused context re-renders that could
+    // exit the onboarding on first load after a SW version update.
     const stored = modeId === 'budget_based' ? state.monthlyBudget : state.savingsGoal;
     if (stored > 0) setGoalAmount(String(stored));
   }
 
   function saveGoalAndAdvance() {
+    dispatch({ type: 'SET_MONEY_MODE', payload: selectedMode });
     const val = parseFloat(goalAmount);
     if (!isNaN(val) && val > 0) {
       if (selectedMode === 'savings_based') dispatch({ type: 'SET_SAVINGS_GOAL', payload: val });
@@ -249,6 +252,9 @@ export default function Onboarding({ onDone }: Props) {
       : ['Everything stored on your device', 'No signup, no email', 'Works fully offline'];
     return (
       <div className="ob-overlay" dir={dir}>
+        <button className="ob-lang-toggle" onClick={toggleLang}>
+          {he ? 'English' : 'עברית'}
+        </button>
         <div className="ob-screen ob-screen-visual" key={0}>
           <AppPreview he={he} />
           <div className="ob-visual-text">
@@ -409,7 +415,7 @@ export default function Onboarding({ onDone }: Props) {
           {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
         </h1>
         <AddExpensePreview he={he} currSym={currencySymbol} />
-        <div className="ob-add-steps" dir="ltr">
+        <div className="ob-add-steps" dir={he ? 'rtl' : 'ltr'}>
           <div className="ob-add-step"><span className="ob-add-step-num">1</span><span>{he ? 'לחץ על +' : 'Tap +'}</span></div>
           <div className="ob-add-step"><span className="ob-add-step-num">2</span><span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span></div>
           <div className="ob-add-step"><span className="ob-add-step-num">3</span><span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span></div>
