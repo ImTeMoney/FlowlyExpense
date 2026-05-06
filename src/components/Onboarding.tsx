@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { TrendingUp, Wallet, Plus, ChevronRight, X, Check } from 'lucide-react';
@@ -102,28 +102,12 @@ function AppPreview({ he }: { he: boolean }) {
   );
 }
 
-// ── Reactive ring (step 2) ────────────────────────────────────────────────────
-
-function ReactiveRing({ amount, isSavings, currency }: {
-  amount: string; isSavings: boolean; currency: string;
-}) {
-  const refMax = isSavings ? 6000 : 12000;
-  const val    = parseFloat(amount) || 0;
-  const pct    = val > 0 ? Math.min(val / refMax, 0.92) : 0;
-  const color  = isSavings ? '#22C55E' : '#F59E0B';
-  const label  = val > 0 ? `${currency}${val.toLocaleString()}` : '?';
-  return (
-    <div className="ob-reactive-ring">
-      <Ring pct={pct} size={110} stroke={9} color={color} label={label} />
-    </div>
-  );
-}
 
 // ── Add-expense tutorial preview ──────────────────────────────────────────────
 
 function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
   const [open, setOpen] = useState(false);
-  const saved = false;
+  const [saved, setSaved] = useState(false);
 
   const s = currSym;
   const txns = he
@@ -153,7 +137,7 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
         {/* FAB */}
         <button
           className={`ob-phone-fab${!open ? ' ob-phone-fab-pulse' : ''}`}
-          onClick={() => { setOpen(v => !v); if (open) setSaved(false); }}
+          onClick={() => { setOpen(v => !v); }}
         >
           <Plus
             size={20}
@@ -191,7 +175,7 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
                   </div>
                 ))}
               </div>
-              <div className="ob-phone-sheet-savebtn">{he ? 'שמור' : 'Save'}</div>
+              <div className="ob-phone-sheet-savebtn" style={{ cursor: 'pointer' }} onClick={() => { setSaved(true); setTimeout(() => { setSaved(false); setOpen(false); }, 1500); }}>{he ? 'שמור' : 'Save'}</div>
             </>
           )}
         </div>
@@ -202,7 +186,7 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const TOTAL = 5;
+const TOTAL = 4;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
@@ -220,10 +204,6 @@ export default function Onboarding({ onDone }: Props) {
     return val > 0 ? String(val) : '';
   });
   const goalInputRef                  = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (step === 2) setTimeout(() => goalInputRef.current?.focus(), 300);
-  }, [step]);
 
   function advance() { setStep(s => s + 1); }
 
@@ -340,90 +320,47 @@ export default function Onboarding({ onDone }: Props) {
           </button>
         </div>
 
-        <p className="ob-sub" style={{ marginTop: 16 }}>
+        {/* Inline goal input */}
+        <p className="ob-sub" style={{ marginTop: 18, marginBottom: 8, textAlign: he ? 'right' : 'left', width: '100%' }}>
+          {he
+            ? (selectedMode === 'savings_based' ? 'יעד חיסכון חודשי (אופציונלי):' : 'תקציב חודשי (אופציונלי):')
+            : (selectedMode === 'savings_based' ? 'Monthly savings goal (optional):' : 'Monthly budget (optional):')}
+        </p>
+        <div className="ob-goal-wrap">
+          <span className="ob-goal-currency">{currencySymbol}</span>
+          <input
+            ref={goalInputRef}
+            type="number"
+            inputMode="numeric"
+            className="ob-goal-input"
+            style={{ fontSize: '26px' }}
+            placeholder={he ? 'הכנס סכום' : 'Enter amount'}
+            value={goalAmount}
+            onChange={e => setGoalAmount(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
+          />
+        </div>
+        <p className="ob-sub" style={{ marginTop: 10 }}>
           {he ? 'ניתן לשנות בכל עת בהגדרות.' : 'Change this any time in Settings.'}
         </p>
       </div>
       <div className="ob-bottom">
         {dots}
-        <button className="ob-btn-primary" onClick={advance}>
+        <button className="ob-btn-primary" onClick={saveGoalAndAdvance}>
           {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
         </button>
       </div>
     </div>
   );
 
-  // ── Step 2: Goal input ────────────────────────────────────────────────────
+  // ── Step 2: Currency picker ───────────────────────────────────────────────
 
-  if (step === 2) {
-    const isSavings = selectedMode !== 'budget_based';
-    const question  = he
-      ? (isSavings ? 'כמה אתה רוצה לחסוך בחודש?' : 'מה התקציב החודשי שלך?')
-      : (isSavings ? 'How much do you want to save per month?' : "What's your monthly budget?");
-    const explain = he
-      ? (isSavings
-          ? 'Flowly יחסיר את היעד מהכנסותיך ויציג כמה מותר לבזבז החודש.'
-          : 'Flowly יציג כמה נשאר מהתקציב ויתריע לפני שחורגים.')
-      : (isSavings
-          ? 'Flowly subtracts this from your income to show how much you can safely spend each month.'
-          : 'Flowly shows remaining budget and warns you before you overspend.');
-
-    return (
-      <div className="ob-overlay" dir={dir}>
-        <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
-          <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
-        </button>
-        <div className="ob-screen ob-screen-goal" key={2}>
-          <ReactiveRing amount={goalAmount} isSavings={isSavings} currency={currencySymbol} />
-          <div className="ob-goal-block">
-            <h1 className="ob-title ob-title-sm">{question}</h1>
-            <div className="ob-goal-wrap">
-              <span className="ob-goal-currency">{currencySymbol}</span>
-              <input
-                ref={goalInputRef}
-                type="number"
-                inputMode="numeric"
-                className="ob-goal-input"
-                placeholder={he ? 'הכנס סכום' : 'Enter amount'}
-                value={goalAmount}
-                onChange={e => setGoalAmount(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
-              />
-            </div>
-            <p className="ob-goal-example">
-              {he
-                ? `לדוגמה: ${currencySymbol}${isSavings ? '5,000' : '10,000'}`
-                : `e.g. ${currencySymbol}${isSavings ? '5,000' : '10,000'}`}
-            </p>
-            <div className="ob-goal-explain" dir={dir}>
-              <span className="ob-goal-explain-label">
-                {he ? 'איך זה עובד?' : 'How this works'}
-              </span>
-              <span className="ob-goal-explain-text">{explain}</span>
-            </div>
-          </div>
-        </div>
-        <div className="ob-bottom">
-          {dots}
-          <button className="ob-btn-primary" onClick={saveGoalAndAdvance} disabled={!goalAmount}>
-            {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
-          </button>
-          <button className="ob-dont-show" onClick={advance}>
-            {he ? 'עדיין לא יודע' : 'Skip for now'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Step 3: Currency picker ───────────────────────────────────────────────
-
-  if (step === 3) return (
+  if (step === 2) return (
     <div className="ob-overlay" dir={dir}>
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
-      <div className="ob-screen" key={3}>
+      <div className="ob-screen" key={2}>
         <h1 className="ob-title ob-title-sm">
           {he ? 'באיזה מטבע אתה מנהל?' : 'What currency do you use?'}
         </h1>
