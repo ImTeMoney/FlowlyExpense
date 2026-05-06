@@ -243,11 +243,15 @@ export function getDeviceId(): string {
 // 'expense_custom_categories' key (which only stored custom additions).
 function loadCategories(): Category[] {
   const stored = loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, []);
-  if (stored.length > 0) return stored;
+  let cats = stored.length > 0
+    ? stored
+    : [...INITIAL_CATEGORIES, ...loadFromStorage<Category[]>('expense_custom_categories', [])];
 
-  // Migration: merge INITIAL_CATEGORIES with any previously saved custom ones
-  const legacy = loadFromStorage<Category[]>('expense_custom_categories', []);
-  return [...INITIAL_CATEGORIES, ...legacy];
+  // Debt mode is on by default; add cat_debt if not already present
+  if (localStorage.getItem(STORAGE_KEYS.DEBT_MODE) !== 'false' && !cats.some(c => c.id === DEBT_CATEGORY_ID)) {
+    cats = [...cats, DEBT_CATEGORY];
+  }
+  return cats;
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
@@ -306,7 +310,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     loadFromStorage<DebtEntry[]>(STORAGE_KEYS.DEBTS, [])
   );
   const [debtModeEnabled, setDebtModeEnabled] = useState<boolean>(() =>
-    localStorage.getItem(STORAGE_KEYS.DEBT_MODE) === 'true'
+    localStorage.getItem(STORAGE_KEYS.DEBT_MODE) !== 'false'
   );
   const [streakData, setStreakData] = useState<StreakData>(() =>
     loadFromStorage<StreakData>(STORAGE_KEYS.STREAKS, { currentStreak: 0, longestStreak: 0, lastCheckedDate: '' })
@@ -551,17 +555,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
 
       case 'ADD_DEBT': {
-        const txId = generateId();
-        const debtTx: Transaction = {
-          id: txId,
-          amount: action.payload.amount,
-          categoryId: DEBT_CATEGORY_ID,
-          date: action.payload.date,
-          description: `חוב — ${action.payload.name}`,
-          isIncome: action.payload.direction === 'owes_me',
-        };
-        const newDebt: DebtEntry = { ...action.payload, id: generateId(), transactionId: txId };
-        setTransactions(prev => [debtTx, ...prev]);
+        // Only record the debt — transaction is created on settlement
+        const newDebt: DebtEntry = { ...action.payload, id: generateId() };
         setDebts(prev => [newDebt, ...prev]);
         break;
       }
@@ -578,12 +573,27 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
       }
 
-      case 'SETTLE_DEBT':
-        setDebts(prev => prev.map(d => d.id === action.payload
-          ? { ...d, settled: true, settledDate: new Date().toISOString().slice(0, 10) }
-          : d
-        ));
+      case 'SETTLE_DEBT': {
+        // Create the transaction only now — debt is confirmed
+        const settling = debts.find(d => d.id === action.payload);
+        if (settling) {
+          const txId = generateId();
+          const settledTx: Transaction = {
+            id: txId,
+            amount: settling.amount,
+            categoryId: DEBT_CATEGORY_ID,
+            date: new Date().toISOString().slice(0, 10),
+            description: `חוב — ${settling.name}`,
+            isIncome: settling.direction === 'owes_me',
+          };
+          setTransactions(prev => [settledTx, ...prev]);
+          setDebts(prev => prev.map(d => d.id === action.payload
+            ? { ...d, settled: true, settledDate: settledTx.date, transactionId: txId }
+            : d
+          ));
+        }
         break;
+      }
 
       case 'DELETE_DEBT': {
         const toDelete = debts.find(d => d.id === action.payload);
