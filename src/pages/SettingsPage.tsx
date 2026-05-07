@@ -1,10 +1,10 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transaction } from '../context/ExpenseContext';
+import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   DndContext,
@@ -162,34 +162,6 @@ const SettingsPage: React.FC = () => {
     showToast(t.savedSettings);
   }
 
-  // CSV export with date range
-  const now = new Date();
-  const todayStr      = now.toISOString().slice(0, 10);
-  const firstOfMonth  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const [csvFrom, setCsvFrom] = useState(firstOfMonth);
-  const [csvTo,   setCsvTo]   = useState(todayStr);
-
-  const csvTxns = useMemo(() =>
-    transactions.filter(tx => tx.date >= csvFrom && tx.date <= csvTo),
-    [transactions, csvFrom, csvTo]
-  );
-
-  function exportCSV() {
-    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method']];
-    csvTxns.forEach(tx => {
-      const cat    = categories.find(c => c.id === tx.categoryId)?.name ?? '';
-      const pmName = tx.paymentSplits && tx.paymentSplits.length > 0
-        ? tx.paymentSplits.map(s => `${(t as any)[`pm_${s.paymentMethod}`] ?? s.paymentMethod}:${s.amount}`).join('+')
-        : tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
-      rows.push([tx.date, tx.description, cat, tx.isIncome ? 'Income' : 'Expense', String(tx.amount), pmName]);
-    });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const a   = document.createElement('a');
-    a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
-    a.download = `flowly_${csvFrom}_to_${csvTo}.csv`;
-    a.click();
-  }
-
   // Inline category editing
   const [editingId,    setEditingId]    = useState<string | null>(null);
   const [editingName,  setEditingName]  = useState('');
@@ -267,158 +239,6 @@ const SettingsPage: React.FC = () => {
       }
     };
     reader.onerror = () => showToast(t.backupImportError);
-    reader.readAsText(file, 'utf-8');
-  }
-
-  // CSV import
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [pendingRows, setPendingRows] = useState<Transaction[] | null>(null);
-
-  // Build reverse map: localized payment label → PaymentMethod key
-  const pmReverseMap = useMemo<Record<string, PaymentMethod>>(() => {
-    const map: Record<string, PaymentMethod> = {};
-    for (const pm of PAYMENT_METHODS) {
-      const label = (t as any)[`pm_${pm}`] as string | undefined;
-      if (label) map[label.toLowerCase()] = pm;
-      map[pm.toLowerCase()] = pm; // also accept raw key
-    }
-    return map;
-  }, [t]);
-
-  function parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let i = 0, cur = '';
-    while (i < line.length) {
-      if (line[i] === '"') {
-        i++;
-        while (i < line.length) {
-          if (line[i] === '"' && line[i + 1] === '"') { cur += '"'; i += 2; }
-          else if (line[i] === '"') { i++; break; }
-          else cur += line[i++];
-        }
-      } else if (line[i] === ',') {
-        result.push(cur); cur = ''; i++;
-      } else {
-        cur += line[i++];
-      }
-    }
-    result.push(cur);
-    return result;
-  }
-
-  function parseCSVImport(text: string): { rows: Transaction[]; invalidCount: number; formatError: string | null } {
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (lines.length < 2) return { rows: [], invalidCount: 0, formatError: t.importInvalidFormat };
-
-    const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-    const required = ['date', 'description', 'category', 'type', 'amount', 'payment method'];
-    if (!required.every(r => header.includes(r)))
-      return { rows: [], invalidCount: 0, formatError: t.importInvalidFormat };
-
-    const idx = {
-      date: header.indexOf('date'),
-      desc: header.indexOf('description'),
-      cat:  header.indexOf('category'),
-      type: header.indexOf('type'),
-      amt:  header.indexOf('amount'),
-      pm:   header.indexOf('payment method'),
-    };
-
-    const rows: Transaction[] = [];
-    let invalidCount = 0;
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = parseCSVLine(lines[i]);
-      const date = cols[idx.date]?.trim() ?? '';
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { invalidCount++; continue; }
-      const amt = parseFloat(cols[idx.amt]?.trim() ?? '');
-      if (isNaN(amt) || amt < 0) { invalidCount++; continue; }
-
-      const catName = cols[idx.cat]?.trim() ?? '';
-      const cat = categories.find(c => c.name === catName);
-      const categoryId = cat?.id ?? 'cat_other';
-      const isIncome = (cols[idx.type]?.trim().toLowerCase() ?? '') === 'income';
-      const pmRaw = cols[idx.pm]?.trim().toLowerCase() ?? '';
-      const paymentMethod = pmReverseMap[pmRaw] ?? undefined;
-
-      rows.push({
-        id: `imp_${Date.now()}_${i}_${Math.random().toString(36).slice(2)}`,
-        date,
-        description: cols[idx.desc]?.trim() ?? '',
-        categoryId,
-        amount: amt,
-        isIncome,
-        paymentMethod,
-      });
-    }
-    return { rows, invalidCount, formatError: null };
-  }
-
-  function fingerprint(tx: { date: string; amount: number; description: string }) {
-    return `${tx.date}|${tx.amount}|${tx.description.trim().toLowerCase()}`;
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const text = ev.target?.result as string;
-      const { rows, invalidCount, formatError } = parseCSVImport(text);
-
-      if (formatError) {
-        setImportStatus({ type: 'error', msg: formatError });
-        return;
-      }
-
-      // Deduplication: skip rows whose date+amount+description already exist
-      const existingPrints = new Set(transactions.map(fingerprint));
-      const newRows = rows.filter(r => !existingPrints.has(fingerprint(r)));
-      const duplicateCount = rows.length - newRows.length;
-
-      // Nothing to import at all
-      if (newRows.length === 0 && rows.length === 0) {
-        setImportStatus({ type: 'error', msg: t.importInvalidFormat });
-        return;
-      }
-
-      // Build confirmation body
-      const iHe = lang === 'he';
-      const summaryLines: React.ReactNode[] = [];
-      if (newRows.length > 0)
-        summaryLines.push(<div key="new">{iHe ? `יובאו ${newRows.length} רשומות` : `${newRows.length} transaction${newRows.length !== 1 ? 's' : ''} will be imported`}</div>);
-      if (duplicateCount > 0)
-        summaryLines.push(<div key="dup" style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>{iHe ? `דולגו ${duplicateCount} כפילויות` : `${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} will be skipped`}</div>);
-      if (invalidCount > 0)
-        summaryLines.push(<div key="inv" style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{iHe ? `${invalidCount} שורות לא תקינות לא יובאו` : `${invalidCount} invalid row${invalidCount !== 1 ? 's' : ''} will be skipped`}</div>);
-
-      setPendingRows(newRows);
-      setConfirm({
-        title: t.importConfirmTitle,
-        body: <div style={{ lineHeight: 1.7 }}>{summaryLines}</div>,
-        onConfirm: () => {
-          if (newRows.length > 0) dispatch({ type: 'MERGE_TRANSACTIONS', payload: newRows });
-          setPendingRows(null);
-          setConfirm(null);
-          // Result summary message
-          const parts: string[] = [];
-          if (iHe) {
-            if (newRows.length > 0) parts.push(`יובאו ${newRows.length} רשומות`);
-            if (duplicateCount > 0) parts.push(`דולגו ${duplicateCount} כפילויות`);
-            if (invalidCount > 0)   parts.push(`${invalidCount} שורות לא תקינות`);
-          } else {
-            if (newRows.length > 0) parts.push(`${newRows.length} imported`);
-            if (duplicateCount > 0) parts.push(`${duplicateCount} skipped (duplicates)`);
-            if (invalidCount > 0)   parts.push(`${invalidCount} invalid`);
-          }
-          setImportStatus({ type: 'success', msg: parts.join(' · ') });
-          setTimeout(() => setImportStatus(null), 5000);
-        },
-      });
-    };
-    reader.onerror = () => setImportStatus({ type: 'error', msg: t.importError });
     reader.readAsText(file, 'utf-8');
   }
 
@@ -702,90 +522,28 @@ const SettingsPage: React.FC = () => {
         <div className="a-sec-title">
           <span className="title-text">{t.toolsTitle}</span>
         </div>
-        {/* Full JSON backup */}
-        <button className="export-btn primary" onClick={exportBackup} style={{ background: 'rgba(0,113,227,0.12)', borderColor: 'rgba(0,113,227,0.3)', color: 'var(--purple)' }}>
+
+        <button className="export-btn primary" onClick={exportBackup}
+          style={{ background: 'rgba(0,113,227,0.12)', borderColor: 'rgba(0,113,227,0.3)', color: 'var(--purple)' }}>
           <Download size={13} />
-          {t.backupExport}
-        </button>
-        <input
-          ref={backupInputRef}
-          type="file"
-          accept=".json,application/json"
-          style={{ display: 'none' }}
-          onChange={handleBackupFileChange}
-        />
-        <button className="export-btn" onClick={() => backupInputRef.current?.click()} style={{ marginTop: 6 }}>
-          <Upload size={13} />
-          {t.backupImport}
-        </button>
-        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center', marginBottom: 10 }}>{t.backupImportNote}</p>
-
-        <div className="csv-range-row">
-          <input
-            type="date" className="csv-range-input"
-            value={csvFrom} max={csvTo}
-            onChange={e => setCsvFrom(e.target.value)}
-          />
-          <span className="csv-range-sep">→</span>
-          <input
-            type="date" className="csv-range-input"
-            value={csvTo} min={csvFrom} max={todayStr}
-            onChange={e => setCsvTo(e.target.value)}
-          />
-        </div>
-        <button
-          className="export-btn"
-          onClick={exportCSV}
-          disabled={csvTxns.length === 0}
-          style={{ marginTop: 6 }}
-        >
-          <Download size={13} />
-          {lang === 'he' ? `ייצוא CSV (${csvTxns.length} עסקאות)` : `Export CSV (${csvTxns.length} transactions)`}
+          {lang === 'he' ? 'גיבוי מלא' : 'Full Backup'}
         </button>
 
-        {/* Hidden file input for CSV import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        <button
-          className="export-btn"
-          onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
-          style={{ marginTop: 6 }}
-        >
-          <Upload size={13} />
-          {t.importCSV}
+        <input ref={backupInputRef} type="file" accept=".json,application/json"
+          style={{ display: 'none' }} onChange={handleBackupFileChange} />
+        <button className="export-btn" onClick={() => backupInputRef.current?.click()} style={{ marginTop: 8 }}>
+          <RotateCcw size={13} />
+          {lang === 'he' ? 'שחזור מלא' : 'Full Restore'}
         </button>
-        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center' }}>{t.importTransactionsOnly}</p>
+        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center', marginBottom: 12 }}>{t.backupImportNote}</p>
 
-        {importStatus && (
-          <div
-            className={`import-status${importStatus.type === 'success' ? ' success' : ' error'}`}
-          >
-            {importStatus.msg}
-          </div>
-        )}
-
-        <button
-          className="export-btn"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          style={{ marginTop: 6 }}
-        >
-          <RefreshCw size={13} className={isRefreshing ? 'spin' : ''} />
-          {isRefreshing ? (lang === 'he' ? 'בודק עדכונים…' : 'Checking for updates…') : t.refreshApp}
-        </button>
-        <button
-          className="export-btn"
+        <button className="export-btn"
           onClick={() => window.dispatchEvent(new CustomEvent('finio-show-onboarding'))}
-          style={{ marginTop: 6 }}
-        >
+          style={{ marginTop: 2 }}>
           <BookOpen size={13} />
           {t.showOnboardingAgain}
         </button>
+
         <p className="settings-version">{t.version} v{__APP_VERSION__}</p>
       </div>
 
@@ -795,7 +553,7 @@ const SettingsPage: React.FC = () => {
           title={confirm.title}
           body={confirm.body}
           onConfirm={confirm.onConfirm}
-          onCancel={() => { setConfirm(null); setPendingRows(null); }}
+          onCancel={() => setConfirm(null)}
         />
       )}
 
