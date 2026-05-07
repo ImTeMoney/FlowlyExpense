@@ -2888,13 +2888,51 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .amount-input:focus-visible { outline: none; }
 
 /* =====================================================
-   ONBOARDING OVERLAY
+   ONBOARDING OVERLAY — iOS 26 Liquid Glass
    ===================================================== */
+
+/* ── Keyframes ── */
+@keyframes ob-aurora-1 {
+  0%   { transform: translate(0%, 0%)    scale(1);    }
+  33%  { transform: translate(15%, -12%) scale(1.15); }
+  66%  { transform: translate(-10%, 8%)  scale(0.92); }
+  100% { transform: translate(0%, 0%)    scale(1);    }
+}
+@keyframes ob-aurora-2 {
+  0%   { transform: translate(0%, 0%)   scale(1);    }
+  40%  { transform: translate(-18%, 10%) scale(1.1); }
+  75%  { transform: translate(12%, -8%) scale(0.95); }
+  100% { transform: translate(0%, 0%)   scale(1);    }
+}
+@keyframes ob-aurora-3 {
+  0%   { transform: translate(0%, 0%)    scale(1);    }
+  30%  { transform: translate(8%, 14%)   scale(1.08); }
+  70%  { transform: translate(-14%, -6%) scale(0.97); }
+  100% { transform: translate(0%, 0%)    scale(1);    }
+}
+@keyframes ob-step-in {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+@keyframes ob-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes ob-launch-pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(10,132,255,0.3), 0 0 20px var(--purple-glow); }
+  50%     { box-shadow: 0 0 0 10px rgba(10,132,255,0),  0 0 28px var(--purple-glow); }
+}
+@keyframes ob-phone-fab-pulse {
+  0%,100% { box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 0 rgba(10,132,255,0.35), inset 0 1px 0 rgba(255,255,255,0.9); }
+  60%     { box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 10px rgba(10,132,255,0), inset 0 1px 0 rgba(255,255,255,0.9); }
+}
+
+/* ── Overlay base ── */
 .ob-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: var(--bg-primary);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3609,6 +3647,182 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   width: 40px; height: 40px; border-radius: 50%;
   background: rgba(34,197,94,0.15); display: flex; align-items: center; justify-content: center;
   color: #22C55E;
+}
+
+/* ── Aurora background blobs ── */
+.ob-aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.ob-aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.18;
+}
+.ob-aurora-blob-1 {
+  width: 340px; height: 340px;
+  background: radial-gradient(circle, #6366F1, transparent 70%);
+  top: -80px; left: -60px;
+  animation: ob-aurora-1 18s ease-in-out infinite;
+}
+.ob-aurora-blob-2 {
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, #0A84FF, transparent 70%);
+  bottom: 20%; right: -80px;
+  animation: ob-aurora-2 22s ease-in-out infinite;
+}
+.ob-aurora-blob-3 {
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, #30D158, transparent 70%);
+  bottom: -60px; left: 20%;
+  animation: ob-aurora-3 16s ease-in-out infinite;
+}
+.ob-overlay > *:not(.ob-aurora) { position: relative; z-index: 1; }
+
+/* ── Story progress bar ── */
+.ob-progress-bar {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  max-width: 340px;
+  padding: 20px 0 8px;
+  position: relative;
+  z-index: 2;
+}
+.ob-progress-seg {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.3s, flex 0.3s;
+}
+.ob-progress-seg.done { background: rgba(255,255,255,0.55); }
+.ob-progress-seg.active {
+  background: var(--purple);
+  box-shadow: 0 0 8px var(--purple-glow);
+}
+
+/* ── Logo & gradient title ── */
+.ob-logo-title {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  background: linear-gradient(135deg, #fff 30%, rgba(10,132,255,0.9) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ob-logo-sub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.ob-title-grad {
+  background: linear-gradient(135deg, #fff 40%, rgba(10,132,255,0.85) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Feature pills ── */
+.ob-feature-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+  width: 100%;
+}
+.ob-feature-pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.ob-feature-pill-check {
+  color: #30D158;
+  flex-shrink: 0;
+  display: flex;
+}
+.ob-feature-pill-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ── Mode check badge ── */
+.ob-mode-check-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px var(--purple-glow);
+}
+
+/* ── Currency grid (2-col) ── */
+.ob-screen-currency { padding-top: 32px; }
+.ob-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.ob-currency-grid .ob-currency-card {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 10px;
+  position: relative;
+  text-align: center;
+}
+.ob-currency-grid .ob-currency-sym {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  width: auto;
+}
+.ob-currency-grid .ob-currency-code {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ob-currency-grid .ob-currency-name {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.ob-currency-check-badge {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 2px 6px var(--purple-glow);
 }
 
 /* =====================================================

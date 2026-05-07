@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
-import { TrendingUp, Wallet, Plus, ChevronRight, X, Check } from 'lucide-react';
+import { TrendingUp, Wallet, Plus, ChevronRight, X, Check, Sparkles } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import type { MoneyMode } from '../context/ExpenseContext';
 
@@ -236,15 +236,28 @@ export default function Onboarding({ onDone }: Props) {
     onDone();
   }
 
-  const dots = (
-    <div className="ob-dots">
+  // ── Story-style progress bar ──────────────────────────────────────────────
+  const progressBar = (
+    <div className="ob-progress-bar">
       {Array.from({ length: TOTAL }).map((_, i) => (
-        <div key={i} className={`ob-dot${i === step ? ' active' : ''}`} />
+        <div
+          key={i}
+          className={`ob-progress-seg${i === step ? ' active' : i < step ? ' done' : ''}`}
+        />
       ))}
     </div>
   );
 
-  // ── Step 0: Intro ─────────────────────────────────────────────────────────
+  // ── Aurora blobs background ───────────────────────────────────────────────
+  const aurora = (
+    <div className="ob-aurora" aria-hidden="true">
+      <div className="ob-aurora-blob ob-aurora-blob-1" />
+      <div className="ob-aurora-blob ob-aurora-blob-2" />
+      <div className="ob-aurora-blob ob-aurora-blob-3" />
+    </div>
+  );
+
+  // ── Step 0: Welcome ───────────────────────────────────────────────────────
 
   if (step === 0) {
     const features = he
@@ -252,27 +265,40 @@ export default function Onboarding({ onDone }: Props) {
       : ['Everything stored on your device', 'No signup, no email', 'Works fully offline'];
     return (
       <div className="ob-overlay" dir={dir}>
+        {aurora}
+        {progressBar}
+
+        {/* Language toggle — top-right glass pill */}
         <button className="ob-lang-toggle" onClick={toggleLang}>
           {he ? 'English' : 'עברית'}
         </button>
+
         <div className="ob-screen ob-screen-visual" key={0}>
+          {/* App preview */}
           <AppPreview he={he} />
+
           <div className="ob-visual-text">
-            <h1 className="ob-title ob-title-sm">
+            {/* Big gradient logo */}
+            <h1 className="ob-logo-title">Flowly</h1>
+            <p className="ob-logo-sub">
               {he ? 'הכסף שלך, ברור סוף סוף' : 'Your money. Finally clear.'}
-            </h1>
-            <ul className="ob-feature-list">
+            </p>
+
+            {/* Glass feature pills */}
+            <div className="ob-feature-pills">
               {features.map((f, i) => (
-                <li key={i} className="ob-feature-item">
-                  <Check size={13} strokeWidth={2.5} className="ob-feature-check" />
-                  <span>{f}</span>
-                </li>
+                <div key={i} className="ob-feature-pill">
+                  <span className="ob-feature-pill-check">
+                    <Check size={12} strokeWidth={3} />
+                  </span>
+                  <span className="ob-feature-pill-text">{f}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
+
         <div className="ob-bottom">
-          {dots}
           <button className="ob-btn-primary" onClick={advance}>
             {he ? 'מתחילים' : 'Get started'} <ChevronRight size={16} />
           </button>
@@ -288,11 +314,13 @@ export default function Onboarding({ onDone }: Props) {
 
   if (step === 1) return (
     <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
       <div className="ob-screen" key={1}>
-        <h1 className="ob-title ob-title-sm">
+        <h1 className="ob-title ob-title-grad">
           {he ? 'איך תרצה לנהל את הכסף?' : 'How do you want to manage money?'}
         </h1>
         <p className="ob-sub ob-mode-intro">
@@ -306,28 +334,40 @@ export default function Onboarding({ onDone }: Props) {
             className={`ob-mode-btn ob-mode-card${selectedMode === 'savings_based' ? ' ob-mode-selected' : ''}`}
             onClick={() => pickMode('savings_based')}
           >
-            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}><TrendingUp size={20} /></div>
+            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}>
+              <TrendingUp size={28} />
+            </div>
             <div className="ob-mode-text">
               <div className="ob-mode-title">{t.modeTrackSavings}</div>
               <div className="ob-mode-desc">{t.modeTrackSavingsDesc}</div>
             </div>
-            {selectedMode === 'savings_based' && <Check size={16} style={{ color: 'var(--purple)', flexShrink: 0 }} />}
+            {selectedMode === 'savings_based' && (
+              <div className="ob-mode-check-badge">
+                <Check size={12} strokeWidth={3} />
+              </div>
+            )}
           </button>
           <button
             className={`ob-mode-btn ob-mode-card${selectedMode === 'budget_based' ? ' ob-mode-selected' : ''}`}
             onClick={() => pickMode('budget_based')}
           >
-            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}><Wallet size={20} /></div>
+            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}>
+              <Wallet size={28} />
+            </div>
             <div className="ob-mode-text">
               <div className="ob-mode-title">{t.modeTrackBudget}</div>
               <div className="ob-mode-desc">{t.modeTrackBudgetDesc}</div>
             </div>
-            {selectedMode === 'budget_based' && <Check size={16} style={{ color: 'var(--purple)', flexShrink: 0 }} />}
+            {selectedMode === 'budget_based' && (
+              <div className="ob-mode-check-badge">
+                <Check size={12} strokeWidth={3} />
+              </div>
+            )}
           </button>
         </div>
 
         {/* Inline goal input */}
-        <p className="ob-sub" style={{ marginTop: 18, marginBottom: 8, textAlign: he ? 'right' : 'left', width: '100%' }}>
+        <p className="ob-sub ob-goal-label">
           {he
             ? (selectedMode === 'savings_based' ? 'יעד חיסכון חודשי (אופציונלי):' : 'תקציב חודשי (אופציונלי):')
             : (selectedMode === 'savings_based' ? 'Monthly savings goal (optional):' : 'Monthly budget (optional):')}
@@ -351,7 +391,6 @@ export default function Onboarding({ onDone }: Props) {
         </p>
       </div>
       <div className="ob-bottom">
-        {dots}
         <button className="ob-btn-primary" onClick={saveGoalAndAdvance}>
           {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
         </button>
@@ -363,11 +402,13 @@ export default function Onboarding({ onDone }: Props) {
 
   if (step === 2) return (
     <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
-      <div className="ob-screen" key={2}>
-        <h1 className="ob-title ob-title-sm">
+      <div className="ob-screen ob-screen-currency" key={2}>
+        <h1 className="ob-title ob-title-grad">
           {he ? 'באיזה מטבע אתה מנהל?' : 'What currency do you use?'}
         </h1>
         <p className="ob-sub ob-mode-intro">
@@ -375,7 +416,7 @@ export default function Onboarding({ onDone }: Props) {
             ? 'זה יהיה מטבע הניהול הראשי שלך. ניתן להוסיף הוצאות במטבע אחר — הן יומרו אוטומטית.'
             : 'This will be your primary management currency. Expenses in other currencies are auto-converted.'}
         </p>
-        <div className="ob-currency-list">
+        <div className="ob-currency-grid">
           {CURRENCIES.map(c => {
             const sym  = CURRENCY_SYMBOL[c];
             const name = he ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c];
@@ -387,18 +428,19 @@ export default function Onboarding({ onDone }: Props) {
                 onClick={() => pickCurrency(c)}
               >
                 <span className="ob-currency-sym">{sym}</span>
-                <div className="ob-currency-info">
-                  <span className="ob-currency-code">{c}</span>
-                  <span className="ob-currency-name">{name}</span>
-                </div>
-                {active && <Check size={16} className="ob-currency-check" />}
+                <span className="ob-currency-code">{c}</span>
+                <span className="ob-currency-name">{name}</span>
+                {active && (
+                  <div className="ob-currency-check-badge">
+                    <Check size={10} strokeWidth={3} />
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
       </div>
       <div className="ob-bottom">
-        {dots}
         <button className="ob-btn-primary" onClick={advance}>
           {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
         </button>
@@ -406,25 +448,36 @@ export default function Onboarding({ onDone }: Props) {
     </div>
   );
 
-  // ── Step 4: Add expense tutorial ─────────────────────────────────────────
+  // ── Step 3: Add expense tutorial ─────────────────────────────────────────
 
   return (
     <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen ob-screen-add" key={4}>
-        <h1 className="ob-title ob-title-sm" style={{ marginBottom: 4 }}>
+      {aurora}
+      {progressBar}
+      <div className="ob-screen ob-screen-add" key={3}>
+        <h1 className="ob-title ob-title-grad" style={{ marginBottom: 4 }}>
           {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
         </h1>
         <AddExpensePreview he={he} currSym={currencySymbol} />
         <div className="ob-add-steps" dir={he ? 'rtl' : 'ltr'}>
-          <div className="ob-add-step"><span className="ob-add-step-num">1</span><span>{he ? 'לחץ על +' : 'Tap +'}</span></div>
-          <div className="ob-add-step"><span className="ob-add-step-num">2</span><span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span></div>
-          <div className="ob-add-step"><span className="ob-add-step-num">3</span><span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span></div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">1</span>
+            <span>{he ? 'לחץ על +' : 'Tap +'}</span>
+          </div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">2</span>
+            <span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span>
+          </div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">3</span>
+            <span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span>
+          </div>
         </div>
       </div>
       <div className="ob-bottom">
-        {dots}
         <button className="ob-btn-primary ob-btn-launch" onClick={handleLaunch}>
-          {he ? 'הוסף הוצאה ראשונה' : 'Add first expense'} <ChevronRight size={16} />
+          <Sparkles size={16} />
+          {he ? 'הוסף הוצאה ראשונה' : 'Start tracking'}
         </button>
       </div>
     </div>
