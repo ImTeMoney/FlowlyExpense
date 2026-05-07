@@ -16,6 +16,7 @@ import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import { useSpendingForecast } from '../hooks/useSpendingForecast';
 import { useTilt } from '../hooks/useTilt';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
+import DatePicker from '../components/DatePicker';
 import DebtTracker from '../components/DebtTracker';
 import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
 import { ReceiptViewerById } from '../components/ReceiptAttachment';
@@ -1019,12 +1020,7 @@ export default function DashboardPage() {
               />
 
               {/* Step: Date */}
-              <input
-                type="date"
-                className="aether-input"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-              />
+              <DatePicker value={date} onChange={setDate} />
 
               {/* Step: Payment method */}
               <div className="pm-section">
