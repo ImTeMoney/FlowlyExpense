@@ -682,7 +682,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     const converted = amount * displayRate;
     if (mainCurrency === 'ILS') {
       return new Intl.NumberFormat('he-IL', {
-        style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
+        style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 2,
       }).format(converted);
     }
     const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
@@ -693,7 +693,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const formatCurrencyDirect = useCallback((amount: number) => {
     if (mainCurrency === 'ILS') {
       return new Intl.NumberFormat('he-IL', {
-        style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
+        style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 2,
       }).format(amount);
     }
     const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
