@@ -7,6 +7,7 @@ export interface SpendingForecast {
   confidenceHigh: number;
   knownRecurring: number;
   projectedVariable: number;
+  spentSoFar: number;
   daysLeft: number;
   confidence: 'high' | 'medium' | 'low';
 }
@@ -145,6 +146,7 @@ export function useSpendingForecast(
       confidenceHigh: forecastTotal + ci,
       knownRecurring,
       projectedVariable,
+      spentSoFar,
       daysLeft,
       confidence,
     };

@@ -660,26 +660,33 @@ export default function DashboardPage() {
       {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
         <div className="forecast-card">
           <div className="forecast-header">
-            <span className="forecast-title">{lang === 'he' ? 'תחזית לסוף החודש' : 'Month-end forecast'}</span>
+            <span className="forecast-title">{lang === 'he' ? 'חודש נוכחי' : 'This month'}</span>
             <span className={`forecast-confidence ${forecast.confidence}`}>
               {lang === 'he'
                 ? forecast.confidence === 'high' ? 'תחזית מדויקת' : forecast.confidence === 'medium' ? 'תחזית בינונית' : 'תחזית משוערת'
                 : forecast.confidence === 'high' ? 'High accuracy' : forecast.confidence === 'medium' ? 'Medium accuracy' : 'Estimated'}
             </span>
           </div>
-          <div className="forecast-amount">{formatCurrency(Math.round(forecast.forecastTotal))}</div>
-          <div className="forecast-subtitle">
-            {lang === 'he' ? 'הוצאות צפויות עד סוף החודש' : 'Expected total spending by month-end'}
-          </div>
-          <div className="forecast-range">
-            ±{formatCurrency(Math.round((forecast.confidenceHigh - forecast.confidenceLow) / 2))}
-            {' · '}{lang === 'he' ? `${forecast.daysLeft} ימים נותרו` : `${forecast.daysLeft} days left`}
+          <div className="forecast-split-row">
+            <div className="forecast-spent-block">
+              <div className="forecast-block-label">{lang === 'he' ? 'הוצאת עד כה' : 'Spent so far'}</div>
+              <div className="forecast-spent-amount">{formatCurrency(Math.round(forecast.spentSoFar))}</div>
+            </div>
+            <div className="forecast-split-divider" />
+            <div className="forecast-proj-block">
+              <div className="forecast-block-label">{lang === 'he' ? 'תחזית לסוף חודש' : 'Month-end forecast'}</div>
+              <div className="forecast-proj-amount">{formatCurrency(Math.round(forecast.forecastTotal))}</div>
+              <div className="forecast-range">
+                ±{formatCurrency(Math.round((forecast.confidenceHigh - forecast.confidenceLow) / 2))}
+                {' · '}{lang === 'he' ? `${forecast.daysLeft} ימים נותרו` : `${forecast.daysLeft} days left`}
+              </div>
+            </div>
           </div>
           <div className="forecast-bar-wrap">
             <div className="forecast-bar-track">
               {forecast.forecastTotal > 0 && (() => {
                 const total = forecast.forecastTotal;
-                const spentPct = Math.min(((forecast.forecastTotal - forecast.knownRecurring - forecast.projectedVariable) / total) * 100, 100);
+                const spentPct = Math.min((forecast.spentSoFar / total) * 100, 100);
                 const recurPct = Math.min((forecast.knownRecurring / total) * 100, 100 - spentPct);
                 return (
                   <>

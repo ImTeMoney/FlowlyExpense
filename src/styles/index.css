@@ -4572,6 +4572,15 @@ body::before, body::after {
 .forecast-subtitle { font-size: 11px; color: var(--text-muted); margin-top: -4px; margin-bottom: 8px; }
 .forecast-amount { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); margin-bottom: 2px; }
 .forecast-range  { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+
+.forecast-split-row { display: flex; align-items: center; gap: 0; margin: 6px 0 12px; }
+.forecast-spent-block { flex: 1; }
+.forecast-proj-block  { flex: 1; }
+.forecast-split-divider { width: 1px; height: 44px; background: var(--glass-border); margin: 0 14px; flex-shrink: 0; }
+.forecast-block-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+.forecast-spent-amount { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text); }
+.forecast-proj-amount  { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.forecast-range { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
 .forecast-bar-wrap {}
 .forecast-bar-track {
   height: 6px;
