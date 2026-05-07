@@ -640,33 +640,41 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Smart status card */}
-      <div className={`smart-status-card ${statusCard.urgency} shimmer-on-load holo-card`}
-        ref={tilt.ref} onPointerMove={tilt.onPointerMove} onPointerLeave={tilt.onPointerLeave}>
-        <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
-        <div className="smart-status-headline">{statusCard.headline}</div>
-        <div className="smart-status-subline">{statusCard.subline}</div>
-        {statusCard.progress > 0 && (
-          <div className="smart-status-bar">
-            <div
-              className="smart-status-bar-fill"
-              style={{ width: `${Math.min(statusCard.progress * 100, 100)}%`, background: URGENCY_BAR[statusCard.urgency] }}
-            />
-          </div>
-        )}
-      </div>
+      {/* Smart status card — shown standalone only when forecast is unavailable */}
+      {!(forecast.daysLeft > 0 && forecast.forecastTotal > 0) && (
+        <div className={`smart-status-card ${statusCard.urgency} shimmer-on-load holo-card`}
+          ref={tilt.ref} onPointerMove={tilt.onPointerMove} onPointerLeave={tilt.onPointerLeave}>
+          <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
+          <div className="smart-status-headline">{statusCard.headline}</div>
+          <div className="smart-status-subline">{statusCard.subline}</div>
+          {statusCard.progress > 0 && (
+            <div className="smart-status-bar">
+              <div
+                className="smart-status-bar-fill"
+                style={{ width: `${Math.min(statusCard.progress * 100, 100)}%`, background: URGENCY_BAR[statusCard.urgency] }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Spending forecast card */}
+      {/* Spending forecast card — merged with status when available */}
       {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
         <div className="forecast-card">
-          <div className="forecast-header">
-            <span className="forecast-title">{lang === 'he' ? 'חודש נוכחי' : 'This month'}</span>
+          {/* Status headline merged in */}
+          <div className="forecast-status-row">
+            <div className="forecast-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
+            <div className="forecast-status-text">
+              <span className="forecast-status-headline">{statusCard.headline}</span>
+              <span className="forecast-status-subline">{statusCard.subline}</span>
+            </div>
             <span className={`forecast-confidence ${forecast.confidence}`}>
               {lang === 'he'
                 ? forecast.confidence === 'high' ? 'תחזית מדויקת' : forecast.confidence === 'medium' ? 'תחזית בינונית' : 'תחזית משוערת'
                 : forecast.confidence === 'high' ? 'High accuracy' : forecast.confidence === 'medium' ? 'Medium accuracy' : 'Estimated'}
             </span>
           </div>
+          <div className="forecast-status-sep" />
           <div className="forecast-split-row">
             <div className="forecast-spent-block">
               <div className="forecast-block-label">{lang === 'he' ? 'הוצאת עד כה' : 'Spent so far'}</div>
