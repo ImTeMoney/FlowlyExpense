@@ -163,7 +163,7 @@ export default function AnalyticsPage() {
   }
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
-  const [showTxnList, setShowTxnList] = useState(false);
+
 
   const hasData = monthTxns.length > 0;
   const CAT_LIMIT = 7;
@@ -488,36 +488,6 @@ export default function AnalyticsPage() {
                     </ul>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* ── All transactions for selected month ── */}
-          {monthTxns.length > 0 && (
-            <div className="an-section">
-              <button className="an-section-title an-txn-toggle" onClick={() => setShowTxnList(v => !v)}>
-                <span>{lang === 'he' ? `עסקאות (${monthTxns.length})` : `Transactions (${monthTxns.length})`}</span>
-                <ChevronDown size={14} style={{ transform: showTxnList ? 'rotate(180deg)' : undefined, transition: '0.2s' }} />
-              </button>
-              {showTxnList && (
-                <ul className="an-txn-list">
-                  {[...monthTxns].sort((a, b) => b.date.localeCompare(a.date)).map(tx => {
-                    const cat = categories.find(c => c.id === tx.categoryId);
-                    const TxIcon = tx.isIncome ? TrendingUp : (CAT_ICON[cat?.id ?? ''] ?? Package);
-                    return (
-                      <li key={tx.id} className="an-txn-item">
-                        <span className="an-txn-icon"><TxIcon size={16} color={tx.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} /></span>
-                        <div className="an-txn-info">
-                          <span className="an-txn-desc">{tx.description}</span>
-                          <span className="an-txn-date">{tx.date}</span>
-                        </div>
-                        <span className={`an-txn-amt${tx.isIncome ? ' income' : ''}`}>
-                          {tx.isIncome ? '+' : '−'}{formatCurrency(tx.amount)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
               )}
             </div>
           )}
