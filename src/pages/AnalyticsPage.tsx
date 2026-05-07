@@ -503,9 +503,10 @@ export default function AnalyticsPage() {
                 <ul className="an-txn-list">
                   {[...monthTxns].sort((a, b) => b.date.localeCompare(a.date)).map(tx => {
                     const cat = categories.find(c => c.id === tx.categoryId);
+                    const TxIcon = tx.isIncome ? TrendingUp : (CAT_ICON[cat?.id ?? ''] ?? Package);
                     return (
                       <li key={tx.id} className="an-txn-item">
-                        <span className="an-txn-icon">{cat ? (CAT_ICON[cat.id] ?? '📦') : '📦'}</span>
+                        <span className="an-txn-icon"><TxIcon size={16} color={tx.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} /></span>
                         <div className="an-txn-info">
                           <span className="an-txn-desc">{tx.description}</span>
                           <span className="an-txn-date">{tx.date}</span>
