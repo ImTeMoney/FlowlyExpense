@@ -3718,6 +3718,74 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 
+/* ── Category trigger row (compact row → opens bottom sheet) ── */
+.cat-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text);
+  box-shadow: var(--glass-inset-sm);
+  text-align: start;
+}
+.cat-trigger-btn:hover {
+  border-color: var(--glass-hi);
+  background: rgba(255,255,255,0.07);
+}
+.cat-trigger-btn:active { transform: scale(0.98); }
+.cat-trigger-icon { flex-shrink: 0; display: flex; align-items: center; }
+.cat-trigger-name { font-size: 14px; font-weight: 600; }
+
+/* ── Category bottom sheet ── */
+.cat-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(5,0,20,0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: overlayIn 0.2s ease;
+}
+.cat-sheet {
+  width: 100%;
+  max-width: 500px;
+  background: var(--modal-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 22px 22px 0 0;
+  backdrop-filter: blur(40px) saturate(220%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(110%);
+  box-shadow: var(--glass-inset), 0 -8px 40px rgba(0,0,0,0.4);
+  padding: 0 16px max(32px, env(safe-area-inset-bottom));
+  animation: sheetUp 0.32s cubic-bezier(0.22,1,0.36,1);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.cat-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--glass-border);
+  margin: 10px auto 14px;
+}
+.cat-sheet-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
 /* =====================================================
    RECEIPT ATTACHMENT
    ===================================================== */

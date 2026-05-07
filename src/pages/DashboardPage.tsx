@@ -7,7 +7,8 @@ import {
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
   Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil, ChevronDown,
 } from 'lucide-react';
-import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit, ReceiptMeta } from '../context/ExpenseContext';
+import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
+import type { ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -17,9 +18,8 @@ import { useTilt } from '../hooks/useTilt';
 import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
 import DebtTracker from '../components/DebtTracker';
 import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
-import ReceiptAttachment, { ReceiptViewerById } from '../components/ReceiptAttachment';
+import { ReceiptViewerById } from '../components/ReceiptAttachment';
 import { deleteReceipt } from '../services/receiptStorage';
-import { OcrResult } from '../services/receiptOcrService';
 
 // ── Insight icon map ─────────────────────────────────────────────
 const INSIGHT_ICON: Record<InsightIcon, React.FC<{ size?: number; color?: string }>> = {
@@ -126,14 +126,14 @@ export default function DashboardPage() {
   // Paste parser
   const [pasteText, setPasteText]     = useState('');
   const [showPaste, setShowPaste]     = useState(false);
-  // Receipt attachment (modal)
+  // Receipt state kept for editing existing transactions that already have receipts
   const [receiptId,   setReceiptId]   = useState<string | undefined>(undefined);
   const [receiptMeta, setReceiptMeta] = useState<ReceiptMeta | undefined>(undefined);
-  // Track receipts staged inside the modal but not yet bound to a saved tx,
-  // so we can clean them up if the user cancels.
   const stagedReceiptIdRef = useRef<string | null>(null);
   // Standalone viewer triggered from the transaction list
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
+  // Category bottom sheet
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
 
   // Lock body scroll when any modal is open.
   // On iOS, overflow:hidden alone doesn't stop rubber-band bounce on fixed elements.
@@ -348,24 +348,6 @@ export default function DashboardPage() {
     if (editingTx) clearDraft(); // edit session must not pollute new-tx draft
     setEditingTx(null);
     setShowModal(false);
-  }
-
-  function handleReceiptChange(next: { receiptId?: string; receipt?: ReceiptMeta }) {
-    stagedReceiptIdRef.current = next.receiptId ?? null;
-    setReceiptId(next.receiptId);
-    setReceiptMeta(next.receipt);
-  }
-
-  function handleOcrPrefill(data: OcrResult) {
-    if (data.totalAmount && (!amount || parseFloat(amount) === 0)) {
-      setAmount(String(data.totalAmount));
-    }
-    if (data.merchantName && !desc.trim()) {
-      setDesc(data.merchantName);
-    }
-    if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
-      setDate(data.date);
-    }
   }
 
   async function handleAdd() {
@@ -1004,11 +986,25 @@ export default function DashboardPage() {
               {!isIncome && (
                 <div className="modal-step">
                   <div className="modal-step-label">{t.category}</div>
-                  <CategoryPicker
-                    categories={categories}
-                    value={catId}
-                    onChange={setCatId}
-                  />
+                  <button
+                    type="button"
+                    className="cat-trigger-btn"
+                    onClick={() => setCatSheetOpen(true)}
+                  >
+                    {(() => {
+                      const cat = categories.find(c => c.id === catId);
+                      const CatIcon = CAT_ICON[catId] ?? Package;
+                      return (
+                        <>
+                          <span className="cat-trigger-icon" style={{ color: cat?.color ?? 'var(--text-muted)' }}>
+                            <CatIcon size={18} strokeWidth={2} />
+                          </span>
+                          <span className="cat-trigger-name">{cat?.name ?? catId}</span>
+                          <ChevronDown size={14} style={{ marginInlineStart: 'auto', color: 'var(--text-muted)' }} />
+                        </>
+                      );
+                    })()}
+                  </button>
                 </div>
               )}
 
@@ -1294,16 +1290,6 @@ export default function DashboardPage() {
               </div>
               )}
 
-              {/* Receipt — scrolls with content */}
-              {!isIncome && (
-                <ReceiptAttachment
-                  receiptId={receiptId}
-                  receiptMeta={receiptMeta}
-                  onChange={handleReceiptChange}
-                  onOcrPrefill={handleOcrPrefill}
-                  onError={showToast}
-                />
-              )}
             </div>
 
             {/* Submit — outside field-group, sticks to bottom */}
@@ -1314,6 +1300,22 @@ export default function DashboardPage() {
             >
               {editingTx ? t.save : t.add}
             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Category bottom sheet */}
+      {catSheetOpen && !isIncome && createPortal(
+        <div className="cat-sheet-overlay" onClick={() => setCatSheetOpen(false)}>
+          <div className="cat-sheet" onClick={e => e.stopPropagation()}>
+            <div className="cat-sheet-handle" />
+            <div className="cat-sheet-title">{t.category}</div>
+            <CategoryPicker
+              categories={categories}
+              value={catId}
+              onChange={(id) => { setCatId(id); setCatSheetOpen(false); }}
+            />
           </div>
         </div>,
         document.body
