@@ -15,7 +15,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import { useSpendingForecast } from '../hooks/useSpendingForecast';
 import { useTilt } from '../hooks/useTilt';
-import CategoryPicker, { CAT_ICON } from '../components/CategoryPicker';
+import CategoryPicker, { resolveCatIcon } from '../components/CategoryPicker';
 import DatePicker from '../components/DatePicker';
 import DebtTracker from '../components/DebtTracker';
 import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
@@ -745,7 +745,7 @@ export default function DashboardPage() {
                 </div>
                 {txns.map(tx => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
-                  const Icon   = tx.isIncome ? TrendingUp : (CAT_ICON[tx.categoryId] ?? Package);
+                  const Icon   = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
                   const PmIcon = tx.paymentMethod ? PM_ICON[tx.paymentMethod] : null;
                   const isRecurringTx = recurringExpenses.some(r =>
@@ -994,7 +994,7 @@ export default function DashboardPage() {
                   >
                     {(() => {
                       const cat = categories.find(c => c.id === catId);
-                      const CatIcon = CAT_ICON[catId] ?? Package;
+                      const CatIcon = resolveCatIcon(cat);
                       return (
                         <>
                           <span className="cat-trigger-icon" style={{ color: cat?.color ?? 'var(--text-muted)' }}>

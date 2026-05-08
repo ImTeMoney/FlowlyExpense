@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
+import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -172,7 +173,8 @@ const SettingsPage: React.FC = () => {
   }
   function commitEdit() {
     if (editingId && editingName.trim()) {
-      dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name: editingName.trim(), color: editingColor } });
+      const name = editingName.trim();
+      dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name, color: editingColor, icon: suggestIcon(name) } });
       showToast(t.categoryUpdated);
     }
     setEditingId(null);
@@ -248,7 +250,7 @@ const SettingsPage: React.FC = () => {
     if (!name) return;
     dispatch({
       type: 'ADD_CATEGORY',
-      payload: { id: `cat_custom_${Date.now()}`, name, color: newCatColor, isCustom: true },
+      payload: { id: `cat_custom_${Date.now()}`, name, color: newCatColor, icon: suggestIcon(name), isCustom: true },
     });
     setNewCatName('');
   }

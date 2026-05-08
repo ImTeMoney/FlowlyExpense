@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
-import { CAT_ICON } from '../components/CategoryPicker';
+import { resolveCatIcon } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import CalendarHeatmap from '../components/CalendarHeatmap';
 
@@ -320,7 +320,7 @@ export default function AnalyticsPage() {
                 <span className="an-cat-card-count">{catTotals.length} {lang === 'he' ? 'קטגוריות' : 'categories'}</span>
               </div>
               {visibleCats.map(({ cat, total }) => {
-                const Icon = CAT_ICON[cat.id] ?? Package;
+                const Icon = resolveCatIcon(cat);
                 const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
                 const isRecurringCat = recurringExpenses.some(r => r.categoryId === cat.id && !r.isIncome);
                 const isSingleTx = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).length === 1;
@@ -514,7 +514,7 @@ export default function AnalyticsPage() {
               <div className="rec-list">
                 {recurringWithDue.map(r => {
                   const cat  = categories.find(c => c.id === r.categoryId);
-                  const Icon = r.isIncome ? TrendingUp : (CAT_ICON[r.categoryId] ?? Package);
+                  const Icon = r.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const badgeLabel = r.totalInstallments
                     ? `${r.postedCount ?? 0}/${r.totalInstallments}`
                     : t.monthlyBadge;

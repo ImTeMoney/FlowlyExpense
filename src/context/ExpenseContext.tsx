@@ -40,6 +40,7 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  icon?: string;
   isCustom?: boolean;
   isRenamed?: boolean;
 }
@@ -133,7 +134,7 @@ type Action =
   | { type: 'SET_SAVINGS_GOAL';          payload: number }
   | { type: 'ADD_CATEGORY';              payload: Category }
   | { type: 'DELETE_CATEGORY';           payload: string }
-  | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string } }
+  | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string; icon?: string } }
   | { type: 'UPDATE_LAST_POSTED';        payload: { id: string; month: string } }
   | { type: 'SET_RECURRING_INSTALLMENTS'; payload: { id: string; totalInstallments: number } }
   | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> }
@@ -509,7 +510,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       case 'RENAME_CATEGORY':
         setCategories(prev =>
           prev.map(c => c.id === action.payload.id
-            ? { ...c, name: action.payload.name, color: action.payload.color, isRenamed: true }
+            ? { ...c, name: action.payload.name, color: action.payload.color, icon: action.payload.icon, isRenamed: true }
             : c
           )
         );
