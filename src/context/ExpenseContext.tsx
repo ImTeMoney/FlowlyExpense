@@ -505,6 +505,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'DELETE_CATEGORY':
         setCategories(prev => prev.filter(c => c.id !== action.payload));
+        setTransactions(prev => prev.map(tx =>
+          tx.categoryId === action.payload ? { ...tx, categoryId: 'cat_other' } : tx
+        ));
         break;
 
       case 'RENAME_CATEGORY':
