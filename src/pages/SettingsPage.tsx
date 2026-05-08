@@ -442,15 +442,45 @@ const SettingsPage: React.FC = () => {
                         </div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
                           <button
-                            onClick={() => setConfirm({
-                              title: t.confirmDeleteCatTitle,
-                              body: <strong>"{editingName}"</strong>,
-                              onConfirm: () => {
-                                dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
-                                setEditingId(null);
-                                setConfirm(null);
-                              },
-                            })}
+                            onClick={() => {
+                              const affected = transactions
+                                .filter(tx => tx.categoryId === editingId)
+                                .map(tx => tx.date.slice(0, 7))
+                                .filter((m, i, a) => a.indexOf(m) === i)
+                                .sort((a, b) => b.localeCompare(a));
+
+                              const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+                              const monthLabels = affected.map(ym => {
+                                const [y, m] = ym.split('-');
+                                return lang === 'he'
+                                  ? `${HE_MONTHS[parseInt(m) - 1]} ${y}`
+                                  : new Date(`${ym}-01`).toLocaleDateString('en', { month: 'long', year: 'numeric' });
+                              });
+
+                              setConfirm({
+                                title: t.confirmDeleteCatTitle,
+                                body: affected.length > 0 ? (
+                                  <>
+                                    <strong>"{editingName}"</strong>
+                                    <br /><br />
+                                    <span style={{ color: 'var(--danger)', fontSize: 13 }}>
+                                      {lang === 'he'
+                                        ? `יש ${affected.length === 1 ? 'עסקה אחת' : `${affected.length} עסקאות`} מ: ${monthLabels.join(', ')}`
+                                        : `Has ${affected.length} transaction${affected.length !== 1 ? 's' : ''} from: ${monthLabels.join(', ')}`}
+                                    </span>
+                                    <br />
+                                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                                      {lang === 'he' ? 'העסקאות ישמרו ללא קטגוריה.' : 'Transactions will remain uncategorised.'}
+                                    </span>
+                                  </>
+                                ) : <strong>"{editingName}"</strong>,
+                                onConfirm: () => {
+                                  dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
+                                  setEditingId(null);
+                                  setConfirm(null);
+                                },
+                              });
+                            }}
                             style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}
                           >
                             <Trash2 size={12} /> {t.deleteLabel}
