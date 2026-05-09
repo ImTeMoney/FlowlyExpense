@@ -26,7 +26,7 @@ import { useTilt } from '../hooks/useTilt';
 import CategoryPicker, { resolveCatIcon } from '../components/CategoryPicker';
 import DatePicker from '../components/DatePicker';
 import DebtTracker from '../components/DebtTracker';
-import { parseExpenseText, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
+import { parseExpenseText, suggestCategory, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
 import { ReceiptViewerById } from '../components/ReceiptAttachment';
 import { deleteReceipt } from '../services/receiptStorage';
 
@@ -322,6 +322,8 @@ export default function DashboardPage() {
       if (parsed.amount)    setAmount(String(parsed.amount));
       if (parsed.desc)      setDesc(parsed.desc);
       if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+      const catMatch = suggestCategory(transcript, categories);
+      if (catMatch) setCatId(catMatch);
       setShowPaste(false);
     };
     rec.onerror = () => setShowPaste(false);
@@ -1015,6 +1017,8 @@ export default function DashboardPage() {
                       if (parsed.amount)    setAmount(String(parsed.amount));
                       if (parsed.desc)      setDesc(parsed.desc);
                       if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+                      const catMatch = suggestCategory(pasteText, categories);
+                      if (catMatch) setCatId(catMatch);
                       setPasteText('');
                     }
                   }}
@@ -1040,6 +1044,8 @@ export default function DashboardPage() {
                     if (parsed.amount)    setAmount(String(parsed.amount));
                     if (parsed.desc)      setDesc(parsed.desc);
                     if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+                    const catMatch = suggestCategory(pasteText, categories);
+                    if (catMatch) setCatId(catMatch);
                     setPasteText('');
                   }}
                 >

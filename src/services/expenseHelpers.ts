@@ -3,7 +3,7 @@
 // The main app goes through ExpenseContext/dispatch for reactive state.
 // These helpers are for direct reads, drafts, and parsing only.
 
-import type { Transaction } from '../context/ExpenseContext';
+import type { Transaction, Category } from '../context/ExpenseContext';
 
 const TRANSACTIONS_KEY = 'expense_transactions';
 const DRAFT_KEY        = 'expense_draft_v1';
@@ -152,4 +152,67 @@ export function parseExpenseText(raw: string): ParsedExpenseText {
   else if (/debit|דביט/i.test(lower))                                       result.payMethod = 'debit';
 
   return result;
+}
+
+// ── Category suggestion from free-form text ───────────────────────────────────
+// Matches transcript keywords against known category IDs and the user's
+// category names. Returns the matching categoryId, or undefined → use cat_other.
+
+const CAT_KEYWORDS: Record<string, string[]> = {
+  cat_transport:     [
+    'רכב', 'תחבורה', 'דלק', 'בנזין', 'חניה', 'אוטובוס', 'רכבת', 'מונית', 'טרמפ',
+    'שמן מנוע', 'תיקון רכב', 'גרר', 'ביטוח רכב',
+    'car', 'vehicle', 'fuel', 'gas', 'petrol', 'parking', 'transport',
+    'taxi', 'uber', 'waze', 'bus', 'train', 'scooter', 'bike',
+  ],
+  cat_groceries:     [
+    'סופר', 'מכולת', 'קניות', 'מזון', 'ירקות', 'פירות', 'שוק', 'רמי לוי', 'שופרסל',
+    'סיטי', 'מגה', 'קרפור', 'יינות ביתן',
+    'supermarket', 'grocery', 'groceries', 'market', 'food shop',
+    'rami levi', 'shufersal', 'mega',
+  ],
+  cat_rent:          [
+    'שכירות', 'שכר דירה', 'דמי שכירות', 'ועד בית', 'ארנונה',
+    'rent', 'apartment', 'housing', 'mortgage', 'house',
+  ],
+  cat_entertainment: [
+    'בידור', 'קולנוע', 'סרט', 'נטפליקס', 'ספוטיפיי', 'גיים', 'משחק', 'מנוי',
+    'הופעה', 'קונצרט', 'תיאטרון', 'ספרים',
+    'entertainment', 'netflix', 'spotify', 'movie', 'cinema', 'game',
+    'gaming', 'subscription', 'concert', 'theatre', 'theater', 'disney', 'youtube',
+  ],
+  cat_utilities:     [
+    'חשמל', 'מים', 'ארנונה', 'אינטרנט', 'טלפון', 'חשבון', 'סלולר', 'פרטנר', 'HOT', 'בזק',
+    'electricity', 'water', 'internet', 'phone', 'bill', 'utility', 'utilities',
+    'mobile', 'cellphone', 'hot', 'bezeq',
+  ],
+  cat_insurance:     [
+    'ביטוח', 'פוליסה', 'ביטוח חיים', 'ביטוח בריאות', 'ביטוח שיניים',
+    'insurance', 'policy', 'coverage',
+  ],
+  cat_dining:        [
+    'מסעדה', 'קפה', 'בית קפה', 'פיצה', 'סושי', 'המבורגר', 'ארוחה', 'אוכל בחוץ',
+    'דליברי', 'וולט', 'טבון',
+    'restaurant', 'cafe', 'coffee', 'dining', 'pizza', 'sushi', 'burger',
+    'lunch', 'dinner', 'breakfast', 'meal', 'wolt', 'uber eats', 'delivery',
+  ],
+  cat_travel:        [
+    'טיסה', 'מלון', 'נסיעה לחוץ לארץ', 'תיירות', 'אירופה', 'חופשה',
+    'flight', 'hotel', 'travel', 'vacation', 'holiday', 'airbnb', 'booking', 'abroad',
+  ],
+};
+
+export function suggestCategory(text: string, categories: Category[]): string | undefined {
+  const lower = text.toLowerCase();
+
+  for (const cat of categories) {
+    if (cat.id === 'cat_other') continue;
+    const builtIn  = CAT_KEYWORDS[cat.id] ?? [];
+    const nameWord = cat.name.toLowerCase();
+    const keywords = [...builtIn, nameWord];
+    for (const kw of keywords) {
+      if (lower.includes(kw.toLowerCase())) return cat.id;
+    }
+  }
+  return undefined;
 }
