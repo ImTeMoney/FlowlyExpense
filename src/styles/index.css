@@ -5334,3 +5334,34 @@ body::before, body::after {
 .an-txn-amt { font-size: 13px; font-weight: 600; color: var(--danger); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .an-txn-amt.income { color: var(--success); }
 .debt-confirm-delete:hover { background: rgba(255,69,58,0.3); }
+
+/* ── Voice input ─────────────────────────────────────────────────────────── */
+.voice-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 2px 0 4px;
+}
+.voice-mic-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 20px; cursor: pointer;
+  background: var(--purple-dim); border: 1.5px solid var(--purple);
+  color: var(--purple); font-size: 13px; font-weight: 600;
+  transition: background 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.voice-mic-btn.listening {
+  background: rgba(139,92,246,0.22);
+  animation: mic-pulse 1s ease-in-out infinite;
+}
+.voice-mic-btn:disabled { cursor: default; opacity: 0.85; }
+.voice-transcript {
+  font-size: 12px; color: var(--text-muted);
+  padding: 3px 8px; border-radius: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--glass-border);
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@keyframes mic-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
+  50%      { box-shadow: 0 0 0 7px rgba(139,92,246,0); }
+}

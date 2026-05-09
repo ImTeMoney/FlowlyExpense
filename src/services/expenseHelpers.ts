@@ -83,6 +83,12 @@ export function parseExpenseText(raw: string): ParsedExpenseText {
     /\$\s*([\d,]+\.?\d*)/,
     /€\s*([\d,]+\.?\d*)/,
     /£\s*([\d,]+\.?\d*)/,
+    // Voice / natural language: "50 shekels", "50 שקל", "50 dollars"
+    /(\d+(?:\.\d{1,2})?)\s*(?:shekels?|dollars?|euros?|pounds?|שקל(?:ים)?|דולר(?:ים)?)/i,
+    // Hebrew voice: "שילמתי / קניתי / שלמתי / עלה לי X"
+    /(?:שילמתי|קניתי|שלמתי|עלה\s+לי)\s+([\d,]+\.?\d*)/i,
+    // English voice: "I spent / I paid / cost / it was X"
+    /(?:i\s+(?:spent|paid)|cost(?:ed)?|it\s+(?:was|cost))\s+\$?([\d,]+\.?\d*)/i,
     // English keywords
     /(?:amount|charged|total|sum|price)[:\s]+([\d,]+\.?\d*)/i,
   ];
@@ -95,9 +101,22 @@ export function parseExpenseText(raw: string): ParsedExpenseText {
     }
   }
 
+  // Plain number fallback — only if nothing above matched
+  if (!result.amount) {
+    const m = text.match(/\b(\d+(?:\.\d{1,2})?)\b/);
+    if (m) {
+      const n = parseFloat(m[1]);
+      if (n > 0) result.amount = n;
+    }
+  }
+
   // ── Merchant / description ───────────────────────────────────────────────────
   // Each entry: [pattern, captureGroup]
   const merchantPatterns: Array<[RegExp, number]> = [
+    // Voice Hebrew: "שילמתי 50 שקל על קפה" / "על ארוחת צהריים"
+    [/(?:על|ל)\s+([א-תa-zA-Z][א-תa-zA-Z\s\-&']{1,39}?)(?:\s*$|,)/i, 1],
+    // Voice English: "I spent 30 on coffee at Aroma"
+    [/(?:spent|paid)\s+[\d.]+\s+on\s+([a-zA-Z][a-zA-Z\s\-&']{1,39}?)(?:\s*$|,)/i, 1],
     // Apple Pay iOS: "Seedance\n₪93.00" — first line before amount
     [/^([A-Za-zא-ת][^\n₪\d]{1,40}?)\s*\n/m, 1],
     // "חיוב ב-FOX על סך"

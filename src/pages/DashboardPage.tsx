@@ -5,8 +5,15 @@ import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil, ChevronDown,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil, ChevronDown, Mic,
 } from 'lucide-react';
+
+declare global {
+  interface Window {
+    SpeechRecognition:       typeof SpeechRecognition | undefined;
+    webkitSpeechRecognition: typeof SpeechRecognition | undefined;
+  }
+}
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import type { ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -294,6 +301,33 @@ export default function DashboardPage() {
     setToast(msg);
     setToastTimer(setTimeout(() => setToast(''), 2200));
   }, [toastTimer]);
+
+  // ── Voice input ───────────────────────────────────────────────────────────
+  const SpeechRec = typeof window !== 'undefined'
+    ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
+    : null;
+
+  function startListening() {
+    if (!SpeechRec) return;
+    const rec = new SpeechRec();
+    rec.lang = lang === 'he' ? 'he-IL' : 'en-US';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    setShowPaste(true);
+    setPasteText('');
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      const transcript = e.results[0][0].transcript;
+      setPasteText(transcript);
+      const parsed = parseExpenseText(transcript);
+      if (parsed.amount)    setAmount(String(parsed.amount));
+      if (parsed.desc)      setDesc(parsed.desc);
+      if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+      setShowPaste(false);
+    };
+    rec.onerror = () => setShowPaste(false);
+    rec.onend   = () => setShowPaste(false);
+    rec.start();
+  }
 
   function openModal() {
     const draft = readDraft();
@@ -961,6 +995,27 @@ export default function DashboardPage() {
                 <TrendingUp size={14} /> {t.income}
               </button>
             </div>
+
+            {/* Voice input */}
+            {SpeechRec && (
+              <div className="voice-row">
+                <button
+                  type="button"
+                  className={`voice-mic-btn${showPaste ? ' listening' : ''}`}
+                  onClick={startListening}
+                  disabled={showPaste}
+                  aria-label={lang === 'he' ? 'הכנס הוצאה בקול' : 'Add expense by voice'}
+                >
+                  <Mic size={16} />
+                  <span className="voice-mic-label">
+                    {showPaste
+                      ? (lang === 'he' ? 'מאזין...' : 'Listening...')
+                      : (lang === 'he' ? 'הוסף בקול' : 'Voice')}
+                  </span>
+                </button>
+                {pasteText && <span className="voice-transcript">{pasteText}</span>}
+              </div>
+            )}
 
             {/* Amount */}
             <div className="amount-row">
