@@ -996,26 +996,57 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Voice input */}
-            {SpeechRec && (
-              <div className="voice-row">
+            {/* Voice / dictation input — works on all platforms.
+                iOS users tap the field and use the keyboard mic.
+                Chrome/Android: mic button also triggers Web Speech API. */}
+            <div className="voice-field-row">
+              <div className={`voice-field-wrap${showPaste ? ' listening' : ''}`}>
+                <Mic size={15} className="voice-field-icon" />
+                <input
+                  type="text"
+                  className="voice-field-input"
+                  placeholder={lang === 'he' ? 'אמור: "שילמתי 50 שקל על קפה"' : 'Say: "I spent 50 on coffee"'}
+                  value={pasteText}
+                  onChange={e => setPasteText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const parsed = parseExpenseText(pasteText);
+                      if (parsed.amount)    setAmount(String(parsed.amount));
+                      if (parsed.desc)      setDesc(parsed.desc);
+                      if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+                      setPasteText('');
+                    }
+                  }}
+                />
+                {SpeechRec ? (
+                  <button
+                    type="button"
+                    className={`voice-api-btn${showPaste ? ' listening' : ''}`}
+                    onClick={startListening}
+                    disabled={showPaste}
+                    aria-label={lang === 'he' ? 'הפעל זיהוי קול' : 'Start voice recognition'}
+                  >
+                    {showPaste ? '...' : <Mic size={14} />}
+                  </button>
+                ) : null}
+              </div>
+              {pasteText && (
                 <button
                   type="button"
-                  className={`voice-mic-btn${showPaste ? ' listening' : ''}`}
-                  onClick={startListening}
-                  disabled={showPaste}
-                  aria-label={lang === 'he' ? 'הכנס הוצאה בקול' : 'Add expense by voice'}
+                  className="voice-parse-btn"
+                  onClick={() => {
+                    const parsed = parseExpenseText(pasteText);
+                    if (parsed.amount)    setAmount(String(parsed.amount));
+                    if (parsed.desc)      setDesc(parsed.desc);
+                    if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+                    setPasteText('');
+                  }}
                 >
-                  <Mic size={16} />
-                  <span className="voice-mic-label">
-                    {showPaste
-                      ? (lang === 'he' ? 'מאזין...' : 'Listening...')
-                      : (lang === 'he' ? 'הוסף בקול' : 'Voice')}
-                  </span>
+                  {lang === 'he' ? 'מלא' : 'Fill'}
                 </button>
-                {pasteText && <span className="voice-transcript">{pasteText}</span>}
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Amount */}
             <div className="amount-row">
