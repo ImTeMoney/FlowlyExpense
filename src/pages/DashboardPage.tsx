@@ -12,6 +12,7 @@ import type { ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
+import { useNotifications } from '../hooks/useNotifications';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import { useSpendingForecast } from '../hooks/useSpendingForecast';
 import { useTilt } from '../hooks/useTilt';
@@ -274,6 +275,19 @@ export default function DashboardPage() {
     if (!showModal || editingTx) return; // never overwrite draft with edit-mode data
     writeDraft({ amount, desc, date, payMethod, catId });
   }, [amount, desc, date, payMethod, catId, showModal, editingTx]);
+
+  // ── Local notifications ───────────────────────────────────────────────────
+  const { checkAndNotify } = useNotifications();
+  useEffect(() => {
+    checkAndNotify(recurringExpenses, formatCurrency, lang);
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndNotify(recurringExpenses, formatCurrency, lang);
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [checkAndNotify, recurringExpenses, lang]);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimer) clearTimeout(toastTimer);

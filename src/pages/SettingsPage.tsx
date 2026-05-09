@@ -5,7 +5,8 @@ import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell } from 'lucide-react';
+import { useNotifications } from '../hooks/useNotifications';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   DndContext,
@@ -53,6 +54,7 @@ const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
+  const { permission, enabled, notifyDays, requestPermission, setEnabled, setNotifyDays } = useNotifications();
 
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode, debtModeEnabled } = state;
 
@@ -547,6 +549,67 @@ const SettingsPage: React.FC = () => {
             <Plus size={13} /> {t.addCategory}
           </button>
         </form>
+      </div>
+
+      {/* ── Notifications ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <Bell size={14} />
+          <span className="title-text">{lang === 'he' ? 'התראות' : 'Notifications'}</span>
+        </div>
+
+        {permission === 'denied' ? (
+          <p className="settings-helper" style={{ color: 'var(--text-muted)' }}>
+            {lang === 'he'
+              ? 'התראות חסומות בדפדפן. אפשר אותן בהגדרות המכשיר.'
+              : 'Notifications blocked by browser. Enable in device settings.'}
+          </p>
+        ) : permission === 'default' ? (
+          <button className="export-btn primary" onClick={requestPermission}>
+            <Bell size={13} />
+            {lang === 'he' ? 'הפעל התראות' : 'Enable notifications'}
+          </button>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                {lang === 'he' ? 'התראות על הוצאות קרובות' : 'Reminders for upcoming bills'}
+              </span>
+              <button
+                onClick={() => setEnabled(!enabled)}
+                className={`adv-card-toggle adv-card-toggle--green${enabled ? ' on' : ''}`}
+                style={{ flexShrink: 0 }}
+              />
+            </div>
+
+            {enabled && (
+              <>
+                <p className="settings-helper">
+                  {lang === 'he' ? 'הודעה מוקדמת:' : 'Advance notice:'}
+                </p>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[1, 2, 3].map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setNotifyDays(d)}
+                      style={{
+                        flex: 1, padding: '7px 0', borderRadius: 10, cursor: 'pointer',
+                        border: `1.5px solid ${notifyDays === d ? 'var(--purple)' : 'var(--glass-border)'}`,
+                        background: notifyDays === d ? 'var(--purple-dim)' : 'var(--bg-input)',
+                        color: notifyDays === d ? 'var(--purple)' : 'var(--text-secondary)',
+                        fontSize: 13, fontWeight: notifyDays === d ? 700 : 500,
+                      }}
+                    >
+                      {d === 1
+                        ? (lang === 'he' ? 'יום אחד' : '1 day')
+                        : (lang === 'he' ? `${d} ימים` : `${d} days`)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
 
       {/* ── Tools ── */}
