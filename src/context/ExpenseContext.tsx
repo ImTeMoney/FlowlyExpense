@@ -299,9 +299,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [moneyMode, setMoneyMode] = useState<MoneyMode>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.MONEY_MODE);
     if (stored === 'savings_based' || stored === 'budget_based') return stored;
-    // Auto-detect: existing users with a savings goal default to savings_based
-    const savedGoal = loadFromStorage<number>(STORAGE_KEYS.SAVINGS_GOAL, 0);
-    return savedGoal > 0 ? 'savings_based' : 'budget_based';
+    return 'savings_based';
   });
 
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgets>(() =>
