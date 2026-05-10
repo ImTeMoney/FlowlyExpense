@@ -7,19 +7,13 @@ import {
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
   Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Paperclip, Pencil, ChevronDown, Mic,
 } from 'lucide-react';
-
-declare global {
-  interface Window {
-    SpeechRecognition:       typeof SpeechRecognition | undefined;
-    webkitSpeechRecognition: typeof SpeechRecognition | undefined;
-  }
-}
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import type { ReceiptMeta } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
+import { useMicPermission } from '../hooks/useMicPermission';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import { useSpendingForecast } from '../hooks/useSpendingForecast';
 import { useTilt } from '../hooks/useTilt';
@@ -306,9 +300,18 @@ export default function DashboardPage() {
   const SpeechRec = typeof window !== 'undefined'
     ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
     : null;
+  const { micPermission, requestMicPermission } = useMicPermission();
 
-  function startListening() {
+  async function startListening() {
     if (!SpeechRec) return;
+
+    // Prime mic permission once via getUserMedia so subsequent SpeechRecognition
+    // calls reuse the cached grant without showing a browser prompt.
+    if (micPermission !== 'granted') {
+      const result = await requestMicPermission();
+      if (result !== 'granted') return;
+    }
+
     const rec = new SpeechRec();
     rec.lang = lang === 'he' ? 'he-IL' : 'en-US';
     rec.interimResults = false;
@@ -1023,7 +1026,7 @@ export default function DashboardPage() {
                     }
                   }}
                 />
-                {SpeechRec ? (
+                {SpeechRec && micPermission !== 'denied' ? (
                   <button
                     type="button"
                     className={`voice-api-btn${showPaste ? ' listening' : ''}`}

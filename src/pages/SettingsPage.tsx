@@ -5,8 +5,9 @@ import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell, Mic } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { useMicPermission } from '../hooks/useMicPermission';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   DndContext,
@@ -55,6 +56,10 @@ const SettingsPage: React.FC = () => {
   const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
   const { permission, enabled, notifyDays, requestPermission, setEnabled, setNotifyDays } = useNotifications();
+  const { micPermission, requestMicPermission } = useMicPermission();
+  const SpeechRec = typeof window !== 'undefined'
+    ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
+    : null;
 
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode, debtModeEnabled } = state;
 
@@ -611,6 +616,36 @@ const SettingsPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* ── Microphone ── */}
+      {SpeechRec && (
+        <div className="a-sec">
+          <div className="a-sec-title">
+            <Mic size={14} />
+            <span className="title-text">{lang === 'he' ? 'מיקרופון' : 'Microphone'}</span>
+          </div>
+
+          {micPermission === 'denied' ? (
+            <p className="settings-helper" style={{ color: 'var(--text-muted)' }}>
+              {lang === 'he'
+                ? 'גישה למיקרופון חסומה בדפדפן. אפשר אותה בהגדרות המכשיר.'
+                : 'Microphone blocked by browser. Enable in device settings.'}
+            </p>
+          ) : micPermission === 'granted' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+              <CheckCircle size={16} color="var(--success)" />
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                {lang === 'he' ? 'גישה למיקרופון מאושרת' : 'Microphone access granted'}
+              </span>
+            </div>
+          ) : (
+            <button className="export-btn primary" onClick={requestMicPermission}>
+              <Mic size={13} />
+              {lang === 'he' ? 'אפשר גישה למיקרופון' : 'Allow microphone access'}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Tools ── */}
       <div className="a-sec">
