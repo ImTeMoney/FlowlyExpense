@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useExpense, CATEGORY_COLORS } from '../context/ExpenseContext';
+import { useExpense, CATEGORY_COLORS, STORAGE_KEYS } from '../context/ExpenseContext';
 import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
@@ -84,7 +84,7 @@ const SettingsPage: React.FC = () => {
   function showToast(msg: string) {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
-    setToastTimer(setTimeout(() => setToast(''), 2200));
+    setToastTimer(setTimeout(() => setToast(''), 3000));
   }
 
   // Refresh / update check
@@ -195,19 +195,7 @@ const SettingsPage: React.FC = () => {
   // Full JSON backup/restore
   const backupInputRef = useRef<HTMLInputElement>(null);
 
-  const BACKUP_STORAGE_KEYS = [
-    'expense_transactions',
-    'expense_recurring',
-    'expense_budget',
-    'expense_savings_goal',
-    'expense_categories_v2',
-    'expense_device_id',
-    'expense_main_currency',
-    'expense_money_mode',
-    'expense_category_budgets',
-    'expense_debts',
-    'expense_streaks',
-  ];
+  const BACKUP_STORAGE_KEYS = Object.values(STORAGE_KEYS);
 
   function exportBackup() {
     const data: Record<string, unknown> = { _version: 1, _exportedAt: new Date().toISOString() };

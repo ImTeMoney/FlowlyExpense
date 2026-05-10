@@ -20,7 +20,7 @@ import { useTilt } from '../hooks/useTilt';
 import CategoryPicker, { resolveCatIcon } from '../components/CategoryPicker';
 import DatePicker from '../components/DatePicker';
 import DebtTracker from '../components/DebtTracker';
-import { parseExpenseText, suggestCategory, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
+import { parseExpenseText, suggestCategory, todayStr, currentMonthStr, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
 import { ReceiptViewerById } from '../components/ReceiptAttachment';
 import { deleteReceipt } from '../services/receiptStorage';
 
@@ -71,14 +71,6 @@ const PM_COLOR: Record<string, string> = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function currentMonthStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-}
 function groupByDate(txns: Transaction[]) {
   const map = new Map<string, Transaction[]>();
   [...txns].sort((a,b) => b.date.localeCompare(a.date)).forEach(t => {
@@ -116,19 +108,21 @@ export default function DashboardPage() {
   const [txCurrency, setTxCurrency]           = useState(mainCurrency);
   const [ratePreview, setRatePreview]         = useState<string>('');
   const [rateLoading, setRateLoading]         = useState(false);
+  const [rateFailed,  setRateFailed]          = useState(false);
+  const [rateRetry,   setRateRetry]           = useState(0);
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
   const [isRecurring, setIsRecurring]         = useState(false);
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
-  const [advancedOpen, setAdvancedOpen]       = useState(false);
   const [splitN, setSplitN]                   = useState(3);
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
-  // Paste parser
+  // Paste parser / voice
   const [pasteText, setPasteText]     = useState('');
   const [showPaste, setShowPaste]     = useState(false);
+  const [voiceError, setVoiceError]   = useState('');
   // Receipt state kept for editing existing transactions that already have receipts
   const [receiptId,   setReceiptId]   = useState<string | undefined>(undefined);
   const [receiptMeta, setReceiptMeta] = useState<ReceiptMeta | undefined>(undefined);
@@ -165,6 +159,18 @@ export default function DashboardPage() {
     };
   }, [showModal, splitTx, confirm]);
 
+  // Escape key closes the active modal
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      if (confirm)       { setConfirm(null); return; }
+      if (splitTx)       { setSplitTx(null); return; }
+      if (showModal)     { setShowModal(false); return; }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showModal, splitTx, confirm]);
+
   // FAB hint ring — shown once after onboarding completes
   const [fabHint, setFabHint] = useState(() => !!localStorage.getItem('finio_fab_hint'));
   useEffect(() => {
@@ -197,18 +203,20 @@ export default function DashboardPage() {
     let cancelled = false;
     setRateLoading(true);
     setRatePreview('');
+    setRateFailed(false);
     convertAmount(parseFloat(amount), txCurrency, mainCurrency, date)
       .then(({ convertedAmount, rate }) => {
         if (!cancelled) {
           setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString()}  (${t.rateLabel}: ${rate})`);
           setRateLoading(false);
+          setRateFailed(false);
         }
       })
       .catch(() => {
-        if (!cancelled) { setRatePreview(t.rateError); setRateLoading(false); }
+        if (!cancelled) { setRateLoading(false); setRateFailed(true); }
       });
     return () => { cancelled = true; };
-  }, [txCurrency, mainCurrency, amount, date]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [txCurrency, mainCurrency, amount, date, rateRetry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── URL param prefill — opens modal automatically when deep-linked ───────────
   // e.g. /?amount=42.90&merchant=Aroma&method=applepay&date=2026-04-13
@@ -293,7 +301,7 @@ export default function DashboardPage() {
   const showToast = useCallback((msg: string) => {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
-    setToastTimer(setTimeout(() => setToast(''), 2200));
+    setToastTimer(setTimeout(() => setToast(''), 3000));
   }, [toastTimer]);
 
   // ── Voice input ───────────────────────────────────────────────────────────
@@ -329,8 +337,17 @@ export default function DashboardPage() {
       if (catMatch) setCatId(catMatch);
       setShowPaste(false);
     };
-    rec.onerror = () => setShowPaste(false);
-    rec.onend   = () => setShowPaste(false);
+    rec.onerror = (e: SpeechRecognitionErrorEvent) => {
+      setShowPaste(false);
+      const msg = e.error === 'not-allowed'
+        ? (lang === 'he' ? 'גישה למיקרופון נדחתה' : 'Microphone access denied')
+        : e.error === 'no-speech'
+          ? (lang === 'he' ? 'לא זוהה קול — נסה שוב' : 'No speech detected — try again')
+          : (lang === 'he' ? 'שגיאת זיהוי קול' : 'Voice recognition error');
+      setVoiceError(msg);
+      setTimeout(() => setVoiceError(''), 3000);
+    };
+    rec.onend = () => setShowPaste(false);
     rec.start();
   }
 
@@ -351,7 +368,7 @@ export default function DashboardPage() {
     setIsRecurring(false);
     setPasteText('');
     setShowPaste(false);
-    setAdvancedOpen(false);
+    setVoiceError('');
     setReceiptId(undefined);
     setReceiptMeta(undefined);
     stagedReceiptIdRef.current = null;
@@ -387,6 +404,7 @@ export default function DashboardPage() {
     ));
     setPasteText('');
     setShowPaste(false);
+    setVoiceError('');
     setReceiptId(tx.receiptId);
     setReceiptMeta(tx.receipt);
     stagedReceiptIdRef.current = null;
@@ -630,7 +648,8 @@ export default function DashboardPage() {
   // Payment method label
   const pmLabel = (pm?: string) => {
     if (!pm) return '';
-    return (t as any)[`pm_${pm}`] ?? pm;
+    const key = `pm_${pm}` as keyof typeof t;
+    return (t[key] as string | undefined) ?? pm;
   };
 
   return (
@@ -1056,6 +1075,7 @@ export default function DashboardPage() {
                 </button>
               )}
             </div>
+            {voiceError && <p className="voice-error">{voiceError}</p>}
 
             {/* Amount */}
             <div className="amount-row">
@@ -1087,7 +1107,19 @@ export default function DashboardPage() {
             </div>
             {txCurrency !== mainCurrency && (
               <div className="rate-preview">
-                {rateLoading ? '...' : ratePreview}
+                {rateLoading ? '...' : rateFailed ? (
+                  <span style={{ color: 'var(--danger)', fontSize: 12 }}>
+                    {t.rateError}
+                    {' '}
+                    <button
+                      type="button"
+                      style={{ color: 'var(--purple)', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                      onClick={() => { setRateFailed(false); setRateRetry(r => r + 1); }}
+                    >
+                      {lang === 'he' ? 'נסה שוב' : 'Retry'}
+                    </button>
+                  </span>
+                ) : ratePreview}
               </div>
             )}
 
@@ -1149,7 +1181,7 @@ export default function DashboardPage() {
                           ))}
                         >
                           {PAYMENT_METHODS.map(pm => (
-                            <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                            <option key={pm} value={pm}>{pmLabel(pm)}</option>
                           ))}
                         </select>
                         <input
@@ -1184,7 +1216,7 @@ export default function DashboardPage() {
                           } : { opacity: 0.6 }}
                         >
                           <PIcon size={16} color={selected ? PM_COLOR[pm] : 'var(--text-muted)'} />
-                          <span>{(t as any)[`pm_${pm}`]}</span>
+                          <span>{pmLabel(pm)}</span>
                         </button>
                       );
                     })}
@@ -1267,7 +1299,7 @@ export default function DashboardPage() {
                               ))}
                             >
                               {PAYMENT_METHODS.map(pm => (
-                                <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                                <option key={pm} value={pm}>{pmLabel(pm)}</option>
                               ))}
                             </select>
                             <input

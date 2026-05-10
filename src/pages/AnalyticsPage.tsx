@@ -213,7 +213,7 @@ export default function AnalyticsPage() {
     }
   }
 
-  const pmLabel = (pm: string) => (t as any)[`pm_${pm}`] ?? pm;
+  const pmLabel = (pm: string) => { const k = `pm_${pm}` as keyof typeof t; return (t[k] as string | undefined) ?? pm; };
 
   // Smart bill predictor: days until next occurrence for each recurring item
   const recurringWithDue = useMemo(() => {
@@ -493,9 +493,14 @@ export default function AnalyticsPage() {
           )}
 
           {/* ── Recurring / Subscription health ── */}
-          {recurringExpenses.length > 0 && (
-            <div className="an-section">
-              <div className="an-section-title">{t.recurringExpenses}</div>
+          <div className="an-section">
+            <div className="an-section-title">{t.recurringExpenses}</div>
+          {recurringExpenses.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0', margin: 0 }}>
+              {lang === 'he' ? 'אין הוצאות קבועות — הוסף אחת מטופס ההוצאה' : 'No recurring expenses yet — add one from the expense form'}
+            </p>
+          ) : (
+            <>
               {subHealth.total > 0 && (
                 <div className="sub-health-card">
                   <div className="sub-health-main">
@@ -587,8 +592,9 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-            </div>
+            </>
           )}
+          </div>
         </>
       )}
 
@@ -699,7 +705,7 @@ export default function AnalyticsPage() {
                 >
                   <option value="">{lang === 'he' ? '— אמצעי תשלום —' : '— Payment method —'}</option>
                   {PAYMENT_METHODS.map(pm => (
-                    <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                    <option key={pm} value={pm}>{pmLabel(pm)}</option>
                   ))}
                 </select>
               )}

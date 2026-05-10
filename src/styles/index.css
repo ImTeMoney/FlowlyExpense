@@ -5380,3 +5380,8 @@ body::before, body::after {
   0%,100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
   50%      { box-shadow: 0 0 0 6px rgba(139,92,246,0); }
 }
+.voice-error {
+  font-size: 12px; color: var(--danger);
+  padding: 3px 8px; margin: 0;
+  animation: fadeIn 0.2s ease;
+}

@@ -17,9 +17,6 @@ export function useTheme(): [Theme, () => void] {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Apply on first render
-  useEffect(() => { applyTheme(theme); }, []);
-
   function toggle() {
     setTheme(t => (t === 'dark' ? 'light' : 'dark'));
   }

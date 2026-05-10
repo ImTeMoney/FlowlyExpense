@@ -179,7 +179,7 @@ export const CATEGORY_COLORS = [
 export const DEBT_CATEGORY_ID = 'cat_debt';
 export const DEBT_CATEGORY: Category = { id: DEBT_CATEGORY_ID, name: 'חוב', color: '#6366f1' };
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   TRANSACTIONS:      'expense_transactions',
   RECURRING:         'expense_recurring',
   BUDGET:            'expense_budget',

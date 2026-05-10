@@ -8,6 +8,18 @@ import type { Transaction, Category } from '../context/ExpenseContext';
 const TRANSACTIONS_KEY = 'expense_transactions';
 const DRAFT_KEY        = 'expense_draft_v1';
 
+// ── Date helpers ──────────────────────────────────────────────────────────────
+
+export function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+export function currentMonthStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
 // ── Read / write raw transactions ─────────────────────────────────────────────
 
 export function getExpenses(): Transaction[] {
