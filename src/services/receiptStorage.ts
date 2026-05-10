@@ -50,17 +50,22 @@ function genId(): string {
   return 'rcpt_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+const ACCEPTED_SET = new Set(ACCEPTED_RECEIPT_TYPES);
+
 export function isAcceptedReceiptType(mimeType: string): boolean {
-  return ACCEPTED_RECEIPT_TYPES.includes(mimeType) || mimeType.startsWith('image/');
+  return ACCEPTED_SET.has(mimeType);
 }
 
 export async function saveReceipt(blob: Blob, filename?: string): Promise<ReceiptRecord> {
   const db = await openDB();
+  const safeName = filename
+    ? filename.replace(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 255)
+    : undefined;
   const record: ReceiptRecord = {
     id:        genId(),
     blob,
     mimeType:  blob.type || 'application/octet-stream',
-    filename,
+    filename:  safeName,
     size:      blob.size,
     createdAt: Date.now(),
   };

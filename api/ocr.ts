@@ -5,7 +5,9 @@
 // The OpenAI API key lives ONLY here — never sent to the browser.
 //
 // Environment variables (Vercel Dashboard → Settings → Environment Variables):
-//   OPENAI_API_KEY  — your OpenAI secret key (scope: Production + Preview)
+//   OPENAI_API_KEY   — your OpenAI secret key (scope: Production + Preview)
+//   ALLOWED_ORIGIN   — your app's origin, e.g. https://flowly.app
+//                      (leave unset in local dev to allow any origin)
 //
 // Local development:
 //   1. Add OPENAI_API_KEY=sk-... to .env.local
@@ -19,6 +21,7 @@ const OPENAI_API_URL    = 'https://api.openai.com/v1/responses';
 const MODEL             = 'gpt-4o-mini';
 const TIMEOUT_MS        = 25_000; // 25 s — stay under Vercel Edge 30 s limit
 const MAX_DECODED_BYTES = 4 * 1024 * 1024; // 4 MB decoded image data
+const IS_PROD           = process.env.VERCEL_ENV === 'production';
 
 // OpenAI vision accepts images directly as data URLs.
 // PDFs require a separate Files API pre-upload step, so they return null (no-data).
@@ -26,6 +29,26 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
   'application/pdf',
 ]);
+
+// ── Rate limiter (in-memory, best-effort per Edge isolate) ─────────────────────
+// For distributed rate limiting across instances, swap in Vercel KV / Upstash Redis.
+
+const RATE_WINDOW_MS = 60_000; // 1 minute
+const RATE_MAX       = 10;     // max OCR requests per IP per minute
+const rateMap        = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): boolean {
+  const now  = Date.now();
+  const hits = (rateMap.get(ip) ?? []).filter(t => now - t < RATE_WINDOW_MS);
+  hits.push(now);
+  rateMap.set(ip, hits);
+  // Evict stale entries to prevent unbounded memory growth
+  if (rateMap.size > 5_000) {
+    for (const [k, v] of rateMap)
+      if (v.every(t => now - t >= RATE_WINDOW_MS)) rateMap.delete(k);
+  }
+  return hits.length > RATE_MAX;
+}
 
 // ── Structured output schema ──────────────────────────────────────────────────
 // strict: true guarantees the model always returns every key — no regex parsing needed.
@@ -77,44 +100,57 @@ GENERAL RULES:
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req: Request): Promise<Response> {
+  const requestOrigin = req.headers.get('origin');
+
+  function respond(body: unknown, status: number): Response {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(requestOrigin) },
+    });
+  }
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders() });
+    return new Response(null, { status: 204, headers: corsHeaders(requestOrigin) });
   }
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
+    return respond({ error: 'Method not allowed' }, 405);
+  }
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+  if (checkRateLimit(ip)) {
+    return respond({ error: 'Too many requests' }, 429);
   }
 
   const apiKey = (process.env.OPENAI_API_KEY ?? '').trim();
   if (!apiKey) {
-    return json({ error: 'OCR not configured on server' }, 503);
+    return respond({ error: 'OCR not configured on server' }, 503);
   }
 
   // ── Parse + validate body ─────────────────────────────────────────────────
   let body: unknown;
   try { body = await req.json(); }
-  catch { return json({ error: 'Invalid JSON body' }, 400); }
+  catch { return respond({ error: 'Invalid JSON body' }, 400); }
 
   if (!isValidBody(body)) {
-    return json({ error: 'Missing required fields: data, mimeType' }, 400);
+    return respond({ error: 'Missing required fields: data, mimeType' }, 400);
   }
 
   const { data, mimeType, filename = 'receipt' } = body;
 
   if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-    return json({ error: `Unsupported MIME type: ${mimeType}` }, 415);
+    return respond({ error: 'Unsupported file type' }, 415);
   }
 
   const decodedSize = Math.ceil(data.length * 0.75);
   if (decodedSize > MAX_DECODED_BYTES) {
-    return json({ error: 'File too large for OCR (max 4 MB)' }, 413);
+    return respond({ error: 'File too large for OCR (max 4 MB)' }, 413);
   }
 
   // PDFs require the OpenAI Files API (a separate pre-upload step) which is
   // out of scope for this Edge Function. Return no-data rather than an error.
   if (mimeType === 'application/pdf') {
-    console.log(`[OCR] PDF not supported by OpenAI vision inline — returning no-data for ${filename}`);
-    return json(null, 200);
+    if (!IS_PROD) console.log('[OCR] PDF skipped (no inline vision support)');
+    return respond(null, 200);
   }
 
   // ── Build OpenAI Responses API request ───────────────────────────────────
@@ -154,18 +190,18 @@ export default async function handler(req: Request): Promise<Response> {
     });
   } catch (err) {
     if ((err as Error).name === 'AbortError') {
-      return json({ error: 'OCR timed out' }, 504);
+      return respond({ error: 'OCR timed out' }, 504);
     }
-    console.error('[OCR] Network error:', err);
-    return json({ error: 'OCR service unreachable' }, 502);
+    console.error('[OCR] Network error:', (err as Error).message);
+    return respond({ error: 'OCR service unreachable' }, 502);
   } finally {
     clearTimeout(timer);
   }
 
   if (!openAiRes.ok) {
     const errBody = await openAiRes.text().catch(() => '');
-    console.error(`[OCR] OpenAI ${openAiRes.status} for ${filename}:`, errBody.slice(0, 300));
-    return json({ error: `Upstream OCR error ${openAiRes.status}` }, 502);
+    console.error('[OCR] Upstream error:', openAiRes.status, errBody.slice(0, 200));
+    return respond({ error: 'Receipt processing failed' }, 502);
   }
 
   // ── Parse response ────────────────────────────────────────────────────────
@@ -173,7 +209,7 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     openAiJson = await openAiRes.json() as OpenAIResponseBody;
   } catch {
-    return json({ error: 'Malformed response from OCR upstream' }, 502);
+    return respond({ error: 'Malformed response from OCR upstream' }, 502);
   }
 
   // Find the first output_text content block (refusals produce output_refusal).
@@ -182,16 +218,15 @@ export default async function handler(req: Request): Promise<Response> {
     .find(c => c.type === 'output_text');
 
   if (!textContent?.text) {
-    console.warn(`[OCR] No output_text in response for ${filename}. Output:`, JSON.stringify(openAiJson.output).slice(0, 300));
-    return json(null, 200);
+    console.warn('[OCR] No output_text in response');
+    return respond(null, 200);
   }
 
-  // Structured Outputs guarantees valid JSON matching RECEIPT_SCHEMA.
   const rawText = textContent.text;
-  console.log(`[OCR] Raw structured output for ${filename}:`, rawText.slice(0, 600));
+  if (!IS_PROD) console.log('[OCR] Raw output:', rawText.slice(0, 600));
 
   const result = parseStructuredOutput(rawText, filename);
-  return json(result, 200);
+  return respond(result, 200);
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -215,15 +250,17 @@ function isValidBody(b: unknown): b is OcrBody {
   );
 }
 
-function json(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
-  });
-}
-
-function corsHeaders(): Record<string, string> {
-  return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+function corsHeaders(requestOrigin?: string | null): Record<string, string> {
+  const allowed = (process.env.ALLOWED_ORIGIN ?? '').trim();
+  // In local dev (ALLOWED_ORIGIN unset) allow any origin for convenience.
+  if (!allowed) {
+    return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+  }
+  const origin = requestOrigin === allowed ? allowed : '';
+  return {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    ...(origin ? { 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin' } : {}),
+  };
 }
 
 // ── Date normalisation ────────────────────────────────────────────────────────
@@ -248,7 +285,7 @@ function parseStructuredOutput(text: string, filename: string): Record<string, u
   try {
     raw = JSON.parse(text) as Record<string, unknown>;
   } catch (e) {
-    console.error(`[OCR] JSON.parse failed for ${filename}:`, e, 'Raw:', text.slice(0, 200));
+    console.error('[OCR] JSON parse failed:', IS_PROD ? '[details redacted]' : String(e));
     return null;
   }
 
@@ -266,7 +303,7 @@ function parseStructuredOutput(text: string, filename: string): Record<string, u
   if (typeof raw.date === 'string') {
     const iso = normalizeDate(raw.date);
     if (iso) result.date = iso;
-    else console.warn(`[OCR] Unrecognised date for ${filename}:`, raw.date);
+    else if (!IS_PROD) console.warn(`[OCR] Unrecognised date for ${filename}:`, raw.date);
   }
   if (typeof raw.taxAmount === 'number' && raw.taxAmount > 0) {
     result.taxAmount = raw.taxAmount;
@@ -283,10 +320,10 @@ function parseStructuredOutput(text: string, filename: string): Record<string, u
 
   const hasUseful = result.merchantName || result.totalAmount || result.date || result.currency;
   if (!hasUseful) {
-    console.warn(`[OCR] No usable fields for ${filename}. Raw:`, JSON.stringify(raw).slice(0, 300));
+    console.warn('[OCR] No usable fields extracted');
     return null;
   }
 
-  console.log(`[OCR] Extracted for ${filename}:`, JSON.stringify(result));
+  if (!IS_PROD) console.log(`[OCR] Extracted for ${filename}:`, JSON.stringify(result));
   return result;
 }
