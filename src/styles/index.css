@@ -3867,6 +3867,53 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   color: #22C55E;
 }
 
+/* ── Install step ── */
+.ob-screen-install {
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding-top: 20px;
+}
+.ob-install-icon-ring {
+  width: 100px; height: 100px; border-radius: 24px;
+  background: linear-gradient(145deg, #6d28d9 0%, #8B5CF6 55%, #a78bfa 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 8px rgba(139,92,246,0.15), 0 14px 44px rgba(139,92,246,0.45);
+  margin-bottom: 6px;
+}
+.ob-install-app-icon {
+  width: 78px; height: 78px; border-radius: 18px;
+}
+.ob-btn-install {
+  width: 100%;
+  justify-content: center;
+}
+.ob-ios-guide {
+  width: 100%; display: flex; flex-direction: column; gap: 10px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px; padding: 16px 18px;
+  margin-top: 4px;
+}
+.ob-ios-step {
+  display: flex; align-items: center; gap: 12px;
+}
+.ob-ios-step-num {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(139,92,246,0.18); border: 1.5px solid var(--purple);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--purple);
+}
+.ob-ios-step-body {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.ob-ios-share-chip {
+  display: inline-flex; align-items: center;
+  background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 6px; padding: 2px 7px; color: var(--text);
+}
+
 
 /* ── Category trigger row (compact row → opens bottom sheet) ── */
 .cat-trigger-btn {

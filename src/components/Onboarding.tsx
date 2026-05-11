@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
-import { TrendingUp, Wallet, Plus, ChevronRight, X, Check, Sparkles } from 'lucide-react';
+import { TrendingUp, Wallet, Plus, ChevronRight, X, Check, Sparkles, Download, Share2 } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import type { MoneyMode } from '../context/ExpenseContext';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -204,6 +205,7 @@ export default function Onboarding({ onDone }: Props) {
     return val > 0 ? String(val) : '';
   });
   const goalInputRef                  = useRef<HTMLInputElement>(null);
+  const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
   function advance() { setStep(s => s + 1); }
 
@@ -234,6 +236,12 @@ export default function Onboarding({ onDone }: Props) {
   function handleLaunch() {
     localStorage.setItem(FAB_HINT_KEY, '1');
     onDone();
+  }
+
+  async function handleInstall() {
+    const outcome = await triggerInstall();
+    if (outcome === 'accepted') handleLaunch();
+    // if 'dismissed': stay on step so user can tap "Maybe later"
   }
 
   // ── Story-style progress bar ──────────────────────────────────────────────
@@ -450,7 +458,7 @@ export default function Onboarding({ onDone }: Props) {
 
   // ── Step 3: Add expense tutorial ─────────────────────────────────────────
 
-  return (
+  if (step === 3) return (
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
@@ -475,9 +483,70 @@ export default function Onboarding({ onDone }: Props) {
         </div>
       </div>
       <div className="ob-bottom">
-        <button className="ob-btn-primary ob-btn-launch" onClick={handleLaunch}>
+        <button
+          className="ob-btn-primary ob-btn-launch"
+          onClick={canPrompt || isIOSSafari ? advance : handleLaunch}
+        >
           <Sparkles size={16} />
-          {he ? 'הוסף הוצאה ראשונה' : 'Start tracking'}
+          {canPrompt || isIOSSafari
+            ? (he ? 'המשך' : 'Continue')
+            : (he ? 'הוסף הוצאה ראשונה' : 'Start tracking')}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 4: Add to home screen ────────────────────────────────────────────
+
+  return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      <div className="ob-screen ob-screen-install" key={4}>
+        <div className="ob-install-icon-ring">
+          <img src="/icon-192.png" className="ob-install-app-icon" alt="Flowly" />
+        </div>
+        <h1 className="ob-title ob-title-grad">
+          {he ? 'הוסף למסך הבית' : 'Add to Home Screen'}
+        </h1>
+        <p className="ob-sub">
+          {he
+            ? 'גישה ישירה ממסך הבית — בלי לפתוח דפדפן, בלי לחפש.'
+            : 'One tap from your home screen — no browser, no searching.'}
+        </p>
+
+        {canPrompt && (
+          <button className="ob-btn-primary ob-btn-install" onClick={handleInstall}>
+            <Download size={16} />
+            {he ? 'הוסף למסך הבית' : 'Add to Home Screen'}
+          </button>
+        )}
+
+        {isIOSSafari && (
+          <div className="ob-ios-guide" dir={he ? 'rtl' : 'ltr'}>
+            <div className="ob-ios-step">
+              <span className="ob-ios-step-num">1</span>
+              <div className="ob-ios-step-body">
+                {he ? 'לחץ על ' : 'Tap '}
+                <span className="ob-ios-share-chip"><Share2 size={13} /></span>
+                {he ? ' בתחתית Safari' : " in Safari's toolbar"}
+              </div>
+            </div>
+            <div className="ob-ios-step">
+              <span className="ob-ios-step-num">2</span>
+              <span className="ob-ios-step-body">
+                {he ? 'גלול ובחר "הוסף למסך הבית"' : 'Scroll and tap "Add to Home Screen"'}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="ob-bottom">
+        <button className="ob-dont-show" onClick={handleLaunch}>
+          {canPrompt
+            ? (he ? 'אולי אחר כך' : 'Maybe later')
+            : (he ? 'הבנתי, מתחיל!' : "Got it, let's go!")}
         </button>
       </div>
     </div>
