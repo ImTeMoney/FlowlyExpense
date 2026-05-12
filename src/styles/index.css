@@ -48,7 +48,7 @@
 }
 
 [data-theme="light"] {
-  /* Accent: Apple Blue (light mode) */
+  /* Accent: Apple Blue */
   --purple:      #0071E3;
   --purple-glow: rgba(0,113,227,0.18);
   --purple-dim:  rgba(0,113,227,0.09);
@@ -60,26 +60,28 @@
   --success:     #34C759;
   --success-dim: rgba(52,199,89,0.10);
 
-  /* Light mode: translucent glass over soft blue-lavender base */
-  --bg:           #E8F0FF;
+  /* Apple-standard light surfaces */
+  --bg:           #F5F5F7;                  /* Apple off-white; was blue-tinted #E8F0FF */
   --bg-raised:    #FFFFFF;
-  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.42) 100%);
-  --bg-sticky:    rgba(232,240,255,0.88);
-  --bg-input:     rgba(255, 255, 255, 0.70);
-  --glass-border: rgba(255, 255, 255, 0.72);
-  --glass-hi:     rgba(255, 255, 255, 0.95);
-  /* Apple text hierarchy */
-  --text:         #1C1C1E;
-  --text-secondary: #48484A;
-  --text-muted:   #8E8E93;
-  --text-dim:     #AEAEB2;
-  --nav-bg:       rgba(220, 232, 255, 0.68);
-  --header-bg:    rgba(218, 230, 255, 0.65);
-  --modal-bg:     rgba(235, 244, 255, 0.92);
+  --bg-card:      #FFFFFF;                  /* solid white cards; was translucent glass */
+  --bg-sticky:    rgba(245,245,247,0.88);   /* was blue-tinted rgba(232,240,255,0.88) */
+  --bg-input:     rgba(255,255,255,0.85);
+  --glass-border: rgba(0,0,0,0.09);         /* dark subtle; was white (invisible on light bg) */
+  --glass-hi:     rgba(0,0,0,0.15);
+  /* Apple text hierarchy — aligned to spec */
+  --text:           #1D1D1F;
+  --text-secondary: #3A3A3C;                /* was #48484A; closer to Apple #333336 */
+  --text-muted:     #6E6E73;                /* was #8E8E93; Apple's exact tertiary */
+  --text-dim:       #AEAEB2;
+  /* Frosted-white nav/header per Apple HIG */
+  --nav-bg:       rgba(255,255,255,0.80);   /* was blue-tinted rgba(220,232,255,0.68) */
+  --header-bg:    rgba(255,255,255,0.80);   /* was blue-tinted rgba(218,230,255,0.65) */
+  --modal-bg:     rgba(255,255,255,0.96);   /* was blue-tinted rgba(235,244,255,0.92) */
   --scrollbar:    rgba(0,0,0,0.08);
-  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,1.0), inset 0 -1px 0 rgba(0,0,0,0.04);
-  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.95);
-  --glass-shadow: 0 8px 32px rgba(120,160,230,0.18), 0 2px 8px rgba(0,0,0,0.06);
+  /* No bright white inset highlights on white cards — use clean drop shadow instead */
+  --glass-inset:    none;
+  --glass-inset-sm: none;
+  --glass-shadow:   0 1px 3px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.07);
 }
 
 /* background now on html::before (fixed layer) */
@@ -116,7 +118,7 @@ html[data-theme="light"]::before {
     radial-gradient(ellipse 60%  45% at 100% 75%, rgba(160,200,255,0.28) 0%, transparent 55%),
     radial-gradient(ellipse 50%  40% at 75%  45%, rgba(190,215,255,0.18) 0%, transparent 60%),
     radial-gradient(ellipse 45%  35% at 25%  55%, rgba(180,210,240,0.14) 0%, transparent 60%),
-    #E8F0FF;
+    #F5F5F7;
 }
 
 body {
@@ -197,10 +199,14 @@ input, select, textarea { font-family: inherit; color: inherit; }
   z-index: 100;
 }
 [data-theme="light"] .bottom-nav {
+  border-color: rgba(0,0,0,0.08);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.95),
-    0 8px 32px rgba(100,140,220,0.20),
-    0 2px 8px rgba(0,0,0,0.07);
+    0 -1px 0 rgba(0,0,0,0.04),
+    0 4px 20px rgba(0,0,0,0.10),
+    0 1px 4px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .aether-header {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.09), 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .nav-tab {
@@ -652,13 +658,12 @@ input, select, textarea { font-family: inherit; color: inherit; }
   transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s;
 }
 [data-theme="light"] .fab {
-  color: #0071E3;
-  background: linear-gradient(145deg, rgba(255,255,255,0.80) 0%, rgba(210,232,255,0.60) 100%);
-  border: 1px solid rgba(255,255,255,0.88);
+  color: #FFFFFF;
+  background: #0071E3;
+  border: none;
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,1.0),
-    0 8px 32px rgba(0,113,227,0.20),
-    0 2px 8px rgba(0,0,0,0.08);
+    0 4px 16px rgba(0,113,227,0.40),
+    0 1px 4px rgba(0,0,0,0.12);
 }
 
 .fab:hover {
@@ -1023,11 +1028,11 @@ input, select, textarea { font-family: inherit; color: inherit; }
   width: 100%;
   background: var(--purple);
   color: #fff;
-  border-radius: var(--r-md);
-  padding: 16px;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  border-radius: var(--r-full);
+  padding: 14px 16px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
   transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
   box-shadow: 0 4px 20px var(--purple-glow), inset 0 1px 0 rgba(255,255,255,0.18);
   margin-top: 6px;
