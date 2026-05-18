@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
-import { TrendingUp, Wallet, Plus, ChevronRight, X, Check, Sparkles, Download, Share2 } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+import { TrendingUp, Wallet, Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import type { MoneyMode } from '../context/ExpenseContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -193,6 +194,7 @@ interface Props { onDone: () => void; }
 export default function Onboarding({ onDone }: Props) {
   const { lang, t, toggleLang } = useLang();
   const { dispatch, state }    = useExpense();
+  const [theme, toggleTheme]   = useTheme();
   const he                     = lang !== 'en';
   const dir                   = he ? 'rtl' : 'ltr';
   const currencySymbol        = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
@@ -256,6 +258,17 @@ export default function Onboarding({ onDone }: Props) {
     </div>
   );
 
+  // ── Theme toggle ─────────────────────────────────────────────────────────
+  const themeBtn = (
+    <button
+      className="ob-theme-toggle"
+      onClick={toggleTheme}
+      aria-label={theme === 'dark' ? (he ? 'מצב בהיר' : 'Light mode') : (he ? 'מצב כהה' : 'Dark mode')}
+    >
+      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
+  );
+
   // ── Aurora blobs background ───────────────────────────────────────────────
   const aurora = (
     <div className="ob-aurora" aria-hidden="true">
@@ -275,6 +288,7 @@ export default function Onboarding({ onDone }: Props) {
       <div className="ob-overlay" dir={dir}>
         {aurora}
         {progressBar}
+        {themeBtn}
 
         {/* Language toggle — top-right glass pill */}
         <button className="ob-lang-toggle" onClick={toggleLang}>
@@ -324,6 +338,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
+      {themeBtn}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
@@ -412,6 +427,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
+      {themeBtn}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
@@ -462,6 +478,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
+      {themeBtn}
       <div className="ob-screen ob-screen-add" key={3}>
         <h1 className="ob-title ob-title-grad" style={{ marginBottom: 4 }}>
           {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
@@ -502,6 +519,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
+      {themeBtn}
       <div className="ob-screen ob-screen-install" key={4}>
         <div className="ob-install-icon-ring">
           <img src="/icon-192.png" className="ob-install-app-icon" alt="Flowly" />
