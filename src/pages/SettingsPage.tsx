@@ -5,7 +5,7 @@ import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell, Mic, Apple, Copy } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell, Mic } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useMicPermission } from '../hooks/useMicPermission';
 import ConfirmModal from '../components/ConfirmModal';
@@ -60,17 +60,6 @@ const SettingsPage: React.FC = () => {
   const SpeechRec = typeof window !== 'undefined'
     ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
     : null;
-  const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
-  const [applePayURLCopied, setApplePayURLCopied] = useState(false);
-
-  function handleCopyApplePayURL() {
-    const url = `${window.location.origin}/?amount=[Amount]&merchant=[Merchant Name]&method=applepay`;
-    navigator.clipboard.writeText(url).then(() => {
-      setApplePayURLCopied(true);
-      setTimeout(() => setApplePayURLCopied(false), 2500);
-    }).catch(() => {});
-  }
-
   const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode, debtModeEnabled } = state;
 
   // DnD sensors (pointer for desktop, touch for mobile)
@@ -642,65 +631,6 @@ const SettingsPage: React.FC = () => {
               {lang === 'he' ? 'אפשר גישה למיקרופון' : 'Allow microphone access'}
             </button>
           )}
-        </div>
-      )}
-
-      {/* ── Apple Pay Automation (iOS only) ── */}
-      {isIOS && (
-        <div className="a-sec">
-          <div className="a-sec-title">
-            <Apple size={14} />
-            <span className="title-text">{lang === 'he' ? 'Apple Pay אוטומטי' : 'Auto Apple Pay'}</span>
-          </div>
-          <p className="settings-helper">
-            {lang === 'he'
-              ? 'הגדר קיצור דרך שמוסיף הוצאה אוטומטית בכל תשלום Apple Pay — ללא הקלדה.'
-              : 'Set up a Shortcut that auto-logs an expense after every Apple Pay payment — no typing needed.'}
-          </p>
-
-          <div className="applepay-steps">
-            {(lang === 'he'
-              ? [
-                  'פתח את אפליקציית Shortcuts (קיצורי דרך)',
-                  'לחץ על Automation ← + ← New Automation',
-                  'בחר Transaction (iOS 17+)',
-                  'הוסף פעולת Open URLs עם הקישור הבא:',
-                ]
-              : [
-                  'Open the Shortcuts app',
-                  'Tap + → Automation → New Automation',
-                  'Choose Transaction (iOS 17+)',
-                  'Add an Open URLs action with this URL:',
-                ]
-            ).map((step, i) => (
-              <div className="applepay-step" key={i}>
-                <span className="applepay-step-num">{i + 1}</span>
-                <span className="applepay-step-body">{step}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="applepay-url-box">
-            <code className="applepay-url-code">
-              {`${window.location.origin}/?amount=[Amount]&merchant=[Merchant Name]&method=applepay`}
-            </code>
-          </div>
-
-          <button
-            className={`export-btn${applePayURLCopied ? '' : ' primary'}`}
-            onClick={handleCopyApplePayURL}
-            style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}
-          >
-            {applePayURLCopied
-              ? <><CheckCircle size={13} /> {lang === 'he' ? 'הועתק!' : 'Copied!'}</>
-              : <><Copy size={13} /> {lang === 'he' ? 'העתק קישור' : 'Copy URL'}</>}
-          </button>
-
-          <p className="settings-helper" style={{ marginTop: 8, textAlign: 'center' }}>
-            {lang === 'he'
-              ? 'הפעולה תפתח את Flowly עם הסכום והמוכר ממולאים מראש — פשוט לחץ שמור.'
-              : 'The action opens Flowly with amount & merchant pre-filled — just tap Save.'}
-          </p>
         </div>
       )}
 

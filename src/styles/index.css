@@ -3943,32 +3943,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 
-/* ── Apple Pay automation steps ── */
-.applepay-steps {
-  display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px;
-}
-.applepay-step {
-  display: flex; align-items: flex-start; gap: 10;
-}
-.applepay-step-num {
-  flex-shrink: 0; width: 22px; height: 22px;
-  border-radius: 50%; background: var(--purple-dim);
-  border: 1.5px solid var(--purple); color: var(--purple);
-  font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-}
-.applepay-step-body {
-  font-size: 13px; color: var(--text-secondary); line-height: 1.5; padding-top: 2px;
-}
-.applepay-url-box {
-  background: var(--bg-input); border: 1px solid var(--glass-border);
-  border-radius: 10px; padding: 10px 12px; margin-top: 6px; overflow-x: auto;
-}
-.applepay-url-code {
-  font-family: 'SF Mono', ui-monospace, monospace; font-size: 11px;
-  color: var(--purple); word-break: break-all; white-space: pre-wrap;
-}
-
 /* ── Category trigger row (compact row → opens bottom sheet) ── */
 .cat-trigger-btn {
   display: flex;
