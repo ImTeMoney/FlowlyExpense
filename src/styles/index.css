@@ -760,8 +760,11 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 
 @keyframes sheetUp {
-  from { transform: translateY(100%); opacity: 0.8; }
-  to   { transform: translateY(0); opacity: 1; }
+  0%   { transform: translateY(100%); opacity: 0.7; }
+  68%  { transform: translateY(-10px); opacity: 1; }
+  82%  { transform: translateY(4px); }
+  92%  { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
 }
 
 .modal-handle { display: none; }
@@ -5482,4 +5485,160 @@ body::before, body::after {
   font-size: 12px; color: var(--danger);
   padding: 3px 8px; margin: 0;
   animation: fadeIn 0.2s ease;
+}
+
+/* =====================================================
+   MOTION SYSTEM — mobile-first micro-interactions
+   ===================================================== */
+
+/* ── Keyframes ── */
+
+@keyframes txn-enter {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes card-pop {
+  0%   { opacity: 0; transform: scale(0.93) translateY(10px); }
+  62%  { opacity: 1; transform: scale(1.015) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes sec-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fab-enter {
+  0%   { opacity: 0; transform: translateY(22px) scale(0.78); }
+  62%  { transform: translateY(-6px) scale(1.06); }
+  80%  { transform: translateY(3px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tab-icon-bounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.78); }
+  65%  { transform: scale(1.22); }
+  82%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tab-pill-in {
+  from { opacity: 0; transform: scaleX(0.5) scaleY(0.6); }
+  to   { opacity: 1; transform: scaleX(1) scaleY(1); }
+}
+
+@keyframes ripple-out {
+  from { opacity: 0.18; transform: scale(0); }
+  to   { opacity: 0; transform: scale(2.4); }
+}
+
+@keyframes num-flash {
+  0%,100% { opacity: 1; }
+  45%     { opacity: 0.55; transform: scale(0.96); }
+}
+
+/* ── Transaction rows — staggered entrance ── */
+
+.txn-item {
+  animation: txn-enter 0.32s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: calc(var(--i, 0) * 52ms + 30ms);
+}
+
+/* Touch ripple on tap */
+.txn-item { position: relative; overflow: hidden; }
+.txn-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, var(--purple-dim) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+.txn-item:active { transform: scale(0.985); transition: transform 0.08s; }
+.txn-item:active::after { animation: ripple-out 0.38s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+/* ── Stat chips — pop in with spring ── */
+
+.stats-row .stat-chip:nth-child(1) { animation: card-pop 0.42s cubic-bezier(0.34,1.2,0.64,1) 0.10s both; }
+.stats-row .stat-chip:nth-child(2) { animation: card-pop 0.42s cubic-bezier(0.34,1.2,0.64,1) 0.17s both; }
+.stats-row .stat-chip:nth-child(3) { animation: card-pop 0.42s cubic-bezier(0.34,1.2,0.64,1) 0.24s both; }
+
+/* ── Smart status card ── */
+
+.smart-status-card { animation: card-pop 0.44s cubic-bezier(0.34,1.1,0.64,1) 0.06s both; }
+
+/* ── Settings section cards ── */
+
+.a-sec:nth-child(1) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.04s both; }
+.a-sec:nth-child(2) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.09s both; }
+.a-sec:nth-child(3) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.14s both; }
+.a-sec:nth-child(4) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.19s both; }
+.a-sec:nth-child(5) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.24s both; }
+.a-sec:nth-child(6) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.29s both; }
+.a-sec:nth-child(7) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.34s both; }
+.a-sec:nth-child(n+8) { animation: sec-up 0.38s cubic-bezier(0.22,1,0.36,1) 0.38s both; }
+
+/* ── FAB — spring entrance ── */
+
+.fab {
+  animation: fab-enter 0.52s cubic-bezier(0.34,1.2,0.64,1) 0.15s both;
+}
+/* Active tap — physical press */
+.fab:active { transform: scale(0.88) !important; transition: transform 0.08s !important; }
+
+/* ── Bottom nav active — icon bounce + pill ── */
+
+.nav-tab { position: relative; }
+
+.nav-tab.active::before {
+  content: '';
+  position: absolute;
+  inset: 5px 8px;
+  border-radius: 13px;
+  background: var(--purple-dim);
+  animation: tab-pill-in 0.22s cubic-bezier(0.34,1.2,0.64,1) both;
+}
+
+.nav-tab.active svg {
+  animation: tab-icon-bounce 0.42s cubic-bezier(0.34,1.2,0.64,1) both;
+}
+
+/* Nav tab tap feedback */
+.nav-tab:active svg { transform: scale(0.82); transition: transform 0.08s; }
+
+/* ── Submit button — satisfying press ── */
+
+.submit-btn:active { transform: scale(0.96) !important; transition: transform 0.08s !important; }
+
+/* ── Amount field — grows on focus ── */
+
+.amount-row {
+  transition: transform 0.25s cubic-bezier(0.22,1,0.36,1);
+}
+.amount-row:focus-within { transform: scale(1.015); }
+
+/* ── Insight cards staggered ── */
+
+.insight-card:nth-child(1) { animation: sec-up 0.36s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
+.insight-card:nth-child(2) { animation: sec-up 0.36s cubic-bezier(0.22,1,0.36,1) 0.14s both; }
+.insight-card:nth-child(3) { animation: sec-up 0.36s cubic-bezier(0.22,1,0.36,1) 0.20s both; }
+.insight-card:nth-child(n+4) { animation: sec-up 0.36s cubic-bezier(0.22,1,0.36,1) 0.24s both; }
+
+/* ── Page transition — refined ── */
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Respect prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .txn-item, .stat-chip, .smart-status-card, .fab,
+  .a-sec, .insight-card {
+    animation: none !important;
+  }
 }

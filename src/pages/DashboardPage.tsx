@@ -815,7 +815,7 @@ export default function DashboardPage() {
                     {dayNet > 0 ? '+' : ''}{formatCurrency(dayNet)}
                   </span>
                 </div>
-                {txns.map(tx => {
+                {txns.map((tx, txIdx) => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
                   const Icon   = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
@@ -824,7 +824,7 @@ export default function DashboardPage() {
                     r.description === tx.description && r.isIncome === !!tx.isIncome
                   );
                   return (
-                    <div key={tx.id} className="txn-item chromatic-edge">
+                    <div key={tx.id} className="txn-item chromatic-edge" style={{ '--i': txIdx } as React.CSSProperties}>
                       <div
                         className="txn-icon"
                         style={{
