@@ -429,6 +429,8 @@ export default function DashboardPage() {
     const num = parseFloat(amount);
     if (!num || num <= 0 || !catId) return;
 
+    const cardIdPayload = selectedCardId && !isIncome ? { cardId: selectedCardId } : {};
+
     // Edit mode: update existing transaction in-place
     if (editingTx) {
       const cat = categories.find(c => c.id === catId);
@@ -452,7 +454,6 @@ export default function DashboardPage() {
           .filter(s => s.amount > 0);
         pmPayload = { paymentSplits: splits };
       }
-      const cardIdPayload = selectedCardId && !isIncome ? { cardId: selectedCardId } : {};
       const receiptPayload = receiptId ? { receiptId, receipt: receiptMeta } : {};
       // When installments are kept on, preserve the original per-installment amount and
       // installments metadata. When turned off, strip installments and use the full amount.
