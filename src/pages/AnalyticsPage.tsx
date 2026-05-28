@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown } from 'lucide-react';
-import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct } from '../context/ExpenseContext';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple, Repeat, ArrowLeftRight } from 'lucide-react';
+import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct, resolvePaymentSplits } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { resolveCatIcon } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
@@ -99,6 +99,31 @@ export default function AnalyticsPage() {
 
   const maxCat        = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
+
+  const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
+    cash: Banknote, credit: CreditCard, debit: Wallet, check: FileCheck,
+    transfer: Landmark, bit: Smartphone, applepay: Apple, standing_order: Repeat,
+  };
+  const PM_COLOR: Record<string, string> = {
+    cash: '#22C55E', credit: '#8B5CF6', debit: '#3B82F6', check: '#F59E0B',
+    transfer: '#0EA5E9', bit: '#06B6D4', applepay: '#A78BFA', standing_order: '#F97316',
+  };
+
+  const pmTotals = useMemo(() => {
+    const map = new Map<PaymentMethod, number>();
+    monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
+      resolvePaymentSplits(tx).forEach(s => {
+        map.set(s.paymentMethod, (map.get(s.paymentMethod) ?? 0) + s.amount);
+      });
+    });
+    return Array.from(map)
+      .map(([pm, total]) => ({ pm, total }))
+      .filter(x => x.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [monthTxns]);
+
+  const maxPm        = pmTotals[0]?.total || 1;
+  const totalPmSpent = pmTotals.reduce((s, x) => s + x.total, 0);
 
   // Weekly breakdown
   const weeklyTotals = useMemo(() => {
@@ -419,6 +444,43 @@ export default function AnalyticsPage() {
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+          {/* ── Payment Method Breakdown ── */}
+          {pmTotals.length > 0 && (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{t.byPaymentMethod}</span>
+                <span className="an-cat-card-count">{pmTotals.length}</span>
+              </div>
+
+              {pmTotals.map(({ pm, total }) => {
+                const PmIcon = PM_ICON[pm] ?? ArrowLeftRight;
+                const color  = PM_COLOR[pm] ?? '#8B5CF6';
+                const pct    = totalPmSpent > 0 ? Math.round((total / totalPmSpent) * 100) : 0;
+                const label  = t[`pm_${pm}` as keyof typeof t] as string ?? pm;
+
+                return (
+                  <div key={pm} className="an-cb-item">
+                    <div className="an-cb-row">
+                      <div className="an-cb-name-side">
+                        <div className="an-cb-icon-wrap" style={{ background: `${color}18`, border: `1px solid ${color}28` }}>
+                          <PmIcon size={17} color={color} />
+                        </div>
+                        <span className="an-cb-name">{label}</span>
+                      </div>
+                      <div className="an-cb-amount-side">
+                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-pct">{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-bar-row">
+                      <div className="an-cb-bar-fill" style={{ width: `${(total / maxPm) * 100}%`, background: color }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
