@@ -245,10 +245,12 @@ export default function DashboardPage() {
     const hasParams = pAmount || pMerchant || pMethod || pCat;
     if (!hasParams) return;
 
-    if (pAmount)   setAmount(pAmount);
+    if (pAmount && /^\d+(\.\d{1,2})?$/.test(pAmount)) setAmount(pAmount);
 
     // Combine merchant + note into description
-    const descParts = [pMerchant, pNote].filter(Boolean);
+    const safeMerchant = pMerchant.slice(0, 100);
+    const safeNote     = pNote.slice(0, 100);
+    const descParts = [safeMerchant, safeNote].filter(Boolean);
     if (descParts.length > 0) setDesc(descParts.join(' — '));
 
     if (pDate && /^\d{4}-\d{2}-\d{2}$/.test(pDate)) setDate(pDate);
@@ -427,7 +429,7 @@ export default function DashboardPage() {
 
   async function handleAdd() {
     const num = parseFloat(amount);
-    if (!num || num <= 0 || !catId) return;
+    if (!num || num <= 0 || !isFinite(num) || num > 9_999_999 || !catId) return;
 
     const cardIdPayload = selectedCardId && !isIncome ? { cardId: selectedCardId } : {};
 
@@ -1094,6 +1096,8 @@ export default function DashboardPage() {
                 className="amount-input"
                 placeholder="0"
                 value={amount}
+                min="0"
+                max="9999999"
                 onChange={e => setAmount(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}
                 inputMode="decimal"
@@ -1165,6 +1169,7 @@ export default function DashboardPage() {
                 className="aether-input"
                 placeholder={t.descOptional}
                 value={desc}
+                maxLength={200}
                 onChange={e => setDesc(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}
               />

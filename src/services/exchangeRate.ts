@@ -34,19 +34,37 @@ function storageKey(base: string, date: string) {
   return `er_${base.toLowerCase()}_${date}`;
 }
 
+const VALID_CURRENCY = /^[A-Z]{3}$/;
+const VALID_DATE = /^\d{4}-\d{2}-\d{2}$|^latest$/;
+
+function isRatesMap(v: unknown): v is RatesMap {
+  return typeof v === 'object' && v !== null && !Array.isArray(v) &&
+    Object.values(v as object).every(x => typeof x === 'number');
+}
+
 async function fetchRates(base: string, date: string): Promise<RatesMap> {
+  if (!VALID_CURRENCY.test(base)) throw new Error(`Invalid currency: ${base}`);
+  if (!VALID_DATE.test(date)) throw new Error(`Invalid date: ${date}`);
+
   const key = storageKey(base, date);
   try {
     const cached = localStorage.getItem(key);
-    if (cached) return JSON.parse(cached) as RatesMap;
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (isRatesMap(parsed) && Object.keys(parsed).length > 0) return parsed;
+    }
   } catch {}
 
   const baseLower = base.toLowerCase();
   const url = `${CDN}@${date}/v1/currencies/${baseLower}.json`;
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: 'omit', mode: 'cors' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   const rates = data[baseLower] as RatesMap;
+
+  if (!isRatesMap(rates) || Object.keys(rates).length === 0) {
+    throw new Error(`Invalid rates response for ${base}`);
+  }
 
   try {
     localStorage.setItem(key, JSON.stringify(rates));

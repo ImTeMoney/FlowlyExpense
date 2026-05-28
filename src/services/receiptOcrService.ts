@@ -96,7 +96,7 @@ async function callBackend(file: Blob): Promise<OcrResult | null> {
   }
 
   const result = await res.json() as OcrResult | null;
-  console.log('[OCR] Backend result:', JSON.stringify(result));
+  if (import.meta.env.DEV) console.log('[OCR] Backend result:', JSON.stringify(result));
   return result;
 }
 

@@ -376,21 +376,31 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       if (!e.key || e.newValue === null) return;
       try {
         switch (e.key) {
-          case STORAGE_KEYS.TRANSACTIONS:
-            setTransactions(JSON.parse(e.newValue));
+          case STORAGE_KEYS.TRANSACTIONS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setTransactions(v);
             break;
-          case STORAGE_KEYS.RECURRING:
-            setRecurringExpenses(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.RECURRING: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setRecurringExpenses(v);
             break;
-          case STORAGE_KEYS.BUDGET:
-            setMonthlyBudget(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.BUDGET: {
+            const v = JSON.parse(e.newValue);
+            if (typeof v === 'number' && isFinite(v)) setMonthlyBudget(v);
             break;
-          case STORAGE_KEYS.SAVINGS_GOAL:
-            setSavingsGoal(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.SAVINGS_GOAL: {
+            const v = JSON.parse(e.newValue);
+            if (typeof v === 'number' && isFinite(v)) setSavingsGoal(v);
             break;
-          case STORAGE_KEYS.CATEGORIES:
-            setCategories(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.CATEGORIES: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setCategories(v);
             break;
+          }
           case STORAGE_KEYS.MAIN_CURRENCY:
             setMainCurrency(e.newValue);
             break;
@@ -398,9 +408,11 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
             if (e.newValue === 'savings_based' || e.newValue === 'budget_based')
               setMoneyMode(e.newValue);
             break;
-          case STORAGE_KEYS.CARDS:
-            setCards(JSON.parse(e.newValue));
+          case STORAGE_KEYS.CARDS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setCards(v);
             break;
+          }
         }
       } catch { /* malformed JSON – ignore */ }
     }

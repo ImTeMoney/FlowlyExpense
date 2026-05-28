@@ -264,6 +264,7 @@ const SettingsPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (backupInputRef.current) backupInputRef.current.value = '';
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast(t.backupImportError); return; }
     const reader = new FileReader();
     reader.onload = ev => {
       try {

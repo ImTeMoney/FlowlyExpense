@@ -252,8 +252,15 @@ function isValidBody(b: unknown): b is OcrBody {
 
 function corsHeaders(requestOrigin?: string | null): Record<string, string> {
   const allowed = (process.env.ALLOWED_ORIGIN ?? '').trim();
-  // In local dev (ALLOWED_ORIGIN unset) allow any origin for convenience.
+  const isProduction = process.env.VERCEL_ENV === 'production';
+
   if (!allowed) {
+    // Block in production if ALLOWED_ORIGIN is not configured
+    if (isProduction) {
+      console.error('[OCR] ALLOWED_ORIGIN env var is not set in production — CORS blocked');
+      return { 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+    }
+    // Local dev only: allow any origin
     return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
   }
   const origin = requestOrigin === allowed ? allowed : '';

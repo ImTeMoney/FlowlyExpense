@@ -144,7 +144,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
   const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const res = await fetch(TREASURY_URL, { signal: controller.signal });
+    const res = await fetch(TREASURY_URL, { signal: controller.signal, credentials: 'omit', mode: 'cors' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
 
