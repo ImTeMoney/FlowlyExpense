@@ -20,6 +20,15 @@ export interface DebtEntry {
   transactionId?: string;
 }
 
+export interface CreditCard {
+  id: string;
+  name: string;
+  last4: string;
+  billingDay: number;
+  limit?: number;
+  color: string;
+}
+
 export interface StreakData {
   currentStreak: number;
   longestStreak: number;
@@ -77,6 +86,8 @@ export interface Transaction {
   receiptId?: string;
   /** Metadata mirror of the attachment so the list can render without an IDB hit */
   receipt?: ReceiptMeta;
+  /** Links to CreditCard.id when paymentMethod is credit/debit */
+  cardId?: string;
 }
 
 export interface RecurringExpense {
@@ -121,6 +132,7 @@ export interface AppState {
   debts: DebtEntry[];
   streakData: StreakData;
   debtModeEnabled: boolean;
+  cards: CreditCard[];
 }
 
 type Action =
@@ -151,7 +163,10 @@ type Action =
   | { type: 'SETTLE_DEBT';               payload: string }
   | { type: 'DELETE_DEBT';               payload: string }
   | { type: 'SET_DEBT_MODE';             payload: boolean }
-  | { type: 'UPDATE_STREAK';             payload: StreakData };
+  | { type: 'UPDATE_STREAK';             payload: StreakData }
+  | { type: 'ADD_CARD';                  payload: CreditCard }
+  | { type: 'UPDATE_CARD';              payload: CreditCard }
+  | { type: 'DELETE_CARD';              payload: string };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -192,6 +207,7 @@ export const STORAGE_KEYS = {
   DEBTS:             'expense_debts',
   STREAKS:           'expense_streaks',
   DEBT_MODE:         'expense_debt_mode',
+  CARDS:             'expense_cards',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -314,6 +330,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [streakData, setStreakData] = useState<StreakData>(() =>
     loadFromStorage<StreakData>(STORAGE_KEYS.STREAKS, { currentStreak: 0, longestStreak: 0, lastCheckedDate: '' })
   );
+  const [cards, setCards] = useState<CreditCard[]>(() =>
+    loadFromStorage<CreditCard[]>(STORAGE_KEYS.CARDS, [])
+  );
 
   const deviceId = useMemo(() => getDeviceId(), []);
 
@@ -349,6 +368,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { saveToStorage(STORAGE_KEYS.DEBTS, debts); }, [debts]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DEBT_MODE, String(debtModeEnabled)); }, [debtModeEnabled]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.STREAKS, streakData); }, [streakData]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.CARDS, cards); }, [cards]);
 
   // Cross-tab sync: when another tab writes to localStorage, mirror the change here
   useEffect(() => {
@@ -377,6 +397,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
           case STORAGE_KEYS.MONEY_MODE:
             if (e.newValue === 'savings_based' || e.newValue === 'budget_based')
               setMoneyMode(e.newValue);
+            break;
+          case STORAGE_KEYS.CARDS:
+            setCards(JSON.parse(e.newValue));
             break;
         }
       } catch { /* malformed JSON – ignore */ }
@@ -623,6 +646,21 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setStreakData(action.payload);
         break;
 
+      case 'ADD_CARD':
+        setCards(prev => [...prev, { ...action.payload, id: generateId() }]);
+        break;
+
+      case 'UPDATE_CARD':
+        setCards(prev => prev.map(c => c.id === action.payload.id ? action.payload : c));
+        break;
+
+      case 'DELETE_CARD':
+        setCards(prev => prev.filter(c => c.id !== action.payload));
+        setTransactions(prev => prev.map(tx =>
+          tx.cardId === action.payload ? { ...tx, cardId: undefined } : tx
+        ));
+        break;
+
       case 'UPDATE_TRANSACTION_RECEIPT':
         setTransactions(prev => prev.map(tx => {
           if (tx.id !== action.payload.id) return tx;
@@ -651,7 +689,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     debts,
     debtModeEnabled,
     streakData,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, debtModeEnabled, streakData]);
+    cards,
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, debtModeEnabled, streakData, cards]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;

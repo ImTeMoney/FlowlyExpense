@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple, Repeat, ArrowLeftRight } from 'lucide-react';
-import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct, resolvePaymentSplits } from '../context/ExpenseContext';
+import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct, resolvePaymentSplits, CreditCard as CreditCardType } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { resolveCatIcon } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
   const { state, dispatch, formatCurrency } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
   const navigate = useNavigate();
-  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, categoryBudgets } = state;
+  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, categoryBudgets, cards } = state;
 
   // Month navigation
   const now = new Date();
@@ -124,6 +124,21 @@ export default function AnalyticsPage() {
 
   const maxPm        = pmTotals[0]?.total || 1;
   const totalPmSpent = pmTotals.reduce((s, x) => s + x.total, 0);
+
+  // Per-card breakdown
+  const cardTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    monthTxns.filter(tx => !tx.isIncome && tx.cardId).forEach(tx => {
+      map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + tx.amount);
+    });
+    return Array.from(map)
+      .map(([id, total]) => ({ card: cards.find(c => c.id === id), total }))
+      .filter((x): x is { card: CreditCardType; total: number } => !!x.card)
+      .sort((a, b) => b.total - a.total);
+  }, [monthTxns, cards]);
+
+  const maxCard        = cardTotals[0]?.total || 1;
+  const totalCardSpent = cardTotals.reduce((s, x) => s + x.total, 0);
 
   // Weekly breakdown
   const weeklyTotals = useMemo(() => {
@@ -477,6 +492,41 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="an-cb-bar-row">
                       <div className="an-cb-bar-fill" style={{ width: `${(total / maxPm) * 100}%`, background: color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Per-card breakdown ── */}
+          {cardTotals.length > 0 && (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
+                <span className="an-cat-card-count">{cardTotals.length}</span>
+              </div>
+              {cardTotals.map(({ card, total }) => {
+                const pct = totalCardSpent > 0 ? Math.round((total / totalCardSpent) * 100) : 0;
+                return (
+                  <div key={card.id} className="an-cb-item">
+                    <div className="an-cb-row">
+                      <div className="an-cb-name-side">
+                        <div className="an-cb-icon-wrap" style={{ background: `${card.color}18`, border: `1px solid ${card.color}28` }}>
+                          <CreditCard size={17} color={card.color} />
+                        </div>
+                        <div className="an-cb-name-group">
+                          <span className="an-cb-name">{card.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>•••• {card.last4}</span>
+                        </div>
+                      </div>
+                      <div className="an-cb-amount-side">
+                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-pct">{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-bar-row">
+                      <div className="an-cb-bar-fill" style={{ width: `${(total / maxCard) * 100}%`, background: card.color }} />
                     </div>
                   </div>
                 );

@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useExpense, CATEGORY_COLORS, STORAGE_KEYS } from '../context/ExpenseContext';
+import { useExpense, CATEGORY_COLORS, STORAGE_KEYS, CreditCard as CreditCardType } from '../context/ExpenseContext';
 import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell, Mic } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell, Mic, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useMicPermission } from '../hooks/useMicPermission';
 import ConfirmModal from '../components/ConfirmModal';
@@ -84,6 +84,53 @@ const SettingsPage: React.FC = () => {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
     setToastTimer(setTimeout(() => setToast(''), 3000));
+  }
+
+  // Card management
+  const { cards } = state;
+  const [cardFormOpen, setCardFormOpen] = useState(false);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [cardName, setCardName] = useState('');
+  const [cardLast4, setCardLast4] = useState('');
+  const [cardBillingDay, setCardBillingDay] = useState('');
+  const [cardLimit, setCardLimit] = useState('');
+  const [cardColor, setCardColor] = useState(CATEGORY_COLORS[1]);
+  const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
+
+  function openAddCard() {
+    setEditingCardId(null);
+    setCardName(''); setCardLast4(''); setCardBillingDay(''); setCardLimit('');
+    setCardColor(CATEGORY_COLORS[1]);
+    setCardFormOpen(true);
+  }
+
+  function openEditCard(c: CreditCardType) {
+    setEditingCardId(c.id);
+    setCardName(c.name); setCardLast4(c.last4);
+    setCardBillingDay(String(c.billingDay));
+    setCardLimit(c.limit ? String(c.limit) : '');
+    setCardColor(c.color);
+    setCardFormOpen(true);
+  }
+
+  function saveCard() {
+    if (!cardName.trim() || cardLast4.length !== 4) return;
+    const day = parseInt(cardBillingDay) || 1;
+    const payload: CreditCardType = {
+      id: editingCardId ?? '',
+      name: cardName.trim(),
+      last4: cardLast4,
+      billingDay: Math.min(28, Math.max(1, day)),
+      limit: cardLimit ? parseFloat(cardLimit) : undefined,
+      color: cardColor,
+    };
+    if (editingCardId) {
+      dispatch({ type: 'UPDATE_CARD', payload });
+    } else {
+      dispatch({ type: 'ADD_CARD', payload });
+    }
+    setCardFormOpen(false);
+    setEditingCardId(null);
   }
 
   // Refresh / update check
@@ -632,6 +679,123 @@ const SettingsPage: React.FC = () => {
             </button>
           )}
         </div>
+      )}
+
+      {/* ── Credit Cards ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <CreditCardIcon size={14} />
+          <span className="title-text">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
+        </div>
+
+        {cards.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            {cards.map(c => (
+              <div key={c.id} className="card-row">
+                <div className="card-row-dot" style={{ background: c.color }} />
+                <div className="card-row-info">
+                  <div className="card-row-name">{c.name}</div>
+                  <div className="card-row-meta">
+                    •••• {c.last4}
+                    {' · '}
+                    {lang === 'he' ? `יום חיוב ${c.billingDay}` : `Bills on day ${c.billingDay}`}
+                    {c.limit ? ` · ${lang === 'he' ? 'מסגרת' : 'Limit'}: ${c.limit.toLocaleString()}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => openEditCard(c)} aria-label="edit"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6, opacity: 0.7 }}>
+                  <Pencil size={14} />
+                </button>
+                <button onClick={() => setDeleteCardId(c.id)} aria-label="delete"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, borderRadius: 6, opacity: 0.7 }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!cardFormOpen && (
+          <button className="export-btn primary" onClick={openAddCard} style={{ marginTop: 4 }}>
+            <Plus size={13} />
+            {lang === 'he' ? 'הוסף כרטיס' : 'Add Card'}
+          </button>
+        )}
+
+        {cardFormOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            <input
+              className="set-input"
+              placeholder={lang === 'he' ? 'שם הכרטיס (למשל: ויזה כאל)' : 'Card name (e.g. Visa Cal)'}
+              value={cardName}
+              onChange={e => setCardName(e.target.value)}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="set-input"
+                placeholder={lang === 'he' ? '4 ספרות אחרונות' : 'Last 4 digits'}
+                value={cardLast4}
+                maxLength={4}
+                inputMode="numeric"
+                onChange={e => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                style={{ flex: 1 }}
+              />
+              <input
+                className="set-input"
+                placeholder={lang === 'he' ? 'יום חיוב' : 'Billing day'}
+                value={cardBillingDay}
+                inputMode="numeric"
+                onChange={e => setCardBillingDay(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                style={{ flex: 1 }}
+              />
+            </div>
+            <input
+              className="set-input"
+              placeholder={lang === 'he' ? 'מסגרת אשראי (אופציונלי)' : 'Credit limit (optional)'}
+              value={cardLimit}
+              inputMode="decimal"
+              onChange={e => setCardLimit(e.target.value.replace(/[^\d.]/g, ''))}
+            />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '4px 0' }}>
+              {CATEGORY_COLORS.map(col => (
+                <button
+                  key={col}
+                  onClick={() => setCardColor(col)}
+                  style={{
+                    width: 22, height: 22, borderRadius: '50%', background: col, border: 'none',
+                    outline: cardColor === col ? `2px solid ${col}` : 'none',
+                    outlineOffset: 2, cursor: 'pointer',
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+              <button
+                className={`export-btn${cardName.trim() && cardLast4.length === 4 ? ' primary' : ''}`}
+                onClick={saveCard}
+                style={{ flex: 1 }}
+              >
+                <Check size={13} />
+                {lang === 'he' ? 'שמור' : 'Save'}
+              </button>
+              <button
+                className="export-btn"
+                onClick={() => { setCardFormOpen(false); setEditingCardId(null); }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {deleteCardId && createPortal(
+        <ConfirmModal
+          message={lang === 'he' ? 'למחוק את הכרטיס?' : 'Delete this card?'}
+          onConfirm={() => { dispatch({ type: 'DELETE_CARD', payload: deleteCardId }); setDeleteCardId(null); }}
+          onCancel={() => setDeleteCardId(null)}
+        />,
+        document.body
       )}
 
       {/* ── Tools ── */}

@@ -85,7 +85,7 @@ function groupByDate(txns: Transaction[]) {
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, todayFullLabel, catName } = useLang();
-  const { categories, recurringExpenses, transactions, mainCurrency, monthlyBudget, streakData, debtModeEnabled } = state;
+  const { categories, recurringExpenses, transactions, mainCurrency, monthlyBudget, streakData, debtModeEnabled, cards } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
   const forecast = useSpendingForecast(transactions, recurringExpenses);
@@ -100,6 +100,7 @@ export default function DashboardPage() {
   const [desc, setDesc]           = useState('');
   const [date, setDate]           = useState(todayStr());
   const [payMethod, setPayMethod]         = useState<PaymentMethod>('credit');
+  const [selectedCardId, setSelectedCardId] = useState<string | undefined>(undefined);
   const [pmSplitEnabled, setPmSplitEnabled] = useState(false);
   const [pmSplits, setPmSplits] = useState<Array<{ pm: PaymentMethod; amount: string }>>([
     { pm: 'credit', amount: '' },
@@ -407,6 +408,7 @@ export default function DashboardPage() {
     setVoiceError('');
     setReceiptId(tx.receiptId);
     setReceiptMeta(tx.receipt);
+    setSelectedCardId(tx.cardId);
     stagedReceiptIdRef.current = null;
     setShowModal(true);
   }
@@ -420,6 +422,7 @@ export default function DashboardPage() {
     if (editingTx) clearDraft(); // edit session must not pollute new-tx draft
     setEditingTx(null);
     setShowModal(false);
+    setSelectedCardId(undefined);
   }
 
   async function handleAdd() {
@@ -449,6 +452,7 @@ export default function DashboardPage() {
           .filter(s => s.amount > 0);
         pmPayload = { paymentSplits: splits };
       }
+      const cardIdPayload = selectedCardId && !isIncome ? { cardId: selectedCardId } : {};
       const receiptPayload = receiptId ? { receiptId, receipt: receiptMeta } : {};
       // When installments are kept on, preserve the original per-installment amount and
       // installments metadata. When turned off, strip installments and use the full amount.
@@ -464,6 +468,7 @@ export default function DashboardPage() {
               description: baseDesc,
               isIncome,
               ...pmPayload,
+              ...cardIdPayload,
               ...receiptPayload,
             }
           : {
@@ -474,6 +479,7 @@ export default function DashboardPage() {
               description: baseDesc,
               isIncome,
               ...pmPayload,
+              ...cardIdPayload,
               ...txCurrencyMeta,
               ...receiptPayload,
             },
@@ -567,6 +573,7 @@ export default function DashboardPage() {
           categoryId: catId, date: txDate, description: baseDesc,
           isIncome: false, paymentMethod: payMethod,
           installments: { current: i + 1, total: numInstallments, groupId },
+          ...cardIdPayload,
           ...(i === 0 ? txCurrencyMeta : {}), // only first installment stores original
           ...(i === 0 ? receiptPayload : {}),  // ditto for the receipt
         }});
@@ -577,6 +584,7 @@ export default function DashboardPage() {
         categoryId: catId, date, description: baseDesc,
         isIncome,
         ...pmPayload,
+        ...cardIdPayload,
         ...txCurrencyMeta,
         ...receiptPayload,
       }});
@@ -1207,7 +1215,7 @@ export default function DashboardPage() {
                         <button
                           key={pm}
                           className={`pm-chip${selected ? ' selected' : ''}`}
-                          onClick={() => setPayMethod(pm)}
+                          onClick={() => { setPayMethod(pm); if (pm !== 'credit' && pm !== 'debit') setSelectedCardId(undefined); }}
                           style={selected ? {
                             borderColor: PM_COLOR[pm],
                             borderWidth: 2,
@@ -1220,6 +1228,28 @@ export default function DashboardPage() {
                         </button>
                       );
                     })}
+                  </div>
+                )}
+
+                {(payMethod === 'credit' || payMethod === 'debit') && cards.length > 0 && !pmSplitEnabled && (
+                  <div className="card-picker">
+                    <button
+                      className={`card-chip${!selectedCardId ? ' selected' : ''}`}
+                      onClick={() => setSelectedCardId(undefined)}
+                    >
+                      {lang === 'he' ? 'ללא כרטיס' : 'No card'}
+                    </button>
+                    {cards.map(c => (
+                      <button
+                        key={c.id}
+                        className={`card-chip${selectedCardId === c.id ? ' selected' : ''}`}
+                        style={selectedCardId === c.id ? { borderColor: c.color, background: `${c.color}22`, color: c.color } : {}}
+                        onClick={() => setSelectedCardId(c.id)}
+                      >
+                        <span>{c.name}</span>
+                        <span className="card-chip-last4">•••• {c.last4}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
