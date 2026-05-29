@@ -171,9 +171,9 @@ export const INITIAL_CATEGORIES: Category[] = [
 
 // Color palette for custom categories
 export const CATEGORY_COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#84cc16',
-  '#10b981', '#14b8a6', '#0ea5e9', '#3b82f6',
-  '#8b5cf6', '#ec4899', '#f43f5e', '#94a3b8',
+  '#f97316', '#f59e0b', '#84cc16', '#10b981',
+  '#14b8a6', '#0ea5e9', '#3b82f6', '#8b5cf6',
+  '#ec4899', '#f43f5e', '#94a3b8',
 ];
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
