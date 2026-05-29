@@ -39,7 +39,7 @@ function toStr(d: Date) {
 export function useInsights(): { statusCard: StatusCard; insights: InsightCard[] } {
   const { state, formatCurrency } = useExpense();
   const { lang, catName } = useLang();
-  const { transactions, monthlyBudget, savingsGoal, moneyMode, categories } = state;
+  const { transactions, categories } = state;
   const iHe = lang === 'he';
 
   return useMemo(() => {
@@ -64,88 +64,34 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
 
     // ── Status card ──────────────────────────────────────────────────────────
 
-    let statusCard: StatusCard;
+    const savings  = income - spent;
+    const progress = income > 0 ? Math.min(Math.max(0, spent / income), 1) : 0;
 
-    if (moneyMode === 'budget_based') {
-      const budget    = monthlyBudget;
-      const hasBudget = budget > 0;
-      const remaining = budget - spent;
-      const pct       = hasBudget ? Math.min(spent / budget, 1) : 0;
+    let headline: string, subline: string, urgency: Urgency;
 
-      // Daily pace: are we ahead of expected spend pace?
-      const expectedSpend = hasBudget && todayDay > 0 ? budget * (todayDay / totalDays) : 0;
-      const paceRatio     = expectedSpend > 0 ? spent / expectedSpend : 0;
-
-      let headline: string, subline: string, urgency: Urgency;
-
-      if (!hasBudget) {
-        headline = iHe ? 'הגדר תקציב כדי להתחיל לעקוב' : 'Set a budget to start tracking';
-        subline  = iHe ? `הוצאות החודש: ${formatCurrency(spent)}` : `Spent ${formatCurrency(spent)} this month`;
-        urgency  = 'neutral';
-      } else if (pct >= 1) {
-        headline = iHe ? 'חרגת מהתקציב החודש' : 'You\'ve gone over budget this month';
-        subline  = iHe ? `חרגת ב־${formatCurrency(Math.abs(remaining))} · עוד ${daysLeft} ימים` : `Over by ${formatCurrency(Math.abs(remaining))} · ${daysLeft} days left`;
-        urgency  = 'warning';
-      } else if (pct >= 0.9) {
-        headline = iHe ? 'כמעט הגעת לתקציב — שים לב' : 'Almost at your budget limit';
-        subline  = iHe ? `נשאר ${formatCurrency(remaining)} · עוד ${daysLeft} ימים` : `${formatCurrency(remaining)} left · ${daysLeft} days to go`;
-        urgency  = 'warning';
-      } else if (paceRatio > 1.25) {
-        headline = iHe ? 'ההוצאות מהירות קצת מהרגיל' : 'Spending a bit faster than usual';
-        subline  = iHe ? `נשאר ${formatCurrency(remaining)} · עוד ${daysLeft} ימים` : `${formatCurrency(remaining)} left · ${daysLeft} days to go`;
-        urgency  = 'caution';
-      } else if (pct >= 0.65) {
-        headline = iHe ? 'כדאי לאט קצת עד סוף החודש' : 'Worth slowing down a bit this week';
-        subline  = iHe ? `נשאר ${formatCurrency(remaining)} · עוד ${daysLeft} ימים` : `${formatCurrency(remaining)} left · ${daysLeft} days to go`;
-        urgency  = 'caution';
-      } else if (pct >= 0.35) {
-        headline = iHe ? 'אתה בדרך הנכונה החודש' : 'You\'re on track this month';
-        subline  = iHe ? `נשאר ${formatCurrency(remaining)} · עוד ${daysLeft} ימים` : `${formatCurrency(remaining)} left · ${daysLeft} days to go`;
-        urgency  = 'good';
-      } else {
-        headline = iHe ? 'מצוין, הכל תחת שליטה' : 'You\'re doing well this month';
-        subline  = iHe ? `נשאר ${formatCurrency(remaining)} · עוד ${daysLeft} ימים` : `${formatCurrency(remaining)} left · ${daysLeft} days to go`;
-        urgency  = 'good';
-      }
-
-      statusCard = { headline, subline, progress: pct, urgency };
-
+    if (income === 0 && spent === 0) {
+      headline = iHe ? 'ברוך הבא — התחל לרשום הוצאות' : 'Welcome — start by adding expenses';
+      subline  = iHe ? 'הוסף הכנסות כדי לחשב את החיסכון' : 'Add income to calculate your savings';
+      urgency  = 'neutral';
+    } else if (income === 0) {
+      headline = iHe ? 'הוסף הכנסה לתמונה המלאה' : 'Add your income to see the full picture';
+      subline  = iHe ? `הוצאת ${formatCurrency(spent)} החודש` : `Spent ${formatCurrency(spent)} this month`;
+      urgency  = 'neutral';
+    } else if (savings < 0) {
+      headline = iHe ? 'ההוצאות עולות על ההכנסות' : 'Spending more than you\'re earning';
+      subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
+      urgency  = 'warning';
+    } else if (savings > 0) {
+      headline = iHe ? 'אתה בדרך טובה החודש' : 'You\'re on a good track this month';
+      subline  = iHe ? `חיסכון: ${formatCurrency(savings)} · עוד ${daysLeft} ימים` : `Saving ${formatCurrency(savings)} · ${daysLeft} days left`;
+      urgency  = 'good';
     } else {
-      // savings_based
-      const savings  = income - spent;
-      const hasGoal  = savingsGoal > 0;
-      const progress = hasGoal && income > 0 ? Math.min(Math.max(0, savings / savingsGoal), 1) : 0;
-
-      let headline: string, subline: string, urgency: Urgency;
-
-      if (income === 0 && spent === 0) {
-        headline = iHe ? 'ברוך הבא — התחל לרשום הוצאות' : 'Welcome — start by adding expenses';
-        subline  = iHe ? 'הוסף הכנסות כדי לחשב את החיסכון' : 'Add income to calculate your savings';
-        urgency  = 'neutral';
-      } else if (income === 0) {
-        headline = iHe ? 'הוסף הכנסה לתמונה המלאה' : 'Add your income to see the full picture';
-        subline  = iHe ? `הוצאת ${formatCurrency(spent)} החודש` : `Spent ${formatCurrency(spent)} this month`;
-        urgency  = 'neutral';
-      } else if (savings < 0) {
-        headline = iHe ? 'ההוצאות עולות על ההכנסות' : 'Spending more than you\'re earning';
-        subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
-        urgency  = 'warning';
-      } else if (hasGoal && savings >= savingsGoal) {
-        headline = iHe ? 'קצב החיסכון שלך נראה טוב' : 'Your saving pace looks great';
-        subline  = iHe ? `חסכת ${formatCurrency(savings)} מתוך יעד ${formatCurrency(savingsGoal)}` : `Saved ${formatCurrency(savings)} of ${formatCurrency(savingsGoal)} goal`;
-        urgency  = 'good';
-      } else if (savings > 0) {
-        headline = iHe ? 'אתה בדרך טובה החודש' : 'You\'re on a good track this month';
-        subline  = iHe ? `חיסכון: ${formatCurrency(savings)} · עוד ${daysLeft} ימים` : `Saving ${formatCurrency(savings)} · ${daysLeft} days left`;
-        urgency  = 'good';
-      } else {
-        headline = iHe ? 'הכנסות והוצאות בשיווי משקל' : 'Income and expenses are balanced';
-        subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
-        urgency  = 'neutral';
-      }
-
-      statusCard = { headline, subline, progress, urgency };
+      headline = iHe ? 'הכנסות והוצאות בשיווי משקל' : 'Income and expenses are balanced';
+      subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
+      urgency  = 'neutral';
     }
+
+    const statusCard: StatusCard = { headline, subline, progress, urgency };
 
     // ── Insights ─────────────────────────────────────────────────────────────
 
