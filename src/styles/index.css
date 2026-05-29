@@ -5505,7 +5505,7 @@ body::before, body::after {
   pointer-events: none;
 }
 .sub-health-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.sub-health-total { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); }
+.sub-health-total { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--danger); }
 .sub-health-sub   { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
 .sub-health-chips { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .sub-health-chip  { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-variant-numeric: tabular-nums; }
