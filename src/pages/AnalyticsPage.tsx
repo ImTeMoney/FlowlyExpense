@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
   const { state, dispatch, formatCurrency } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
   const navigate = useNavigate();
-  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, categoryBudgets, cards } = state;
+  const { transactions, categories, recurringExpenses, categoryBudgets, cards } = state;
 
   // Month navigation
   const now = new Date();
@@ -214,43 +214,27 @@ export default function AnalyticsPage() {
   // ── Hero: donut data ──────────────────────────────────────────────────────
   // Both modes use the same visual metaphor: ring fills as spending increases.
   // Green = healthy, orange = caution, red = danger.
-  const { moneyMode } = state;
-  let heroPct: number, heroColor: string, heroSublabel: string;
+  // Burn rate: how much of this month's income has been spent
+  const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
+  const heroPct: number = Math.min(Math.max(0, burnRate), 1);
+  const heroColor: string = burnRate >= 1 ? '#FF3B30' : burnRate > 0.85 ? '#FF9F0A' : '#8B5CF6';
+  const heroSublabel: string = income > 0
+    ? (lang === 'he' ? 'מההכנסות' : 'of income')
+    : (lang === 'he' ? 'הוצאות' : 'spent');
   let heroRemaining: string, heroRemainingColor: string;
-
-  if (moneyMode === 'budget_based') {
-    const budget    = monthlyBudget;
-    const remaining = budget - spent;
-    const overBudget = remaining < 0;
-    heroPct       = budget > 0 ? Math.min(spent / budget, 1) : 0;
-    heroColor     = heroPct >= 1 ? '#FF3B30' : heroPct > 0.75 ? '#FF9F0A' : '#8B5CF6';
-    heroSublabel  = lang === 'he' ? 'מהתקציב' : 'of budget';
-    heroRemaining = budget > 0
-      ? (overBudget
-          ? (lang === 'he' ? `חרגת ב־${formatCurrency(Math.abs(remaining))}` : `Over by ${formatCurrency(Math.abs(remaining))}`)
-          : (lang === 'he' ? `נשאר ${formatCurrency(remaining)} מהתקציב` : `${formatCurrency(remaining)} left in budget`))
-      : (lang === 'he' ? 'לא הוגדר תקציב' : 'no budget set');
-    heroRemainingColor = budget > 0 ? (overBudget ? '#FF3B30' : '#8B5CF6') : 'var(--text-secondary)';
+  if (!income) {
+    heroRemaining      = '';
+    heroRemainingColor = 'var(--text-muted)';
+  } else if (savings >= 0) {
+    heroRemaining      = lang === 'he'
+      ? `חסכת ${formatCurrency(savings)} החודש`
+      : `Saved ${formatCurrency(savings)} this month`;
+    heroRemainingColor = '#30D158';
   } else {
-    // Savings mode: show burn rate (spent / income) — universally clear regardless of savings goal
-    const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
-    heroPct       = Math.min(Math.max(0, burnRate), 1);
-    heroColor     = burnRate >= 1 ? '#FF3B30' : burnRate > 0.85 ? '#FF9F0A' : '#8B5CF6';
-    heroSublabel  = lang === 'he' ? 'מההכנסות' : 'of income';
-    if (!income) {
-      heroRemaining      = lang === 'he' ? 'לא נרשמו הכנסות' : 'no income recorded';
-      heroRemainingColor = 'var(--text-muted)';
-    } else if (savings >= 0) {
-      heroRemaining      = lang === 'he'
-        ? `חסכת ${formatCurrency(savings)} החודש`
-        : `Saved ${formatCurrency(savings)} this month`;
-      heroRemainingColor = '#8B5CF6';
-    } else {
-      heroRemaining      = lang === 'he'
-        ? `גירעון של ${formatCurrency(Math.abs(savings))}`
-        : `Deficit of ${formatCurrency(Math.abs(savings))}`;
-      heroRemainingColor = '#FF3B30';
-    }
+    heroRemaining      = lang === 'he'
+      ? `גירעון של ${formatCurrency(Math.abs(savings))}`
+      : `Deficit of ${formatCurrency(Math.abs(savings))}`;
+    heroRemainingColor = '#FF3B30';
   }
 
   const pmLabel = (pm: string) => { const k = `pm_${pm}` as keyof typeof t; return (t[k] as string | undefined) ?? pm; };
@@ -331,7 +315,7 @@ export default function AnalyticsPage() {
                       : (lang === 'he' ? 'גירעון החודש' : 'Deficit this month')}
                   </span>
                   <span className="an-kpi-val" style={{
-                    color: savings >= 0 ? '#8B5CF6' : '#FF3B30',
+                    color: savings >= 0 ? '#30D158' : '#FF3B30',
                   }}>
                     {savings >= 0
                       ? formatCurrency(savings)
