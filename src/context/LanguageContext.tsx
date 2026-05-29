@@ -344,7 +344,7 @@ const he: Translations = {
   savingsGoalLabel: 'יעד חיסכון',
   savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. יש לרשום גם הכנסות לחישוב מדויק.',
   budgetHelperText: 'עוקב אחרי ההוצאות מול התקציב. אין צורך לרשום הכנסות.',
-  mainCurrencyLabel: 'מטבע',
+  mainCurrencyLabel: 'מטבע ניהול',
   // Categories section
   categoriesTitle: 'קטגוריות',
   newCategoryPlaceholder: 'שם קטגוריה חדשה',
@@ -566,7 +566,7 @@ const en: Translations = {
   savingsGoalLabel: 'Savings Goal',
   savingsHelperText: 'Savings = income minus expenses. Record both for an accurate picture.',
   budgetHelperText: 'Tracks spending against a monthly cap. No income recording needed.',
-  mainCurrencyLabel: 'Currency',
+  mainCurrencyLabel: 'Management Currency',
   // Categories section
   categoriesTitle: 'Categories',
   newCategoryPlaceholder: 'New category name',

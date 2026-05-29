@@ -5,9 +5,7 @@ import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, Bell, Mic, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
-import { useNotifications } from '../hooks/useNotifications';
-import { useMicPermission } from '../hooks/useMicPermission';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   DndContext,
@@ -55,11 +53,6 @@ const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
-  const { permission, enabled, notifyDays, requestPermission, setEnabled, setNotifyDays } = useNotifications();
-  const { micPermission, requestMicPermission } = useMicPermission();
-  const SpeechRec = typeof window !== 'undefined'
-    ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
-    : null;
   const { transactions, categories, mainCurrency, debtModeEnabled } = state;
 
   // DnD sensors (pointer for desktop, touch for mobile)
@@ -319,40 +312,21 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Debt Mode ── */}
-      <div className="a-sec">
-        <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="title-text">{lang === 'he' ? 'מצב חובות' : 'Debt Mode'}</span>
-          <button
-            className={`debt-mode-toggle${debtModeEnabled ? ' on' : ''}`}
-            onClick={() => dispatch({ type: 'SET_DEBT_MODE', payload: !debtModeEnabled })}
-            aria-label={lang === 'he' ? 'הפעל/כבה מצב חובות' : 'Toggle debt mode'}
-          >
-            <span className="debt-mode-thumb" />
-          </button>
-        </div>
-        <p className="mode-seg-desc" style={{ marginTop: 6 }}>
-          {lang === 'he'
-            ? 'עקוב אחרי חובות שנתת או קיבלת. כשפעיל, חוב יירשם גם כהוצאה/הכנסה.'
-            : 'Track debts you gave or received. When on, each debt is also recorded as an expense/income.'}
-        </p>
-      </div>
-
       {/* ── Currency ── */}
       <div className="a-sec">
         <div className="a-sec-title">
           <span className="title-text">{t.mainCurrencyLabel}</span>
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {CURRENCIES.map(c => (
             <button
               key={c}
               type="button"
               className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
               onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
+              style={{ textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {CURRENCY_SYMBOL[c]} {c}
-              <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {lang === 'he' ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c]}</span>
             </button>
           ))}
         </div>
@@ -504,96 +478,24 @@ const SettingsPage: React.FC = () => {
         </form>
       </div>
 
-      {/* ── Notifications ── */}
+      {/* ── Debt Mode ── */}
       <div className="a-sec">
-        <div className="a-sec-title">
-          <Bell size={14} />
-          <span className="title-text">{lang === 'he' ? 'התראות' : 'Notifications'}</span>
-        </div>
-
-        {permission === 'denied' ? (
-          <p className="settings-helper" style={{ color: 'var(--text-muted)' }}>
-            {lang === 'he'
-              ? 'התראות חסומות בדפדפן. אפשר אותן בהגדרות המכשיר.'
-              : 'Notifications blocked by browser. Enable in device settings.'}
-          </p>
-        ) : permission === 'default' ? (
-          <button className="export-btn primary" onClick={requestPermission}>
-            <Bell size={13} />
-            {lang === 'he' ? 'הפעל התראות' : 'Enable notifications'}
+        <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="title-text">{lang === 'he' ? 'מצב חובות' : 'Debt Mode'}</span>
+          <button
+            className={`debt-mode-toggle${debtModeEnabled ? ' on' : ''}`}
+            onClick={() => dispatch({ type: 'SET_DEBT_MODE', payload: !debtModeEnabled })}
+            aria-label={lang === 'he' ? 'הפעל/כבה מצב חובות' : 'Toggle debt mode'}
+          >
+            <span className="debt-mode-thumb" />
           </button>
-        ) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                {lang === 'he' ? 'התראות על הוצאות קרובות' : 'Reminders for upcoming bills'}
-              </span>
-              <button
-                onClick={() => setEnabled(!enabled)}
-                className={`adv-card-toggle adv-card-toggle--green${enabled ? ' on' : ''}`}
-                style={{ flexShrink: 0 }}
-              />
-            </div>
-
-            {enabled && (
-              <>
-                <p className="settings-helper">
-                  {lang === 'he' ? 'הודעה מוקדמת:' : 'Advance notice:'}
-                </p>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[1, 2, 3].map(d => (
-                    <button
-                      key={d}
-                      onClick={() => setNotifyDays(d)}
-                      style={{
-                        flex: 1, padding: '7px 0', borderRadius: 10, cursor: 'pointer',
-                        border: `1.5px solid ${notifyDays === d ? 'var(--purple)' : 'var(--glass-border)'}`,
-                        background: notifyDays === d ? 'var(--purple-dim)' : 'var(--bg-input)',
-                        color: notifyDays === d ? 'var(--purple)' : 'var(--text-secondary)',
-                        fontSize: 13, fontWeight: notifyDays === d ? 700 : 500,
-                      }}
-                    >
-                      {d === 1
-                        ? (lang === 'he' ? 'יום אחד' : '1 day')
-                        : (lang === 'he' ? `${d} ימים` : `${d} days`)}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ── Microphone ── */}
-      {SpeechRec && (
-        <div className="a-sec">
-          <div className="a-sec-title">
-            <Mic size={14} />
-            <span className="title-text">{lang === 'he' ? 'מיקרופון' : 'Microphone'}</span>
-          </div>
-
-          {micPermission === 'denied' ? (
-            <p className="settings-helper" style={{ color: 'var(--text-muted)' }}>
-              {lang === 'he'
-                ? 'גישה למיקרופון חסומה בדפדפן. אפשר אותה בהגדרות המכשיר.'
-                : 'Microphone blocked by browser. Enable in device settings.'}
-            </p>
-          ) : micPermission === 'granted' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-              <CheckCircle size={16} color="var(--success)" />
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                {lang === 'he' ? 'גישה למיקרופון מאושרת' : 'Microphone access granted'}
-              </span>
-            </div>
-          ) : (
-            <button className="export-btn primary" onClick={requestMicPermission}>
-              <Mic size={13} />
-              {lang === 'he' ? 'אפשר גישה למיקרופון' : 'Allow microphone access'}
-            </button>
-          )}
         </div>
-      )}
+        <p className="mode-seg-desc" style={{ marginTop: 6 }}>
+          {lang === 'he'
+            ? 'עקוב אחרי חובות שנתת או קיבלת. כשפעיל, חוב יירשם גם כהוצאה/הכנסה.'
+            : 'Track debts you gave or received. When on, each debt is also recorded as an expense/income.'}
+        </p>
+      </div>
 
       {/* ── Credit Cards ── */}
       <div className="a-sec">
