@@ -130,6 +130,7 @@ body {
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   transition: color 0.3s;
+  touch-action: pan-y;
 }
 
 #root { min-height: 100vh; }
