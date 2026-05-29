@@ -2,9 +2,8 @@ import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
-import { TrendingUp, Wallet, Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon } from 'lucide-react';
+import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
-import type { MoneyMode } from '../context/ExpenseContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -200,33 +199,33 @@ export default function Onboarding({ onDone }: Props) {
   const currencySymbol        = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
 
   const [step, setStep]               = useState(0);
-  const [selectedMode, setSelectedMode] = useState<MoneyMode>(() => state.moneyMode);
   const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
-  const [goalAmount, setGoalAmount]   = useState(() => {
-    const val = state.moneyMode === 'budget_based' ? state.monthlyBudget : state.savingsGoal;
-    return val > 0 ? String(val) : '';
-  });
-  const goalInputRef                  = useRef<HTMLInputElement>(null);
+  const [income, setIncome]           = useState('');
+  const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '' }]);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
   function advance() { setStep(s => s + 1); }
 
-  function pickMode(modeId: MoneyMode) {
-    setSelectedMode(modeId);
-    // Don't dispatch to context during selection — only on Continue.
-    // Dispatching on every click caused context re-renders that could
-    // exit the onboarding on first load after a SW version update.
-    const stored = modeId === 'budget_based' ? state.monthlyBudget : state.savingsGoal;
-    if (stored > 0) setGoalAmount(String(stored));
-  }
-
-  function saveGoalAndAdvance() {
-    dispatch({ type: 'SET_MONEY_MODE', payload: selectedMode });
-    const val = parseFloat(goalAmount);
-    if (!isNaN(val) && val > 0) {
-      if (selectedMode === 'savings_based') dispatch({ type: 'SET_SAVINGS_GOAL', payload: val });
-      else dispatch({ type: 'SET_BUDGET', payload: val });
+  function saveSetupAndAdvance() {
+    dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
+    const incomeVal = parseFloat(income);
+    if (!isNaN(incomeVal) && incomeVal > 0) {
+      dispatch({ type: 'SET_BUDGET', payload: incomeVal });
     }
+    const defaultCatId = state.categories[0]?.id ?? 'cat_other';
+    recurringRows.forEach((row, i) => {
+      const amt = parseFloat(row.amount);
+      if (row.name.trim() && !isNaN(amt) && amt > 0) {
+        dispatch({ type: 'ADD_RECURRING', payload: {
+          id: `rec_${Date.now()}_${i}`,
+          amount: amt,
+          categoryId: defaultCatId,
+          dayOfMonth: 1,
+          description: row.name.trim(),
+          isIncome: false,
+        }});
+      }
+    });
     advance();
   }
 
@@ -332,7 +331,7 @@ export default function Onboarding({ onDone }: Props) {
     );
   }
 
-  // ── Step 1: Mode picker ───────────────────────────────────────────────────
+  // ── Step 1: Quick setup ───────────────────────────────────────────────────
 
   if (step === 1) return (
     <div className="ob-overlay" dir={dir}>
@@ -342,79 +341,85 @@ export default function Onboarding({ onDone }: Props) {
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
-      <div className="ob-screen" key={1}>
+      <div className="ob-screen ob-screen-setup" key={1}>
         <h1 className="ob-title ob-title-grad">
-          {he ? 'איך תרצה לנהל את הכסף?' : 'How do you want to manage money?'}
+          {he ? 'הגדרה מהירה' : 'Quick setup'}
         </h1>
         <p className="ob-sub ob-mode-intro">
           {he
-            ? 'בחר את הגישה שמתאימה לך — המערכת תתאים את עצמה.'
-            : 'Pick the approach that fits you — the app adapts to match.'}
+            ? 'ספר לנו על ההכנסה וההוצאות הקבועות שלך — נוכל לעקוב מיד.'
+            : "Tell us about your income and fixed expenses — we'll track from day one."}
         </p>
 
-        <div className="ob-modes">
-          <button
-            className={`ob-mode-btn ob-mode-card${selectedMode === 'savings_based' ? ' ob-mode-selected' : ''}`}
-            onClick={() => pickMode('savings_based')}
-          >
-            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}>
-              <TrendingUp size={28} />
-            </div>
-            <div className="ob-mode-text">
-              <div className="ob-mode-title">{t.modeTrackSavings}</div>
-              <div className="ob-mode-desc">{t.modeTrackSavingsDesc}</div>
-            </div>
-            {selectedMode === 'savings_based' && (
-              <div className="ob-mode-check-badge">
-                <Check size={12} strokeWidth={3} />
-              </div>
-            )}
-          </button>
-          <button
-            className={`ob-mode-btn ob-mode-card${selectedMode === 'budget_based' ? ' ob-mode-selected' : ''}`}
-            onClick={() => pickMode('budget_based')}
-          >
-            <div className="ob-mode-icon-wrap" style={{ color: 'var(--purple)' }}>
-              <Wallet size={28} />
-            </div>
-            <div className="ob-mode-text">
-              <div className="ob-mode-title">{t.modeTrackBudget}</div>
-              <div className="ob-mode-desc">{t.modeTrackBudgetDesc}</div>
-            </div>
-            {selectedMode === 'budget_based' && (
-              <div className="ob-mode-check-badge">
-                <Check size={12} strokeWidth={3} />
-              </div>
-            )}
-          </button>
-        </div>
-
-        {/* Inline goal input */}
+        {/* Income */}
         <p className="ob-sub ob-goal-label">
-          {he
-            ? (selectedMode === 'savings_based' ? 'יעד חיסכון חודשי (אופציונלי):' : 'תקציב חודשי (אופציונלי):')
-            : (selectedMode === 'savings_based' ? 'Monthly savings goal (optional):' : 'Monthly budget (optional):')}
+          {he ? 'הכנסה חודשית (אופציונלי):' : 'Monthly income (optional):'}
         </p>
         <div className="ob-goal-wrap">
           <span className="ob-goal-currency">{currencySymbol}</span>
           <input
-            ref={goalInputRef}
             type="number"
             inputMode="numeric"
             className="ob-goal-input"
             style={{ fontSize: '26px' }}
             placeholder={he ? 'הכנס סכום' : 'Enter amount'}
-            value={goalAmount}
-            onChange={e => setGoalAmount(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
+            value={income}
+            min="0"
+            max="9999999"
+            onChange={e => setIncome(e.target.value)}
           />
         </div>
-        <p className="ob-sub" style={{ marginTop: 10 }}>
-          {he ? 'ניתן לשנות בכל עת בהגדרות.' : 'Change this any time in Settings.'}
+
+        {/* Recurring expenses */}
+        <p className="ob-sub ob-goal-label" style={{ marginTop: 20 }}>
+          {he ? 'הוצאות קבועות (אופציונלי):' : 'Fixed expenses (optional):'}
         </p>
+        <div className="ob-recurring-rows">
+          {recurringRows.map((row, i) => (
+            <div key={i} className="ob-recurring-row">
+              <input
+                type="text"
+                className="ob-recurring-name"
+                placeholder={he ? 'שכירות, חשמל...' : 'Rent, electricity...'}
+                value={row.name}
+                maxLength={50}
+                onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
+              />
+              <div className="ob-recurring-amt-wrap">
+                <span className="ob-recurring-sym">{currencySymbol}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="ob-recurring-amt"
+                  placeholder="0"
+                  value={row.amount}
+                  min="0"
+                  max="9999999"
+                  onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
+                />
+              </div>
+              {recurringRows.length > 1 && (
+                <button
+                  type="button"
+                  className="ob-recurring-remove"
+                  onClick={() => setRecurringRows(rs => rs.filter((_, j) => j !== i))}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="ob-recurring-add"
+            onClick={() => setRecurringRows(rs => [...rs, { name: '', amount: '' }])}
+          >
+            + {he ? 'הוסף עוד' : 'Add another'}
+          </button>
+        </div>
       </div>
       <div className="ob-bottom">
-        <button className="ob-btn-primary" onClick={saveGoalAndAdvance}>
+        <button className="ob-btn-primary" onClick={saveSetupAndAdvance}>
           {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
         </button>
       </div>
