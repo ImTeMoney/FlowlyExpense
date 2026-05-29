@@ -5,7 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, Mic,
+  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
@@ -789,7 +789,7 @@ export default function DashboardPage() {
         {grouped.size > 0 && (
           <div className="dg-global-toggle">
             <button className="dg-collapse-all-btn" onClick={toggleAll}>
-              <ChevronDown size={14} className={allCollapsed ? 'dg-chevron dg-chevron-collapsed' : 'dg-chevron'} />
+              <ChevronDown size={13} className={`dg-chevron${allCollapsed ? ' dg-chevron-flip' : ''}`} />
               {lang === 'he'
                 ? (allCollapsed ? 'הרחב הכל' : 'כווץ הכל')
                 : (allCollapsed ? 'Expand all' : 'Collapse all')}
@@ -807,22 +807,39 @@ export default function DashboardPage() {
             const dayIncome  = txns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
             const dayExpense = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
             const dayNet = dayIncome - dayExpense;
+            const isCollapsed = collapsedDays.has(dateKey);
+            const dayCatColors = [...new Set(
+              txns.filter(tx => !tx.isIncome)
+                .map(tx => categories.find(c => c.id === tx.categoryId)?.color)
+                .filter(Boolean)
+            )].slice(0, 4) as string[];
             return (
               <div key={dateKey} className="date-group">
-                <div className="dg-header" onClick={() => toggleDay(dateKey)} style={{ cursor: 'pointer' }}>
-                  <span className="dg-label">{formatDateGroup(dateKey)}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className="dg-total" style={{ color: dayNet > 0 ? 'var(--green)' : dayNet < 0 ? 'var(--red)' : 'var(--text-muted)' }}>
+                <div className="dg-header" onClick={() => toggleDay(dateKey)}>
+                  <div className="dg-header-start">
+                    <span className="dg-label">{formatDateGroup(dateKey)}</span>
+                    {isCollapsed && dayCatColors.length > 0 && (
+                      <div className="dg-day-peek">
+                        {dayCatColors.map((color, i) => (
+                          <span key={i} className="dg-cat-dot" style={{ background: color }} />
+                        ))}
+                        <span className="dg-txn-count">{txns.length}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="dg-header-end">
+                    <span className={`dg-total${dayNet > 0 ? ' dg-total--pos' : dayNet < 0 ? ' dg-total--neg' : ''}`}>
                       {dayNet > 0 ? '+' : ''}{formatCurrency(dayNet)}
                     </span>
-                    <ChevronDown
+                    <ChevronRight
                       size={14}
-                      className={`dg-chevron${collapsedDays.has(dateKey) ? ' dg-chevron-collapsed' : ''}`}
-                      style={{ color: 'var(--text-dim)', flexShrink: 0 }}
+                      className={`dg-chevron${!isCollapsed ? ' dg-chevron-open' : ''}`}
                     />
                   </div>
                 </div>
-                {!collapsedDays.has(dateKey) && txns.map((tx, txIdx) => {
+                <div className={`dg-body${isCollapsed ? ' dg-body--collapsed' : ''}`}>
+                <div className="dg-body-inner">
+                {txns.map((tx, txIdx) => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
                   const Icon   = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
@@ -954,6 +971,8 @@ export default function DashboardPage() {
                     </div>
                   );
                 })}
+                </div>
+                </div>
               </div>
             );
           })
