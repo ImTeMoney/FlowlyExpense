@@ -82,7 +82,7 @@ function groupByDate(txns: Transaction[]) {
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, todayFullLabel, catName } = useLang();
-  const { categories, recurringExpenses, transactions, mainCurrency, monthlyBudget, streakData, debtModeEnabled, cards } = state;
+  const { categories, recurringExpenses, transactions, mainCurrency, streakData, debtModeEnabled, cards } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
   const forecast = useSpendingForecast(transactions, recurringExpenses);
@@ -677,11 +677,11 @@ export default function DashboardPage() {
       )}
 
       {/* Streak chip */}
-      {streakData.currentStreak > 1 && monthlyBudget > 0 && (
+      {streakData.currentStreak > 1 && (
         <div className="streak-chip">
           <span>🔥</span>
           <span className="streak-count">{streakData.currentStreak}</span>
-          <span className="streak-label">{lang === 'he' ? 'ימים תחת תקציב' : 'days on track'}</span>
+          <span className="streak-label">{lang === 'he' ? 'ימים ברצף' : 'days in a row'}</span>
         </div>
       )}
 

@@ -287,5 +287,5 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     }
 
     return { statusCard, insights };
-  }, [transactions, monthlyBudget, savingsGoal, moneyMode, categories, formatCurrency, iHe, catName]);
+  }, [transactions, categories, formatCurrency, iHe, catName]);
 }
