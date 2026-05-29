@@ -60,14 +60,6 @@ export interface InstallmentInfo {
   groupId: string;
 }
 
-/** Lightweight receipt metadata mirrored on the Transaction for fast list rendering. */
-export interface ReceiptMeta {
-  mimeType:   string;
-  filename?:  string;
-  size:       number;
-  capturedAt: number;
-}
-
 export interface Transaction {
   id: string;
   amount: number;             // always stored in mainCurrency
@@ -82,10 +74,6 @@ export interface Transaction {
   currency?: string;          // original currency (if different from main)
   originalAmount?: number;    // amount in original currency
   exchangeRate?: number;      // rate used: 1 original = rate main
-  /** IndexedDB id pointing to the attached receipt blob (image or PDF) */
-  receiptId?: string;
-  /** Metadata mirror of the attachment so the list can render without an IDB hit */
-  receipt?: ReceiptMeta;
   /** Links to CreditCard.id when paymentMethod is credit/debit */
   cardId?: string;
 }
@@ -153,7 +141,6 @@ type Action =
   | { type: 'SET_MAIN_CURRENCY';         payload: string }
   | { type: 'SET_MONEY_MODE';            payload: MoneyMode }
   | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] }   // append imported rows
-  | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } }
   | { type: 'UPDATE_TRANSACTION';        payload: Transaction }
   | { type: 'REORDER_CATEGORIES';        payload: Category[] }
   | { type: 'SET_CATEGORY_BUDGET';       payload: { catId: string; amount: number } }
@@ -673,18 +660,6 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         ));
         break;
 
-      case 'UPDATE_TRANSACTION_RECEIPT':
-        setTransactions(prev => prev.map(tx => {
-          if (tx.id !== action.payload.id) return tx;
-          if (action.payload.receiptId) {
-            return { ...tx, receiptId: action.payload.receiptId, receipt: action.payload.receipt };
-          }
-          const next = { ...tx };
-          delete next.receiptId;
-          delete next.receipt;
-          return next;
-        }));
-        break;
     }
   }, []);
 

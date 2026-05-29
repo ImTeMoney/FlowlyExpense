@@ -229,21 +229,6 @@ export interface Translations {
   appUpToDate: string;
   // Onboarding
   showOnboardingAgain: string;
-  // Receipt attachment
-  receiptLabel: string;
-  attachReceipt: string;
-  replaceReceipt: string;
-  removeReceipt: string;
-  viewReceipt: string;
-  takePhoto: string;
-  chooseFromGallery: string;
-  choosePdf: string;
-  receiptTooLarge: string;
-  receiptUnsupported: string;
-  ocrAutoDetected: string;
-  ocrFailed: string;
-  ocrNoData: string;
-  ocrNoKey: string;
   // Full backup
   backupExport: string;
   backupImport: string;
@@ -467,20 +452,6 @@ const he: Translations = {
   appUpToDate: 'האפליקציה מעודכנת ✓',
   showOnboardingAgain: 'הצג הדרכה מחדש',
   // Receipt attachment
-  receiptLabel:        'קבלה (לא חובה)',
-  attachReceipt:       'צרף קבלה',
-  replaceReceipt:      'החלף',
-  removeReceipt:       'הסר',
-  viewReceipt:         'הצג קבלה',
-  takePhoto:           'מצלמה',
-  chooseFromGallery:   'גלריה',
-  choosePdf:           'PDF',
-  receiptTooLarge:     'הקובץ גדול מדי (מקסימום 8 מ״ב)',
-  receiptUnsupported:  'סוג קובץ לא נתמך',
-  ocrAutoDetected:     'הנתונים זוהו אוטומטית, מומלץ לבדוק לפני שמירה',
-  ocrFailed:           'זיהוי אוטומטי נכשל — ניתן למלא ידנית',
-  ocrNoData:           'לא זוהו נתונים — ניתן למלא ידנית',
-  ocrNoKey:            'זיהוי אוטומטי לא מוגדר — מלא ידנית',
   backupExport:        'גיבוי מלא (JSON)',
   backupImport:        'שחזור מגיבוי (JSON)',
   backupImportNote:    'משחזר את כל הנתונים — עסקאות, קטגוריות והגדרות',
@@ -703,20 +674,6 @@ const en: Translations = {
   appUpToDate: 'App is up to date ✓',
   showOnboardingAgain: 'Show onboarding again',
   // Receipt attachment
-  receiptLabel:        'Receipt (optional)',
-  attachReceipt:       'Attach receipt',
-  replaceReceipt:      'Replace',
-  removeReceipt:       'Remove',
-  viewReceipt:         'View receipt',
-  takePhoto:           'Camera',
-  chooseFromGallery:   'Gallery',
-  choosePdf:           'PDF',
-  receiptTooLarge:     'File too large (max 8 MB)',
-  receiptUnsupported:  'Unsupported file type',
-  ocrAutoDetected:     'Data detected automatically — please verify before saving.',
-  ocrFailed:           'Auto-detection failed — fill in manually.',
-  ocrNoData:           'No data detected — fill in manually.',
-  ocrNoKey:            'Auto-detection not configured — fill in manually.',
   backupExport:        'Full Backup (JSON)',
   backupImport:        'Restore from Backup (JSON)',
   backupImportNote:    'Restores all data — transactions, categories and settings',
