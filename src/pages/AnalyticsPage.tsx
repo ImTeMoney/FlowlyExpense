@@ -315,7 +315,7 @@ export default function AnalyticsPage() {
                       : (lang === 'he' ? 'גירעון החודש' : 'Deficit this month')}
                   </span>
                   <span className="an-kpi-val" style={{
-                    color: savings >= 0 ? '#30D158' : '#FF3B30',
+                    color: savings >= 0 ? '#8B5CF6' : '#FF3B30',
                   }}>
                     {savings >= 0
                       ? formatCurrency(savings)
