@@ -282,7 +282,7 @@ export default function Onboarding({ onDone }: Props) {
 
   if (step === 0) {
     const features = he
-      ? ['הכל נשמר אצלך — אין שרת', 'בלי הרשמה, בלי אימייל', 'עובד גם ללא אינטרנט']
+      ? ['הכל נשמר אצלך במכשיר', 'בלי הרשמה, בלי אימייל', 'עובד גם ללא אינטרנט']
       : ['Everything stored on your device', 'No signup, no email', 'Works fully offline'];
     return (
       <div className="ob-overlay" dir={dir}>
