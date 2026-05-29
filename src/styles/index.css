@@ -3244,7 +3244,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 /* ── Skip button ── */
 .ob-skip {
   position: absolute;
-  top: 20px;
+  top: max(52px, calc(env(safe-area-inset-top) + 12px));
   inset-inline-end: 20px;
   display: flex;
   align-items: center;
