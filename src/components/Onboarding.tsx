@@ -384,14 +384,17 @@ export default function Onboarding({ onDone }: Props) {
           <div className="ob-recurring-day-wrap">
             <span className="ob-recurring-day-lbl">{he ? 'יום' : 'Day'}</span>
             <input
-              type="number"
+              type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               className="ob-recurring-day"
               placeholder="1"
               value={incomeDay}
-              min="1"
-              max="28"
-              onChange={e => setIncomeDay(e.target.value)}
+              onFocus={e => e.target.select()}
+              onChange={e => {
+                const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                setIncomeDay(v);
+              }}
             />
           </div>
         </div>
@@ -427,14 +430,17 @@ export default function Onboarding({ onDone }: Props) {
               <div className="ob-recurring-day-wrap">
                 <span className="ob-recurring-day-lbl">{he ? 'יום' : 'Day'}</span>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
                   className="ob-recurring-day"
                   placeholder="1"
                   value={row.day}
-                  min="1"
-                  max="28"
-                  onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: e.target.value } : r))}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                    setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r));
+                  }}
                 />
               </div>
               {recurringRows.length > 1 && (

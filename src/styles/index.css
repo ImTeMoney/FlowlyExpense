@@ -1828,7 +1828,7 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
 .rec-info { flex: 1; min-width: 0; }
 .rec-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.rec-amt { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; color: var(--purple); flex-shrink: 0; }
+.rec-amt { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; color: var(--danger); flex-shrink: 0; }
 .rec-amt.income { color: var(--success); }
 .rec-del { color: var(--text-dim); transition: color 0.15s, background 0.15s, opacity 0.18s; padding: 4px; border-radius: 6px; opacity: 0; }
 .rec-item:hover .rec-del { opacity: 0.65; }
