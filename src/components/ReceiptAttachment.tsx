@@ -113,7 +113,6 @@ export default function ReceiptAttachment({
         const data = await extractReceiptData(file);
 
         if (data) {
-          if (import.meta.env.DEV) console.log('[OCR] Success:', JSON.stringify(data));
           if (onOcrPrefill) onOcrPrefill(data);
           setOcrStatus('done');
         } else {
