@@ -374,7 +374,10 @@ export default function DashboardPage() {
       ? Math.round(tx.amount * tx.installments.total * 100) / 100
       : (tx.originalAmount ?? tx.amount);
     setAmount(String(fullAmt));
-    setDesc(tx.description);
+    const cleanDesc = tx.description.startsWith('(קבועה) ')
+      ? tx.description.slice('(קבועה) '.length)
+      : tx.description;
+    setDesc(cleanDesc);
     setDate(tx.date);
     setCatId(tx.categoryId);
     setTxCurrency(tx.currency ?? mainCurrency);
@@ -391,7 +394,7 @@ export default function DashboardPage() {
     setSplitEnabled(!!tx.installments);
     setNumInstallments(tx.installments?.total ?? 3);
     setIsRecurring(!!recurringExpenses.find(r =>
-      r.description === tx.description && r.isIncome === !!tx.isIncome
+      r.description === cleanDesc && r.isIncome === !!tx.isIncome
     ));
     setPasteText('');
     setShowPaste(false);

@@ -605,7 +605,10 @@ export default function Onboarding({ onDone }: Props) {
       </div>
 
       <div className="ob-bottom">
-        <button className="ob-dont-show" onClick={handleLaunch}>
+        <button
+          className={canPrompt ? 'ob-dont-show' : 'ob-btn-primary ob-btn-launch-pulse'}
+          onClick={handleLaunch}
+        >
           {canPrompt
             ? (he ? 'אולי אחר כך' : 'Maybe later')
             : (he ? 'הבנתי, מתחיל!' : "Got it, let's go!")}
