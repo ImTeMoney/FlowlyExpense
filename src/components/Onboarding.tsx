@@ -201,26 +201,37 @@ export default function Onboarding({ onDone }: Props) {
   const [step, setStep]               = useState(0);
   const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
   const [income, setIncome]           = useState('');
-  const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '' }]);
+  const [incomeDay, setIncomeDay]     = useState('1');
+  const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
   function advance() { setStep(s => s + 1); }
 
   function saveSetupAndAdvance() {
     dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
+    const defaultCatId = state.categories[0]?.id ?? 'cat_other';
     const incomeVal = parseFloat(income);
+    const incomeDayVal = Math.min(28, Math.max(1, parseInt(incomeDay) || 1));
     if (!isNaN(incomeVal) && incomeVal > 0) {
       dispatch({ type: 'SET_BUDGET', payload: incomeVal });
+      dispatch({ type: 'ADD_RECURRING', payload: {
+        id: `rec_income_${Date.now()}`,
+        amount: incomeVal,
+        categoryId: defaultCatId,
+        dayOfMonth: incomeDayVal,
+        description: he ? 'משכורת' : 'Salary',
+        isIncome: true,
+      }});
     }
-    const defaultCatId = state.categories[0]?.id ?? 'cat_other';
     recurringRows.forEach((row, i) => {
       const amt = parseFloat(row.amount);
+      const day = Math.min(28, Math.max(1, parseInt(row.day) || 1));
       if (row.name.trim() && !isNaN(amt) && amt > 0) {
         dispatch({ type: 'ADD_RECURRING', payload: {
           id: `rec_${Date.now()}_${i}`,
           amount: amt,
           categoryId: defaultCatId,
-          dayOfMonth: 1,
+          dayOfMonth: day,
           description: row.name.trim(),
           isIncome: false,
         }});
@@ -355,19 +366,34 @@ export default function Onboarding({ onDone }: Props) {
         <p className="ob-sub ob-goal-label">
           {he ? 'הכנסה חודשית (אופציונלי):' : 'Monthly income (optional):'}
         </p>
-        <div className="ob-goal-wrap">
-          <span className="ob-goal-currency">{currencySymbol}</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            className="ob-goal-input"
-            style={{ fontSize: '26px' }}
-            placeholder={he ? 'הכנס סכום' : 'Enter amount'}
-            value={income}
-            min="0"
-            max="9999999"
-            onChange={e => setIncome(e.target.value)}
-          />
+        <div className="ob-recurring-row">
+          <div className="ob-goal-wrap" style={{ flex: 1 }}>
+            <span className="ob-goal-currency">{currencySymbol}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              className="ob-goal-input"
+              style={{ fontSize: '22px' }}
+              placeholder={he ? 'סכום' : 'Amount'}
+              value={income}
+              min="0"
+              max="9999999"
+              onChange={e => setIncome(e.target.value)}
+            />
+          </div>
+          <div className="ob-recurring-day-wrap">
+            <span className="ob-recurring-day-lbl">{he ? 'יום' : 'Day'}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              className="ob-recurring-day"
+              placeholder="1"
+              value={incomeDay}
+              min="1"
+              max="28"
+              onChange={e => setIncomeDay(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Recurring expenses */}
@@ -396,6 +422,19 @@ export default function Onboarding({ onDone }: Props) {
                   min="0"
                   max="9999999"
                   onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
+                />
+              </div>
+              <div className="ob-recurring-day-wrap">
+                <span className="ob-recurring-day-lbl">{he ? 'יום' : 'Day'}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="ob-recurring-day"
+                  placeholder="1"
+                  value={row.day}
+                  min="1"
+                  max="28"
+                  onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: e.target.value } : r))}
                 />
               </div>
               {recurringRows.length > 1 && (

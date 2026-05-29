@@ -60,7 +60,7 @@ const SettingsPage: React.FC = () => {
   const SpeechRec = typeof window !== 'undefined'
     ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
     : null;
-  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode, debtModeEnabled } = state;
+  const { transactions, categories, mainCurrency, debtModeEnabled } = state;
 
   // DnD sensors (pointer for desktop, touch for mobile)
   const sensors = useSensors(
@@ -201,21 +201,6 @@ const SettingsPage: React.FC = () => {
     }
   }
 
-  // Budget
-  const [budgetEdit, setBudgetEdit] = useState(monthlyBudget > 0 ? String(monthlyBudget) : '');
-  function saveBudget() {
-    const val = parseFloat(budgetEdit);
-    if (val > 0) { dispatch({ type: 'SET_BUDGET', payload: val }); showToast(t.savedSettings); }
-  }
-
-  // Savings goal
-  const [goalEdit, setGoalEdit] = useState(savingsGoal > 0 ? String(savingsGoal) : '');
-  function saveGoal() {
-    const val = parseFloat(goalEdit);
-    dispatch({ type: 'SET_SAVINGS_GOAL', payload: !isNaN(val) && val > 0 ? val : 0 });
-    showToast(t.savedSettings);
-  }
-
   // Inline category editing
   const [editingId,    setEditingId]    = useState<string | null>(null);
   const [editingName,  setEditingName]  = useState('');
@@ -334,32 +319,6 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Money Management Mode ── */}
-      <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text">{t.moneyModeTitle}</span>
-        </div>
-        <div className="mode-seg-ctrl">
-          <button
-            className={`mode-seg-btn${moneyMode === 'savings_based' ? ' active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'savings_based' })}
-          >
-            <Target size={14} />
-            <span>{t.modeTrackSavings}</span>
-          </button>
-          <button
-            className={`mode-seg-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' })}
-          >
-            <BarChart2 size={14} />
-            <span>{t.modeTrackBudget}</span>
-          </button>
-        </div>
-        <p className="mode-seg-desc">
-          {moneyMode === 'savings_based' ? t.modeTrackSavingsDesc : t.modeTrackBudgetDesc}
-        </p>
-      </div>
-
       {/* ── Debt Mode ── */}
       <div className="a-sec">
         <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -379,69 +338,23 @@ const SettingsPage: React.FC = () => {
         </p>
       </div>
 
-      {/* ── Financial Goals (mode-dependent) ── */}
+      {/* ── Currency ── */}
       <div className="a-sec">
         <div className="a-sec-title">
-          <span className="title-text">{t.financialGoals}</span>
+          <span className="title-text">{t.mainCurrencyLabel}</span>
         </div>
-
-        {moneyMode === 'savings_based' ? (
-          <>
-            {/* Savings goal — PRIMARY */}
-            <div className="set-row">
-              <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <PiggyBank size={13} color="#22C55E" />
-                {t.savingsGoalLabel} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
-              </span>
-              <input
-                type="number" className="set-input"
-                placeholder={lang === 'he' ? 'לדוגמה: 5,000' : 'e.g. 5,000'}
-                value={goalEdit}
-                onChange={e => setGoalEdit(e.target.value)}
-                onBlur={saveGoal}
-                onKeyDown={e => e.key === 'Enter' && saveGoal()}
-                inputMode="numeric"
-              />
-            </div>
-
-            <p className="settings-helper">{t.savingsHelperText}</p>
-          </>
-        ) : (
-          <>
-            {/* Budget — PRIMARY */}
-            <div className="set-row">
-              <span className="set-lbl">{t.monthlyBudget} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})</span>
-              <input
-                type="number" className="set-input"
-                placeholder={lang === 'he' ? 'לדוגמה: 10,000' : 'e.g. 10,000'}
-                value={budgetEdit}
-                onChange={e => setBudgetEdit(e.target.value)}
-                onBlur={saveBudget}
-                onKeyDown={e => e.key === 'Enter' && saveBudget()}
-                inputMode="numeric"
-              />
-            </div>
-
-            <p className="settings-helper">{t.budgetHelperText}</p>
-          </>
-        )}
-
-        {/* Main Currency */}
-        <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <span className="set-lbl">{t.mainCurrencyLabel}</span>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {CURRENCIES.map(c => (
-              <button
-                key={c}
-                type="button"
-                className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
-                onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
-              >
-                {CURRENCY_SYMBOL[c]} {c}
-                <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {lang === 'he' ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c]}</span>
-              </button>
-            ))}
-          </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {CURRENCIES.map(c => (
+            <button
+              key={c}
+              type="button"
+              className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
+            >
+              {CURRENCY_SYMBOL[c]} {c}
+              <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {lang === 'he' ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c]}</span>
+            </button>
+          ))}
         </div>
       </div>
 
