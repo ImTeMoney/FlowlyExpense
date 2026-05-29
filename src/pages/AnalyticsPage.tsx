@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
   // Burn rate: how much of this month's income has been spent
   const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
   const heroPct: number = Math.min(Math.max(0, burnRate), 1);
-  const heroColor: string = burnRate >= 1 ? '#FF3B30' : burnRate > 0.85 ? '#FF9F0A' : '#8B5CF6';
+  const heroColor: string = burnRate >= 1 ? '#FF3B30' : '#8B5CF6';
   const heroSublabel: string = income > 0
     ? (lang === 'he' ? 'מההכנסות' : 'of income')
     : (lang === 'he' ? 'הוצאות' : 'spent');
