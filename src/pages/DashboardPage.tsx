@@ -111,6 +111,7 @@ export default function DashboardPage() {
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
   const [isRecurring, setIsRecurring]         = useState(false);
+  const [collapsedDays, setCollapsedDays]     = useState<Set<string>>(new Set());
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
   const [splitN, setSplitN]                   = useState(3);
@@ -186,6 +187,22 @@ export default function DashboardPage() {
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const grouped    = useMemo(() => groupByDate(monthTxns), [monthTxns]);
+  const allCollapsed = grouped.size > 0 && collapsedDays.size === grouped.size;
+
+  function toggleDay(dateKey: string) {
+    setCollapsedDays(prev => {
+      const next = new Set(prev);
+      next.has(dateKey) ? next.delete(dateKey) : next.add(dateKey);
+      return next;
+    });
+  }
+  function toggleAll() {
+    if (allCollapsed) {
+      setCollapsedDays(new Set());
+    } else {
+      setCollapsedDays(new Set(grouped.keys()));
+    }
+  }
 
   // Live exchange rate preview when currency differs from main
   useEffect(() => {
@@ -769,6 +786,16 @@ export default function DashboardPage() {
 
       {/* Transaction feed */}
       <div className="txn-section">
+        {grouped.size > 0 && (
+          <div className="dg-global-toggle">
+            <button className="dg-collapse-all-btn" onClick={toggleAll}>
+              <ChevronDown size={14} className={allCollapsed ? 'dg-chevron dg-chevron-collapsed' : 'dg-chevron'} />
+              {lang === 'he'
+                ? (allCollapsed ? 'הרחב הכל' : 'כווץ הכל')
+                : (allCollapsed ? 'Expand all' : 'Collapse all')}
+            </button>
+          </div>
+        )}
         {grouped.size === 0 ? (
           <div className="empty-state">
             <div className="empty-icon"><TrendingDown size={22} /></div>
@@ -782,13 +809,20 @@ export default function DashboardPage() {
             const dayNet = dayIncome - dayExpense;
             return (
               <div key={dateKey} className="date-group">
-                <div className="dg-header">
+                <div className="dg-header" onClick={() => toggleDay(dateKey)} style={{ cursor: 'pointer' }}>
                   <span className="dg-label">{formatDateGroup(dateKey)}</span>
-                  <span className="dg-total" style={{ color: dayNet > 0 ? 'var(--green)' : dayNet < 0 ? 'var(--red)' : 'var(--text-muted)' }}>
-                    {dayNet > 0 ? '+' : ''}{formatCurrency(dayNet)}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="dg-total" style={{ color: dayNet > 0 ? 'var(--green)' : dayNet < 0 ? 'var(--red)' : 'var(--text-muted)' }}>
+                      {dayNet > 0 ? '+' : ''}{formatCurrency(dayNet)}
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      className={`dg-chevron${collapsedDays.has(dateKey) ? ' dg-chevron-collapsed' : ''}`}
+                      style={{ color: 'var(--text-dim)', flexShrink: 0 }}
+                    />
+                  </div>
                 </div>
-                {txns.map((tx, txIdx) => {
+                {!collapsedDays.has(dateKey) && txns.map((tx, txIdx) => {
                   const cat    = categories.find(c => c.id === tx.categoryId);
                   const Icon   = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
