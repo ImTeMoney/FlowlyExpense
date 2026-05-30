@@ -4,7 +4,7 @@ import { useLang } from '../context/LanguageContext';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type InsightType = 'spike_week' | 'spike_cat' | 'opportunity' | 'all_clear' | 'over_budget' | 'repeat_merchant' | 'cat_dominance' | 'saving_tip';
+export type InsightType = 'spike_week' | 'spike_cat' | 'opportunity' | 'all_clear' | 'over_budget' | 'top_cat_nonrecurring' | 'cat_dominance' | 'saving_tip';
 export type InsightIcon = 'zap' | 'piggy' | 'check' | 'alert';
 export type Urgency     = 'good' | 'caution' | 'warning' | 'neutral';
 
@@ -129,38 +129,31 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       });
     }
 
-    // ── 2. Repeat merchant (same description ≥ 2 times) ──────────────────────
+    // ── 2. Top non-recurring category ────────────────────────────────────────
     if (insights.length < 2) {
-      const descMap = new Map<string, { total: number; count: number }>();
-      for (const tx of expenseTxns) {
-        const key = tx.description.trim().toLowerCase();
-        if (!key) continue;
-        const prev = descMap.get(key) ?? { total: 0, count: 0 };
-        descMap.set(key, { total: prev.total + tx.amount, count: prev.count + 1 });
+      const nonRecTxns = expenseTxns.filter(tx => !tx.description.startsWith('(קבועה) '));
+      const byCatNR = new Map<string, number>();
+      for (const tx of nonRecTxns) {
+        byCatNR.set(tx.categoryId, (byCatNR.get(tx.categoryId) ?? 0) + tx.amount);
       }
-      let topDesc = '', topEntry = { total: 0, count: 0 };
-      for (const [desc, entry] of descMap.entries()) {
-        if (entry.count >= 2 && entry.total > topEntry.total) {
-          topDesc = desc;
-          topEntry = entry;
-        }
+      let topCatNRId = '', topCatNRTotal = 0;
+      for (const [catId, total] of byCatNR.entries()) {
+        if (total > topCatNRTotal) { topCatNRTotal = total; topCatNRId = catId; }
       }
-      // Find original casing
-      const origDesc = expenseTxns.find(tx => tx.description.trim().toLowerCase() === topDesc)?.description.trim() ?? topDesc;
-      if (topDesc && topEntry.total > 100) {
+      if (topCatNRId && topCatNRTotal > 200) {
+        const cat = categories.find(c => c.id === topCatNRId);
+        const resolvedName = catName(topCatNRId, cat?.name ?? topCatNRId, cat?.isRenamed);
         insights.push({
-          id:    'repeat_merchant',
-          type:  'repeat_merchant',
+          id:    'top_cat_nonrecurring',
+          type:  'top_cat_nonrecurring',
           icon:  'zap',
           line1: iHe
-            ? `קנית ב"${origDesc}" ${topEntry.count} פעמים החודש`
-            : `"${origDesc}" — ${topEntry.count} purchases this month`,
+            ? `הוצאת ${formatCurrency(Math.round(topCatNRTotal))} על ${resolvedName} החודש`
+            : `Spent ${formatCurrency(Math.round(topCatNRTotal))} on ${resolvedName} this month`,
           line2: iHe
-            ? `סה״כ ${formatCurrency(Math.round(topEntry.total))} (${formatCurrency(Math.round(topEntry.total / topEntry.count))} ממוצע לקנייה)`
-            : `Total ${formatCurrency(Math.round(topEntry.total))} · avg ${formatCurrency(Math.round(topEntry.total / topEntry.count))}/purchase`,
-          line3: iHe
-            ? 'שקול לאחד קניות כדי לקבל עסקאות טובות יותר'
-            : 'Consider consolidating purchases for better deals',
+            ? 'תשים לב — נסה לחסוך בקטגוריה הזו'
+            : 'Consider cutting back in this category',
+          line3: '',
         });
       }
     }
