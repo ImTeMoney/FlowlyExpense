@@ -1309,35 +1309,35 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Recurring expense — always visible */}
-              {!isIncome && !splitEnabled && (
-                <div className={`adv-card adv-card--green${isRecurring ? ' adv-card-active' : ''}`}>
-                  <button
-                    className="adv-card-header"
-                    type="button"
-                    onClick={() => setIsRecurring(s => !s)}
-                  >
-                    <div className="adv-card-icon adv-card-icon--green"><Repeat size={15} /></div>
-                    <div className="adv-card-text">
-                      <div className="adv-card-title">{lang === 'he' ? 'הוצאה קבועה' : 'Recurring expense'}</div>
-                      <div className="adv-card-sub">
-                        {isRecurring
-                          ? (lang === 'he'
-                              ? `חוזר ב-${parseInt(date.split('-')[2])} לכל חודש`
-                              : `Repeats on day ${parseInt(date.split('-')[2])} every month`)
-                          : (lang === 'he'
-                              ? 'חוזר על עצמו כל חודש באותו תאריך'
-                              : 'Repeats monthly on the same date')}
-                      </div>
-                    </div>
-                    <div className={`adv-card-toggle adv-card-toggle--green${isRecurring ? ' on' : ''}`} />
-                  </button>
-                </div>
-              )}
-
-              {/* Advanced options — split + installments */}
+              {/* Payment options section: recurring always visible + advanced options toggle */}
               {!isIncome && (
               <div className="payment-opts-section" ref={advancedRef}>
+
+                {/* Recurring expense — always visible at top */}
+                {!splitEnabled && (
+                  <div className={`adv-card adv-card--green${isRecurring ? ' adv-card-active' : ''}`}>
+                    <button
+                      className="adv-card-header"
+                      type="button"
+                      onClick={() => setIsRecurring(s => !s)}
+                    >
+                      <div className="adv-card-icon adv-card-icon--green"><Repeat size={15} /></div>
+                      <div className="adv-card-text">
+                        <div className="adv-card-title">{lang === 'he' ? 'הוצאה קבועה' : 'Recurring expense'}</div>
+                        <div className="adv-card-sub">
+                          {isRecurring
+                            ? (lang === 'he'
+                                ? `חוזר ב-${parseInt(date.split('-')[2])} לכל חודש`
+                                : `Repeats on day ${parseInt(date.split('-')[2])} every month`)
+                            : (lang === 'he'
+                                ? 'חוזר על עצמו כל חודש באותו תאריך'
+                                : 'Repeats monthly on the same date')}
+                        </div>
+                      </div>
+                      <div className={`adv-card-toggle adv-card-toggle--green${isRecurring ? ' on' : ''}`} />
+                    </button>
+                  </div>
+                )}
                 <button
                   className="modal-advanced-toggle"
                   type="button"
