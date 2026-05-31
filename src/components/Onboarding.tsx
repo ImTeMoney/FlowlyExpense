@@ -315,7 +315,7 @@ export default function Onboarding({ onDone }: Props) {
         {/* Language toggle — top-right dropdown */}
         <div ref={langRef} className="ob-lang-wrap">
           <button className="ob-lang-toggle" onClick={() => setLangOpen(v => !v)}>
-            {he ? <FlagIL size={20} /> : <FlagUS size={20} />}
+            <span className="lang-flag" style={{ fontSize: 20 }}>{he ? '🇮🇱' : '🇺🇸'}</span>
             <span>{he ? 'עברית' : 'EN'}</span>
             <ChevronDown size={12} style={{ opacity: 0.7, transition: 'transform 0.18s', transform: langOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
@@ -325,13 +325,13 @@ export default function Onboarding({ onDone }: Props) {
                 className={`ob-lang-option${!he ? ' active' : ''}`}
                 onClick={() => { if (he) toggleLang(); setLangOpen(false); }}
               >
-                <FlagUS size={20} /> English
+                <span>English</span><span className="lang-flag">🇺🇸</span>
               </button>
               <button
                 className={`ob-lang-option${he ? ' active' : ''}`}
                 onClick={() => { if (!he) toggleLang(); setLangOpen(false); }}
               >
-                <FlagIL size={20} /> עברית
+                <span>עברית</span><span className="lang-flag">🇮🇱</span>
               </button>
             </div>
           )}

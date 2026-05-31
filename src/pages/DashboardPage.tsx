@@ -667,15 +667,15 @@ export default function DashboardPage() {
           <div className="header-actions">
             <div ref={langRef} className="dash-lang-wrap">
               <button className="icon-btn lang-btn" onClick={() => setLangOpen(v => !v)} aria-label="Toggle language">
-                {lang === 'he' ? <FlagIL size={22} /> : <FlagUS size={22} />}
+                <span className="lang-flag">{lang === 'he' ? '🇮🇱' : '🇺🇸'}</span>
               </button>
               {langOpen && (
                 <div className="dash-lang-dropdown">
                   <button className={`ob-lang-option${lang !== 'he' ? ' active' : ''}`} onClick={() => { if (lang === 'he') toggleLang(); setLangOpen(false); }}>
-                    <FlagUS size={20} /> English
+                    <span>English</span><span className="lang-flag">🇺🇸</span>
                   </button>
                   <button className={`ob-lang-option${lang === 'he' ? ' active' : ''}`} onClick={() => { if (lang !== 'he') toggleLang(); setLangOpen(false); }}>
-                    <FlagIL size={20} /> עברית
+                    <span>עברית</span><span className="lang-flag">🇮🇱</span>
                   </button>
                 </div>
               )}
