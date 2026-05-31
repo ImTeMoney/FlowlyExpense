@@ -1179,8 +1179,8 @@ export default function DashboardPage() {
               {/* Description — collapsed by default */}
               {!showNote ? (
                 <button className="modal-add-note-btn" type="button" onClick={() => setShowNote(true)}>
-                  <Plus size={13} />
-                  <span>{lang === 'he' ? '+ הוסף הערה' : '+ Add note'}</span>
+                  <span className="modal-add-note-plus">+</span>
+                  <span className="modal-add-note-label">{lang === 'he' ? 'הוסף הערה' : 'Add note'}</span>
                 </button>
               ) : (
                 <div className="modal-note-wrap">

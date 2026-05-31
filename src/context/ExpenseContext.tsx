@@ -36,7 +36,7 @@ export interface StreakData {
 }
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
-  'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay', 'standing_order',
+  'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'standing_order',
 ];
 
 /** One leg of a split payment — method + amount for that leg. */

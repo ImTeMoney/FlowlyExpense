@@ -4724,12 +4724,23 @@ button:focus-visible, input:focus-visible, select:focus-visible {
    ===================================================== */
 
 .modal-add-note-btn {
-  display: flex; align-items: center; gap: 6px;
-  background: none; border: none; padding: 2px 0;
-  font-size: 13px; color: var(--text-muted);
-  cursor: pointer; transition: color 0.15s;
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  font-size: 14px; color: var(--text-muted);
+  cursor: text;
+  transition: border-color 0.15s, color 0.15s;
+  text-align: start;
 }
-.modal-add-note-btn:hover { color: var(--purple); }
+.modal-add-note-btn:hover { border-color: var(--purple); color: var(--text); }
+.modal-add-note-plus {
+  font-size: 18px; font-weight: 300; line-height: 1;
+  color: var(--text-muted); flex-shrink: 0;
+}
+.modal-add-note-label { font-size: 14px; }
 .modal-note-wrap {
   display: flex; align-items: center; gap: 8px;
 }
