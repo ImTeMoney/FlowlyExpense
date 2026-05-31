@@ -92,6 +92,17 @@ export default function DashboardPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [isIncome, setIsIncome]   = useState(false);
+  const [langOpen, setLangOpen]   = useState(false);
+  const langRef                   = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!langOpen) return;
+    function onOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+    }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [langOpen]);
   const [amount, setAmount]       = useState('');
   const [catId, setCatId]         = useState(categories[0]?.id ?? '');
   const [desc, setDesc]           = useState('');
@@ -653,9 +664,21 @@ export default function DashboardPage() {
             <div className="header-month">{todayFullLabel()}</div>
           </div>
           <div className="header-actions">
-            <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
-              {lang === 'he' ? '🇮🇱' : '🇬🇧'}
-            </button>
+            <div ref={langRef} className="dash-lang-wrap">
+              <button className="icon-btn lang-btn" onClick={() => setLangOpen(v => !v)} aria-label="Toggle language">
+                {lang === 'he' ? '🇮🇱' : '🇬🇧'}
+              </button>
+              {langOpen && (
+                <div className="dash-lang-dropdown">
+                  <button className={`ob-lang-option${lang !== 'he' ? ' active' : ''}`} onClick={() => { if (lang === 'he') toggleLang(); setLangOpen(false); }}>
+                    <span>🇬🇧</span> English
+                  </button>
+                  <button className={`ob-lang-option${lang === 'he' ? ' active' : ''}`} onClick={() => { if (lang !== 'he') toggleLang(); setLangOpen(false); }}>
+                    <span>🇮🇱</span> עברית
+                  </button>
+                </div>
+              )}
+            </div>
             <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
