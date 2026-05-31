@@ -250,9 +250,6 @@ input, select, textarea { font-family: inherit; color: inherit; }
   align-items: center;
   justify-content: space-between;
 }
-.header-row > div {
-  text-align: center;
-}
 
 .header-brand {
   font-size: 12px;

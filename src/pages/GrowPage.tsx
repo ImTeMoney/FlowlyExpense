@@ -123,10 +123,10 @@ export default function GrowPage() {
         <div className="header-row">
           <div className="header-brand">{t.growTitle}</div>
           <div className="header-actions">
-            <LangToggle variant="inline" />
-            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
+            <LangToggle variant="inline" />
           </div>
         </div>
       </div>
