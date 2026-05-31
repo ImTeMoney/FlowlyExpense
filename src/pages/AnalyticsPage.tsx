@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
     setEditRecAmount(String(r.amount));
     setEditRecDay(String(r.dayOfMonth));
     setEditRecCat(r.categoryId);
-    setEditRecPm(r.paymentMethod ?? '');
+    setEditRecPm((r.paymentMethod && (PAYMENT_METHODS as string[]).includes(r.paymentMethod)) ? r.paymentMethod : '');
   }
 
   function saveEditRec() {
