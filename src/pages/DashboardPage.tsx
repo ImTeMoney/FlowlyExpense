@@ -115,6 +115,7 @@ export default function DashboardPage() {
   const [isRecurring, setIsRecurring]         = useState(false);
   const [showNote, setShowNote]               = useState(false);
   const [showAdvanced, setShowAdvanced]       = useState(false);
+  const advancedRef                           = useRef<HTMLDivElement>(null);
   const [collapsedDays, setCollapsedDays]     = useState<Set<string>>(new Set());
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
@@ -1336,11 +1337,16 @@ export default function DashboardPage() {
 
               {/* Advanced options — split + installments */}
               {!isIncome && (
-              <div className="payment-opts-section">
+              <div className="payment-opts-section" ref={advancedRef}>
                 <button
                   className="modal-advanced-toggle"
                   type="button"
-                  onClick={() => setShowAdvanced(v => !v)}
+                  onClick={() => {
+                    setShowAdvanced(v => {
+                      if (!v) setTimeout(() => advancedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 60);
+                      return !v;
+                    });
+                  }}
                 >
                   <ChevronDown size={14} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                   <span>{lang === 'he' ? 'אפשרויות מתקדמות' : 'Advanced options'}</span>

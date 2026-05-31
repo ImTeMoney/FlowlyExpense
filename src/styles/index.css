@@ -849,7 +849,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .amount-input[type=number] { -moz-appearance: textfield; }
 
 /* Form fields */
-.field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
+.field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; padding-bottom: 16px; }
 .form-row-2  { display: flex; gap: 8px; }
 
 .aether-select,
