@@ -3181,7 +3181,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex-direction: column;
   align-items: center;
   padding: 0 24px;
-  overflow: hidden;
 }
 
 /* ── Aurora animated background ── */
