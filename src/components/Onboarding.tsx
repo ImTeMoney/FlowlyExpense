@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
 import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
-import { FlagIL, FlagUS } from './Flags';
+import LangToggle from './LangToggle';
 
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
@@ -205,18 +205,7 @@ export default function Onboarding({ onDone }: Props) {
   const [income, setIncome]           = useState('');
   const [incomeDay, setIncomeDay]     = useState('1');
   const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
-  const [langOpen, setLangOpen]       = useState(false);
-  const langRef                       = useRef<HTMLDivElement>(null);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
-
-  useEffect(() => {
-    if (!langOpen) return;
-    function onOutside(e: MouseEvent) {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
-    }
-    document.addEventListener('mousedown', onOutside);
-    return () => document.removeEventListener('mousedown', onOutside);
-  }, [langOpen]);
 
   function advance() { setStep(s => s + 1); }
 
@@ -313,30 +302,8 @@ export default function Onboarding({ onDone }: Props) {
         {progressBar}
         {themeBtn}
 
-        {/* Language toggle — top-right dropdown */}
-        <div ref={langRef} className="ob-lang-wrap">
-          <button className="ob-lang-toggle" onClick={() => setLangOpen(v => !v)}>
-            {he ? <FlagIL size={20}/> : <FlagUS size={20}/>}
-            <span>{he ? 'עברית' : 'EN'}</span>
-            <ChevronDown size={12} style={{ opacity: 0.7, transition: 'transform 0.18s', transform: langOpen ? 'rotate(180deg)' : 'none' }} />
-          </button>
-          {langOpen && (
-            <div className="ob-lang-dropdown">
-              <button
-                className={`ob-lang-option${!he ? ' active' : ''}`}
-                onClick={() => { if (he) toggleLang(); setLangOpen(false); }}
-              >
-                <FlagUS size={20}/><span>English</span>
-              </button>
-              <button
-                className={`ob-lang-option${he ? ' active' : ''}`}
-                onClick={() => { if (!he) toggleLang(); setLangOpen(false); }}
-              >
-                <FlagIL size={20}/><span>עברית</span>
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Language toggle */}
+        <LangToggle variant="floating" />
 
         <div className="ob-screen ob-screen-visual" key={0}>
           {/* App preview */}

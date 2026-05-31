@@ -7,6 +7,7 @@ import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import LangToggle from '../components/LangToggle';
 import {
   DndContext,
   closestCenter,
@@ -302,9 +303,7 @@ const SettingsPage: React.FC = () => {
                 : <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
               }
             </button>
-            <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
-              {lang === 'he' ? 'EN' : 'עב'}
-            </button>
+            <LangToggle variant="inline" />
             <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>

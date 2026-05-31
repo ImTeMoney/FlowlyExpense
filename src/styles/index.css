@@ -3406,6 +3406,50 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   white-space: nowrap;
 }
 .ob-lang-toggle:hover { background: rgba(255,255,255,0.20); }
+
+/* ── Shared language toggle (LangToggle component) ── */
+.lang-toggle-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.13);
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: var(--r-full);
+  padding: 8px 14px;
+  font-size: 14px; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.22), 0 2px 10px rgba(0,0,0,0.15);
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.lang-toggle-pill:hover { background: rgba(255,255,255,0.20); }
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  min-width: 165px;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  z-index: 300;
+}
+.lang-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+  font-size: 15px; font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  background: none; border: none; width: 100%;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.lang-option + .lang-option { border-top: 1px solid var(--glass-border); }
+.lang-option:hover { background: var(--bg-input); }
+.lang-option.active { background: rgba(139,92,246,0.12); }
+
 .ob-lang-dropdown, .dash-lang-dropdown {
   position: absolute;
   top: calc(100% + 6px);
