@@ -654,7 +654,7 @@ export default function DashboardPage() {
           </div>
           <div className="header-actions">
             <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
-              {lang === 'he' ? 'EN' : 'עב'}
+              {lang === 'he' ? '🇮🇱' : '🇬🇧'}
             </button>
             <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
