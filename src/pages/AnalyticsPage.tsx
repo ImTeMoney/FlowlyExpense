@@ -785,7 +785,7 @@ export default function AnalyticsPage() {
                   className="set-input"
                   value={editRecCat}
                   onChange={e => setEditRecCat(e.target.value)}
-                  style={{ textAlign: 'right' }}
+                  style={{ textAlign: 'right', width: '100%', direction: 'rtl' }}
                 >
                   {categories.map(c => (
                     <option key={c.id} value={c.id}>{catName(c.id, c.name, c.isRenamed)}</option>
@@ -797,7 +797,7 @@ export default function AnalyticsPage() {
                   className="set-input"
                   value={editRecPm}
                   onChange={e => setEditRecPm(e.target.value as PaymentMethod)}
-                  style={{ textAlign: 'right' }}
+                  style={{ textAlign: 'right', width: '100%', direction: 'rtl' }}
                 >
                   <option value="">{lang === 'he' ? '— אמצעי תשלום —' : '— Payment method —'}</option>
                   {PAYMENT_METHODS.map(pm => (
