@@ -13,24 +13,31 @@ export function FlagIL({ size = 20 }: { size?: number }) {
   );
 }
 
-export function FlagGB({ size = 20 }: { size?: number }) {
-  const h = Math.round(size * 0.5);
+export function FlagUS({ size = 20 }: { size?: number }) {
+  const h = Math.round(size * 30 / 57);
+  // 13 stripes, canton covers top-left 2/5 width × 7 stripes height
+  const stripeH = 30 / 13;
+  const cantonW = 57 * 0.4;
+  const cantonH = stripeH * 7;
+  const stripes = Array.from({ length: 13 }, (_, i) => i);
   return (
-    <svg width={size} height={h} viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg"
+    <svg width={size} height={h} viewBox="0 0 57 30" xmlns="http://www.w3.org/2000/svg"
       style={{ display: 'block', borderRadius: 2, flexShrink: 0 }}>
-      <rect width="60" height="30" fill="#012169"/>
-      {/* White diagonals */}
-      <line x1="0" y1="0"  x2="60" y2="30" stroke="#fff" strokeWidth="7"/>
-      <line x1="60" y1="0" x2="0"  y2="30" stroke="#fff" strokeWidth="7"/>
-      {/* Red diagonals (offset for St Patrick's cross) */}
-      <line x1="0" y1="0"  x2="60" y2="30" stroke="#C8102E" strokeWidth="4"/>
-      <line x1="60" y1="0" x2="0"  y2="30" stroke="#C8102E" strokeWidth="4"/>
-      {/* White St George cross */}
-      <rect x="25" y="0"  width="10" height="30" fill="#fff"/>
-      <rect x="0"  y="10" width="60" height="10" fill="#fff"/>
-      {/* Red St George cross */}
-      <rect x="27" y="0"  width="6"  height="30" fill="#C8102E"/>
-      <rect x="0"  y="12" width="60" height="6"  fill="#C8102E"/>
+      {/* Red background (all odd stripes) */}
+      <rect width="57" height="30" fill="#B22234"/>
+      {/* White even stripes */}
+      {stripes.filter(i => i % 2 === 1).map(i => (
+        <rect key={i} x="0" y={i * stripeH} width="57" height={stripeH} fill="#fff"/>
+      ))}
+      {/* Blue canton */}
+      <rect x="0" y="0" width={cantonW} height={cantonH} fill="#3C3B6E"/>
+      {/* Stars — 5×3 simplified grid in canton */}
+      {[0,1,2,3,4].map(col => [0,1,2].map(row => (
+        <circle key={`${col}-${row}`}
+          cx={cantonW * (col + 0.5) / 5}
+          cy={cantonH * (row + 0.5) / 3}
+          r={0.9} fill="#fff"/>
+      )))}
     </svg>
   );
 }
