@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon } from 'lucide-react';
+import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
@@ -203,7 +203,18 @@ export default function Onboarding({ onDone }: Props) {
   const [income, setIncome]           = useState('');
   const [incomeDay, setIncomeDay]     = useState('1');
   const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
+  const [langOpen, setLangOpen]       = useState(false);
+  const langRef                       = useRef<HTMLDivElement>(null);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
+
+  useEffect(() => {
+    if (!langOpen) return;
+    function onOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+    }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [langOpen]);
 
   function advance() { setStep(s => s + 1); }
 
@@ -300,10 +311,30 @@ export default function Onboarding({ onDone }: Props) {
         {progressBar}
         {themeBtn}
 
-        {/* Language toggle — top-right glass pill */}
-        <button className="ob-lang-toggle" onClick={toggleLang}>
-          {he ? 'English' : 'עברית'}
-        </button>
+        {/* Language toggle — top-right dropdown */}
+        <div ref={langRef} className="ob-lang-wrap">
+          <button className="ob-lang-toggle" onClick={() => setLangOpen(v => !v)}>
+            <span>{he ? '🇮🇱' : '🇬🇧'}</span>
+            <span>{he ? 'עברית' : 'EN'}</span>
+            <ChevronDown size={12} style={{ opacity: 0.7, transition: 'transform 0.18s', transform: langOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+          {langOpen && (
+            <div className="ob-lang-dropdown">
+              <button
+                className={`ob-lang-option${!he ? ' active' : ''}`}
+                onClick={() => { if (he) toggleLang(); setLangOpen(false); }}
+              >
+                <span>🇬🇧</span> English
+              </button>
+              <button
+                className={`ob-lang-option${he ? ' active' : ''}`}
+                onClick={() => { if (!he) toggleLang(); setLangOpen(false); }}
+              >
+                <span>🇮🇱</span> עברית
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="ob-screen ob-screen-visual" key={0}>
           {/* App preview */}
@@ -565,6 +596,20 @@ export default function Onboarding({ onDone }: Props) {
 
   // ── Step 4: Add to home screen ────────────────────────────────────────────
 
+  const installSteps = he
+    ? [
+        { icon: <Share2 size={18} />,      text: 'לחץ על כפתור השיתוף' },
+        { icon: <ChevronDown size={18} />, text: 'גלול למטה בתפריט' },
+        { icon: <Home size={18} />,        text: 'לחץ על "הוסף למסך הבית"' },
+        { icon: <Check size={18} />,       text: 'לחץ "הוסף" לאישור' },
+      ]
+    : [
+        { icon: <Share2 size={18} />,      text: 'Tap the Share button' },
+        { icon: <ChevronDown size={18} />, text: 'Scroll down in the menu' },
+        { icon: <Home size={18} />,        text: 'Tap "Add to Home Screen"' },
+        { icon: <Check size={18} />,       text: 'Tap "Add" to confirm' },
+      ];
+
   return (
     <div className="ob-overlay" dir={dir}>
       {aurora}
@@ -574,13 +619,13 @@ export default function Onboarding({ onDone }: Props) {
         <div className="ob-install-icon-ring">
           <img src="/icon-192.png" className="ob-install-app-icon" alt="Flowly" />
         </div>
-        <h1 className="ob-title ob-title-grad">
-          {he ? 'הוסף למסך הבית' : 'Add to Home Screen'}
-        </h1>
-        <p className="ob-sub">
+        <h1 className="ob-install-title">
           {he
-            ? 'גישה ישירה ממסך הבית — בלי לפתוח דפדפן, בלי לחפש.'
-            : 'One tap from your home screen — no browser, no searching.'}
+            ? <>{`הוסף את `}<span className="ob-install-brand">Flowly</span>{` למסך הבית`}</>
+            : <>{'Add '}<span className="ob-install-brand">Flowly</span>{' to Home Screen'}</>}
+        </h1>
+        <p className="ob-install-subtitle">
+          {he ? '4 שלבים פשוטים' : '4 simple steps'}
         </p>
 
         {canPrompt && (
@@ -590,22 +635,15 @@ export default function Onboarding({ onDone }: Props) {
           </button>
         )}
 
-        {isIOSSafari && (
-          <div className="ob-ios-guide" dir={he ? 'rtl' : 'ltr'}>
-            <div className="ob-ios-step">
-              <span className="ob-ios-step-num">1</span>
-              <div className="ob-ios-step-body">
-                {he ? 'לחץ על ' : 'Tap '}
-                <span className="ob-ios-share-chip"><Share2 size={13} /></span>
-                {he ? ' בתחתית Safari' : " in Safari's toolbar"}
+        {!canPrompt && (
+          <div className="ob-install-steps">
+            {installSteps.map((s, i) => (
+              <div key={i} className="ob-install-step">
+                <div className="ob-install-step-icon">{s.icon}</div>
+                <div className="ob-install-step-text">{s.text}</div>
+                <div className="ob-install-step-num">{i + 1}</div>
               </div>
-            </div>
-            <div className="ob-ios-step">
-              <span className="ob-ios-step-num">2</span>
-              <span className="ob-ios-step-body">
-                {he ? 'גלול ובחר "הוסף למסך הבית"' : 'Scroll and tap "Add to Home Screen"'}
-              </span>
-            </div>
+            ))}
           </div>
         )}
       </div>
