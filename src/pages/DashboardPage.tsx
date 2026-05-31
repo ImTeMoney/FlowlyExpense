@@ -673,10 +673,10 @@ export default function DashboardPage() {
               {langOpen && (
                 <div className="dash-lang-dropdown">
                   <button className={`ob-lang-option${lang !== 'he' ? ' active' : ''}`} onClick={() => { if (lang === 'he') toggleLang(); setLangOpen(false); }}>
-                    <span>English</span><FlagUS size={20}/>
+                    <FlagUS size={20}/><span>English</span>
                   </button>
                   <button className={`ob-lang-option${lang === 'he' ? ' active' : ''}`} onClick={() => { if (lang !== 'he') toggleLang(); setLangOpen(false); }}>
-                    <span>עברית</span><FlagIL size={20}/>
+                    <FlagIL size={20}/><span>עברית</span>
                   </button>
                 </div>
               )}

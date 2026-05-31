@@ -326,13 +326,13 @@ export default function Onboarding({ onDone }: Props) {
                 className={`ob-lang-option${!he ? ' active' : ''}`}
                 onClick={() => { if (he) toggleLang(); setLangOpen(false); }}
               >
-                <span>English</span><FlagUS size={20}/>
+                <FlagUS size={20}/><span>English</span>
               </button>
               <button
                 className={`ob-lang-option${he ? ' active' : ''}`}
                 onClick={() => { if (!he) toggleLang(); setLangOpen(false); }}
               >
-                <span>עברית</span><FlagIL size={20}/>
+                <FlagIL size={20}/><span>עברית</span>
               </button>
             </div>
           )}

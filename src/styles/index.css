@@ -326,18 +326,6 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .dash-lang-wrap {
   position: relative;
 }
-.dash-lang-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  inset-inline-start: 0;
-  min-width: 150px;
-  background: var(--bg-card);
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  z-index: 200;
-}
 
 /* =====================================================
    SMART STATUS CARD
@@ -3431,24 +3419,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   z-index: 200;
 }
 .ob-lang-option {
-  direction: ltr;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 15px 20px;
-  font-size: 16px; font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+  font-size: 15px; font-weight: 500;
   color: var(--text);
   cursor: pointer;
   background: none; border: none; width: 100%;
+  white-space: nowrap;
   transition: background 0.12s;
 }
 .ob-lang-option + .ob-lang-option { border-top: 1px solid var(--glass-border); }
 .ob-lang-option:hover { background: var(--bg-input); }
 .ob-lang-option.active { background: rgba(139,92,246,0.12); }
-.lang-flag {
-  font-family: 'Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji', 'Twemoji Mozilla', sans-serif;
-  font-size: 22px;
-  line-height: 1;
-  display: block;
-}
 
 .ob-theme-toggle {
   position: absolute;
