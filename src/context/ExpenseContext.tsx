@@ -446,10 +446,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const currentDay = today.getDate();
+    const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const toPost = recurringExpenses.filter(r => {
       if (r.lastPostedMonth === currentMonthStr) return false;
-      if (currentDay < r.dayOfMonth) return false;
       if (r.totalInstallments && (r.postedCount ?? 0) >= r.totalInstallments) return false;
       return true;
     });
@@ -458,7 +457,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       id:            generateId(),
       amount:        r.amount,
       categoryId:    r.categoryId,
-      date:          `${currentMonthStr}-${String(r.dayOfMonth).padStart(2, '0')}`,
+      date:          `${currentMonthStr}-${String(Math.min(r.dayOfMonth, daysInCurrentMonth)).padStart(2, '0')}`,
       description:   `(קבועה) ${r.description}`,
       isIncome:      r.isIncome,
       paymentMethod: r.paymentMethod,
