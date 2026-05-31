@@ -113,6 +113,8 @@ export default function DashboardPage() {
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
   const [isRecurring, setIsRecurring]         = useState(false);
+  const [showNote, setShowNote]               = useState(false);
+  const [showAdvanced, setShowAdvanced]       = useState(false);
   const [collapsedDays, setCollapsedDays]     = useState<Set<string>>(new Set());
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
@@ -379,6 +381,8 @@ export default function DashboardPage() {
     setSplitEnabled(false);
     setNumInstallments(3);
     setIsRecurring(false);
+    setShowNote(false);
+    setShowAdvanced(false);
     setPasteText('');
     setShowPaste(false);
     setVoiceError('');
@@ -397,6 +401,8 @@ export default function DashboardPage() {
       ? tx.description.slice('(קבועה) '.length)
       : tx.description;
     setDesc(cleanDesc);
+    setShowNote(!!cleanDesc);
+    setShowAdvanced(false);
     setDate(tx.date);
     setCatId(tx.categoryId);
     setTxCurrency(tx.currency ?? mainCurrency);
@@ -1105,7 +1111,6 @@ export default function DashboardPage() {
                 onChange={e => setAmount(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}
                 inputMode="decimal"
-                autoFocus
               />
             </div>
 
@@ -1167,19 +1172,32 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Description — close to Category so merchant/item name flows naturally */}
-              <input
-                type="text"
-                className="aether-input"
-                placeholder={t.descOptional}
-                value={desc}
-                maxLength={200}
-                onChange={e => setDesc(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              />
-
               {/* Step: Date */}
               <DatePicker value={date} onChange={setDate} />
+
+              {/* Description — collapsed by default */}
+              {!showNote ? (
+                <button className="modal-add-note-btn" type="button" onClick={() => setShowNote(true)}>
+                  <Plus size={13} />
+                  <span>{lang === 'he' ? '+ הוסף הערה' : '+ Add note'}</span>
+                </button>
+              ) : (
+                <div className="modal-note-wrap">
+                  <input
+                    type="text"
+                    className="aether-input"
+                    placeholder={t.descOptional}
+                    value={desc}
+                    maxLength={200}
+                    autoFocus
+                    onChange={e => setDesc(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                  />
+                  <button type="button" className="modal-note-close" onClick={() => { setShowNote(false); setDesc(''); }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
 
               {/* Step: Payment method */}
               <div className="pm-section">
@@ -1290,10 +1308,44 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Payment options — inside field-group so they scroll with content */}
+              {/* Recurring expense — always visible */}
+              {!isIncome && !splitEnabled && (
+                <div className={`adv-card adv-card--green${isRecurring ? ' adv-card-active' : ''}`}>
+                  <button
+                    className="adv-card-header"
+                    type="button"
+                    onClick={() => setIsRecurring(s => !s)}
+                  >
+                    <div className="adv-card-icon adv-card-icon--green"><Repeat size={15} /></div>
+                    <div className="adv-card-text">
+                      <div className="adv-card-title">{lang === 'he' ? 'הוצאה קבועה' : 'Recurring expense'}</div>
+                      <div className="adv-card-sub">
+                        {isRecurring
+                          ? (lang === 'he'
+                              ? `חוזר ב-${parseInt(date.split('-')[2])} לכל חודש`
+                              : `Repeats on day ${parseInt(date.split('-')[2])} every month`)
+                          : (lang === 'he'
+                              ? 'חוזר על עצמו כל חודש באותו תאריך'
+                              : 'Repeats monthly on the same date')}
+                      </div>
+                    </div>
+                    <div className={`adv-card-toggle adv-card-toggle--green${isRecurring ? ' on' : ''}`} />
+                  </button>
+                </div>
+              )}
+
+              {/* Advanced options — split + installments */}
               {!isIncome && (
               <div className="payment-opts-section">
-                <div className="payment-opts-label">{t.paymentOptions}</div>
+                <button
+                  className="modal-advanced-toggle"
+                  type="button"
+                  onClick={() => setShowAdvanced(v => !v)}
+                >
+                  <ChevronDown size={14} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <span>{lang === 'he' ? 'אפשרויות מתקדמות' : 'Advanced options'}</span>
+                </button>
+                {showAdvanced && <>
 
                 {/* Split Payment card */}
                 <div className={`adv-card adv-card--blue${pmSplitEnabled ? ' adv-card-active' : ''}`}>
@@ -1437,32 +1489,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Recurring expense card */}
-                {!splitEnabled && (
-                  <div className={`adv-card adv-card--green${isRecurring ? ' adv-card-active' : ''}`}>
-                    <button
-                      className="adv-card-header"
-                      type="button"
-                      onClick={() => setIsRecurring(s => !s)}
-                    >
-                      <div className="adv-card-icon adv-card-icon--green"><Repeat size={15} /></div>
-                      <div className="adv-card-text">
-                        <div className="adv-card-title">{lang === 'he' ? 'הוצאה קבועה' : 'Recurring expense'}</div>
-                        <div className="adv-card-sub">
-                          {isRecurring
-                            ? (lang === 'he'
-                                ? `חוזר ב-${parseInt(date.split('-')[2])} לכל חודש`
-                                : `Repeats on day ${parseInt(date.split('-')[2])} every month`)
-                            : (lang === 'he'
-                                ? 'חוזר על עצמו כל חודש באותו תאריך'
-                                : 'Repeats monthly on the same date')}
-                        </div>
-                      </div>
-                      <div className={`adv-card-toggle adv-card-toggle--green${isRecurring ? ' on' : ''}`} />
-                    </button>
-                  </div>
-                )}
+                </>}
 
               </div>
               )}

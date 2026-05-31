@@ -4723,6 +4723,30 @@ button:focus-visible, input:focus-visible, select:focus-visible {
    PAYMENT OPTIONS SECTION — groups Split + Installments
    ===================================================== */
 
+.modal-add-note-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; padding: 2px 0;
+  font-size: 13px; color: var(--text-muted);
+  cursor: pointer; transition: color 0.15s;
+}
+.modal-add-note-btn:hover { color: var(--purple); }
+.modal-note-wrap {
+  display: flex; align-items: center; gap: 8px;
+}
+.modal-note-wrap .aether-input { flex: 1; }
+.modal-note-close {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 4px; flex-shrink: 0; display: flex;
+}
+.modal-advanced-toggle {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 10px 0 4px;
+  background: none; border: none; border-top: 1px solid var(--glass-border);
+  font-size: 13px; color: var(--text-muted);
+  cursor: pointer; transition: color 0.15s;
+}
+.modal-advanced-toggle:hover { color: var(--text); }
+
 .payment-opts-section {
   display: flex;
   flex-direction: column;
