@@ -1043,7 +1043,6 @@ export default function DashboardPage() {
                 Chrome/Android: mic button also triggers Web Speech API. */}
             <div className="voice-field-row">
               <div className={`voice-field-wrap${showPaste ? ' listening' : ''}`}>
-                <Mic size={15} className="voice-field-icon" />
                 <input
                   type="text"
                   className="voice-field-input"
