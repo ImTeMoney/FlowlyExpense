@@ -18,25 +18,25 @@
   --success:     #30D158;
   --success-dim: rgba(48,209,88,0.12);
 
-  /* Dark mode: deep cool navy — calm, not purple-black */
-  --bg:           #1C2035;
-  --bg-raised:    #232840;
-  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.05) 100%);
-  --bg-sticky:    rgba(28,32,53,0.88);
-  --bg-input:     rgba(255, 255, 255, 0.09);
-  --glass-border: rgba(255, 255, 255, 0.16);
-  --glass-hi:     rgba(255, 255, 255, 0.26);
-  --text:         #FFFFFF;
-  --text-secondary: rgba(235,235,245,0.72);
-  --text-muted:   rgba(235,235,245,0.48);
-  --text-dim:     rgba(235,235,245,0.26);
-  --nav-bg:       rgba(22, 26, 46, 0.68);
-  --header-bg:    rgba(20, 24, 44, 0.62);
-  --modal-bg:     rgba(24, 28, 50, 0.92);
-  --scrollbar:    rgba(255,255,255,0.08);
-  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(0,0,0,0.12);
-  --glass-inset-sm: inset 0 1.5px 0 rgba(255,255,255,0.18);
-  --glass-shadow: 0 4px 20px rgba(0,0,0,0.28), 0 1px 4px rgba(0,0,0,0.14);
+  /* Dark mode: warm charcoal — comfortable, not cold navy */
+  --bg:           #16161F;
+  --bg-raised:    #1E1E2A;
+  --bg-card:      linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+  --bg-sticky:    rgba(22,22,31,0.90);
+  --bg-input:     rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-hi:     rgba(255, 255, 255, 0.20);
+  --text:         #F0F0F5;
+  --text-secondary: rgba(230,230,242,0.72);
+  --text-muted:   rgba(200,200,220,0.48);
+  --text-dim:     rgba(200,200,220,0.28);
+  --nav-bg:       rgba(18,18,26,0.80);
+  --header-bg:    rgba(18,18,26,0.75);
+  --modal-bg:     rgba(16,16,24,0.96);
+  --scrollbar:    rgba(255,255,255,0.07);
+  --glass-inset:  inset 0 1.5px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.18);
+  --glass-inset-sm: inset 0 1px 0 rgba(255,255,255,0.12);
+  --glass-shadow: 0 4px 24px rgba(0,0,0,0.40), 0 1px 4px rgba(0,0,0,0.20);
   --bg-primary:   var(--bg);
   --glass-bg:     var(--bg-card);
 
@@ -249,6 +249,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.header-row > div {
+  text-align: center;
 }
 
 .header-brand {

@@ -650,16 +650,14 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="aether-header">
         <div className="header-row">
+          <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <div>
             <div className="header-brand">Flowly</div>
             <div className="header-month">{todayFullLabel()}</div>
           </div>
-          <div className="header-actions">
-            <LangToggle variant="inline" />
-            <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          </div>
+          <LangToggle variant="inline" />
         </div>
       </div>
 
