@@ -284,25 +284,6 @@ const SettingsPage: React.FC = () => {
         <div className="header-row">
           <div className="header-brand">{t.settings}</div>
           <div className="header-actions">
-            <button
-              className="icon-btn"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              aria-label={lang === 'he' ? 'בדוק עדכונים' : 'Check for updates'}
-              title={
-                isRefreshing
-                  ? (lang === 'he' ? 'בודק…' : 'Checking…')
-                  : updateCheck === 'ok'
-                  ? (lang === 'he' ? 'האפליקציה מעודכנת' : 'App is up to date')
-                  : (lang === 'he' ? 'בדוק עדכונים' : 'Check for updates')
-              }
-              style={updateCheck === 'ok' ? { color: '#22C55E' } : undefined}
-            >
-              {updateCheck === 'ok'
-                ? <CheckCircle size={16} />
-                : <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
-              }
-            </button>
             <LangToggle variant="inline" />
             <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
