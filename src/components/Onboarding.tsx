@@ -4,6 +4,7 @@ import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
 import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
+import { FlagIL, FlagGB } from './Flags';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -314,7 +315,7 @@ export default function Onboarding({ onDone }: Props) {
         {/* Language toggle — top-right dropdown */}
         <div ref={langRef} className="ob-lang-wrap">
           <button className="ob-lang-toggle" onClick={() => setLangOpen(v => !v)}>
-            <span>{he ? '🇮🇱' : '🇬🇧'}</span>
+            {he ? <FlagIL size={20} /> : <FlagGB size={20} />}
             <span>{he ? 'עברית' : 'EN'}</span>
             <ChevronDown size={12} style={{ opacity: 0.7, transition: 'transform 0.18s', transform: langOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
@@ -324,13 +325,13 @@ export default function Onboarding({ onDone }: Props) {
                 className={`ob-lang-option${!he ? ' active' : ''}`}
                 onClick={() => { if (he) toggleLang(); setLangOpen(false); }}
               >
-                <span>🇬🇧</span> English
+                <FlagGB size={20} /> English
               </button>
               <button
                 className={`ob-lang-option${he ? ' active' : ''}`}
                 onClick={() => { if (!he) toggleLang(); setLangOpen(false); }}
               >
-                <span>🇮🇱</span> עברית
+                <FlagIL size={20} /> עברית
               </button>
             </div>
           )}

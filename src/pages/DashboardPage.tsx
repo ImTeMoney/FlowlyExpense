@@ -8,6 +8,7 @@ import {
   Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
+import { FlagIL, FlagGB } from '../components/Flags';
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -666,15 +667,15 @@ export default function DashboardPage() {
           <div className="header-actions">
             <div ref={langRef} className="dash-lang-wrap">
               <button className="icon-btn lang-btn" onClick={() => setLangOpen(v => !v)} aria-label="Toggle language">
-                {lang === 'he' ? '🇮🇱' : '🇬🇧'}
+                {lang === 'he' ? <FlagIL size={22} /> : <FlagGB size={22} />}
               </button>
               {langOpen && (
                 <div className="dash-lang-dropdown">
                   <button className={`ob-lang-option${lang !== 'he' ? ' active' : ''}`} onClick={() => { if (lang === 'he') toggleLang(); setLangOpen(false); }}>
-                    <span>🇬🇧</span> English
+                    <FlagGB size={20} /> English
                   </button>
                   <button className={`ob-lang-option${lang === 'he' ? ' active' : ''}`} onClick={() => { if (lang !== 'he') toggleLang(); setLangOpen(false); }}>
-                    <span>🇮🇱</span> עברית
+                    <FlagIL size={20} /> עברית
                   </button>
                 </div>
               )}
