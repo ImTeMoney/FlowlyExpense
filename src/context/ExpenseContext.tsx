@@ -3,7 +3,7 @@ import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'check' | 'transfer' | 'bit' | 'applepay' | 'standing_order';
+export type PaymentMethod = 'cash' | 'credit' | 'check' | 'transfer' | 'bit';
 export type MoneyMode = 'savings_based' | 'budget_based';
 
 export type CategoryBudgets = Record<string, number>; // catId → monthly budget amount
@@ -36,7 +36,7 @@ export interface StreakData {
 }
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
-  'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'standing_order',
+  'cash', 'credit', 'check', 'transfer', 'bit',
 ];
 
 /** One leg of a split payment — method + amount for that leg. */

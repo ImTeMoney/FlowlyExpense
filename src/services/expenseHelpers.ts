@@ -161,7 +161,6 @@ export function parseExpenseText(raw: string): ParsedExpenseText {
   else if (/\bcash\b|מזומן/.test(lower))                                    result.payMethod = 'cash';
   else if (/credit|אשראי|ויזה|mastercard|visa|diners/i.test(lower))         result.payMethod = 'credit';
   else if (/paypal|transfer|העברה|bank\s*transfer/i.test(lower))            result.payMethod = 'transfer';
-  else if (/debit|דביט/i.test(lower))                                       result.payMethod = 'debit';
 
   return result;
 }

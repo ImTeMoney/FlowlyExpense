@@ -4,8 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
-  Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, Apple,
-  Wallet, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
+  Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone,
+  GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import LangToggle from '../components/LangToggle';
@@ -53,20 +53,16 @@ const URGENCY_BAR: Record<Urgency, string> = {
 
 // ── Payment method icons ────────────────────────────────────────
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
-  cash:          Banknote,
-  credit:        CreditCard,
-  debit:         Wallet,
-  check:         FileCheck,
-  transfer:      Landmark,
-  bit:           Smartphone,
-  applepay:      Apple,
-  standing_order: Repeat,
+  cash:     Banknote,
+  credit:   CreditCard,
+  check:    FileCheck,
+  transfer: Landmark,
+  bit:      Smartphone,
 };
 
 const PM_COLOR: Record<string, string> = {
-  cash: '#22C55E', credit: '#8B5CF6', debit: '#3B82F6',
-  check: '#F59E0B', transfer: '#0EA5E9', bit: '#06B6D4', applepay: '#A78BFA',
-  standing_order: '#F97316',
+  cash: '#22C55E', credit: '#8B5CF6',
+  check: '#F59E0B', transfer: '#0EA5E9', bit: '#06B6D4',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -270,12 +266,12 @@ export default function DashboardPage() {
 
     if (pMethod) {
       const methodMap: Record<string, PaymentMethod> = {
-        applepay: 'applepay', apple: 'applepay',
+        applepay: 'credit', apple: 'credit',
         googlepay: 'transfer', google: 'transfer',
         card: 'credit', credit: 'credit',
         cash: 'cash', bit: 'bit',
-        debit: 'debit', transfer: 'transfer',
-        check: 'check', standing_order: 'standing_order',
+        debit: 'credit', transfer: 'transfer',
+        check: 'check', standing_order: 'transfer',
       };
       const mapped = methodMap[pMethod.toLowerCase()];
       if (mapped) setPayMethod(mapped);
@@ -1244,7 +1240,7 @@ export default function DashboardPage() {
                         <button
                           key={pm}
                           className={`pm-chip${selected ? ' selected' : ''}`}
-                          onClick={() => { setPayMethod(pm); if (pm !== 'credit' && pm !== 'debit') setSelectedCardId(undefined); }}
+                          onClick={() => { setPayMethod(pm); if (pm !== 'credit') setSelectedCardId(undefined); }}
                           style={selected ? {
                             borderColor: PM_COLOR[pm],
                             borderWidth: 2,
@@ -1260,7 +1256,7 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {(payMethod === 'credit' || payMethod === 'debit') && cards.length > 0 && !pmSplitEnabled && (
+                {payMethod === 'credit' && cards.length > 0 && !pmSplitEnabled && (
                   <div className="card-picker">
                     <button
                       className={`card-chip${!selectedCardId ? ' selected' : ''}`}

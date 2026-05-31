@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, Wallet, FileCheck, Landmark, Smartphone, Apple, Repeat, ArrowLeftRight } from 'lucide-react';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, FileCheck, Landmark, Smartphone, ArrowLeftRight } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct, resolvePaymentSplits, CreditCard as CreditCardType } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { resolveCatIcon } from '../components/CategoryPicker';
@@ -101,12 +101,12 @@ export default function AnalyticsPage() {
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
 
   const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
-    cash: Banknote, credit: CreditCard, debit: Wallet, check: FileCheck,
-    transfer: Landmark, bit: Smartphone, applepay: Apple, standing_order: Repeat,
+    cash: Banknote, credit: CreditCard, check: FileCheck,
+    transfer: Landmark, bit: Smartphone,
   };
   const PM_COLOR: Record<string, string> = {
-    cash: '#22C55E', credit: '#8B5CF6', debit: '#3B82F6', check: '#F59E0B',
-    transfer: '#0EA5E9', bit: '#06B6D4', applepay: '#A78BFA', standing_order: '#F97316',
+    cash: '#22C55E', credit: '#8B5CF6', check: '#F59E0B',
+    transfer: '#0EA5E9', bit: '#06B6D4',
   };
 
   const pmTotals = useMemo(() => {
