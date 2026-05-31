@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import { FlagIL, FlagUS } from '../components/Flags';
+
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
@@ -666,22 +667,22 @@ export default function DashboardPage() {
           </div>
           <div className="header-actions">
             <div ref={langRef} className="dash-lang-wrap">
-              <button className="icon-btn lang-btn" onClick={() => setLangOpen(v => !v)} aria-label="Toggle language">
-                <span className="lang-flag">{lang === 'he' ? '🇮🇱' : '🇺🇸'}</span>
+              <button className="header-naked-btn lang-btn" onClick={() => setLangOpen(v => !v)} aria-label="Toggle language">
+                {lang === 'he' ? <FlagIL size={24}/> : <FlagUS size={24}/>}
               </button>
               {langOpen && (
                 <div className="dash-lang-dropdown">
                   <button className={`ob-lang-option${lang !== 'he' ? ' active' : ''}`} onClick={() => { if (lang === 'he') toggleLang(); setLangOpen(false); }}>
-                    <span>English</span><span className="lang-flag">🇺🇸</span>
+                    <span>English</span><FlagUS size={20}/>
                   </button>
                   <button className={`ob-lang-option${lang === 'he' ? ' active' : ''}`} onClick={() => { if (lang !== 'he') toggleLang(); setLangOpen(false); }}>
-                    <span>עברית</span><span className="lang-flag">🇮🇱</span>
+                    <span>עברית</span><FlagIL size={20}/>
                   </button>
                 </div>
               )}
             </div>
-            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
         </div>
