@@ -3381,11 +3381,17 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 /* ── Language toggle pill (top-right, step 0) ── */
-.ob-lang-wrap {
+.ob-header-actions {
   position: absolute;
   top: max(52px, calc(env(safe-area-inset-top) + 12px));
-  inset-inline-start: 20px;
+  inset-inline-end: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   z-index: 100;
+}
+.ob-lang-wrap {
+  position: relative;
 }
 .ob-lang-toggle {
   background: rgba(255,255,255,0.13);
@@ -3472,16 +3478,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-lang-option.active { background: rgba(139,92,246,0.12); }
 
 .ob-theme-toggle {
-  position: absolute;
-  top: max(52px, calc(env(safe-area-inset-top) + 12px));
-  inset-inline-end: 20px;
   background: none;
   border: none;
   box-shadow: none;
   padding: 4px;
   color: var(--text);
   cursor: pointer;
-  z-index: 10;
   transition: opacity 0.18s;
   display: flex; align-items: center; justify-content: center;
 }

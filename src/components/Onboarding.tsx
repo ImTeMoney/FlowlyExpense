@@ -270,15 +270,18 @@ export default function Onboarding({ onDone }: Props) {
     </div>
   );
 
-  // ── Theme toggle ─────────────────────────────────────────────────────────
-  const themeBtn = (
-    <button
-      className="ob-theme-toggle"
-      onClick={toggleTheme}
-      aria-label={theme === 'dark' ? (he ? 'מצב בהיר' : 'Light mode') : (he ? 'מצב כהה' : 'Dark mode')}
-    >
-      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
+  // ── Header actions (theme + lang grouped) ────────────────────────────────
+  const headerActions = (
+    <div className="ob-header-actions">
+      <button
+        className="ob-theme-toggle"
+        onClick={toggleTheme}
+        aria-label={theme === 'dark' ? (he ? 'מצב בהיר' : 'Light mode') : (he ? 'מצב כהה' : 'Dark mode')}
+      >
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+      <LangToggle variant="floating" />
+    </div>
   );
 
   // ── Aurora blobs background ───────────────────────────────────────────────
@@ -300,10 +303,7 @@ export default function Onboarding({ onDone }: Props) {
       <div className="ob-overlay" dir={dir}>
         {aurora}
         {progressBar}
-        {themeBtn}
-
-        {/* Language toggle */}
-        <LangToggle variant="floating" />
+        {headerActions}
 
         <div className="ob-screen ob-screen-visual" key={0}>
           {/* App preview */}
@@ -348,7 +348,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
-      {themeBtn}
+      {headerActions}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
@@ -477,7 +477,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
-      {themeBtn}
+      {headerActions}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
@@ -528,7 +528,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
-      {themeBtn}
+      {headerActions}
       <div className="ob-screen ob-screen-add" key={3}>
         <h1 className="ob-title ob-title-grad" style={{ marginBottom: 4 }}>
           {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
@@ -583,7 +583,7 @@ export default function Onboarding({ onDone }: Props) {
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
-      {themeBtn}
+      {headerActions}
       <div className="ob-screen ob-screen-install" key={4}>
         <div className="ob-install-icon-ring">
           <img src="/icon-192.png" className="ob-install-app-icon" alt="Flowly" />
