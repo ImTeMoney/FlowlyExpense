@@ -350,14 +350,19 @@ export default function DashboardPage() {
     setPasteText('');
     rec.onresult = (e: SpeechRecognitionEvent) => {
       const transcript = e.results[0][0].transcript;
-      setPasteText(transcript);
       const parsed = parseExpenseText(transcript);
+      const catMatch = suggestCategory(transcript, categories);
       if (parsed.amount)    setAmount(String(parsed.amount));
       if (parsed.desc)      setDesc(parsed.desc);
       if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
-      const catMatch = suggestCategory(transcript, categories);
       if (catMatch) setCatId(catMatch);
+      // Clear the voice field — form is auto-filled; leaving the raw transcript is confusing
+      setPasteText('');
       setShowPaste(false);
+      if (!parsed.amount && !parsed.desc && !catMatch) {
+        setVoiceError(lang === 'he' ? 'לא הצלחתי להבין — נסה שוב' : 'Could not understand — try again');
+        setTimeout(() => setVoiceError(''), 3000);
+      }
     };
     rec.onerror = (e: SpeechRecognitionErrorEvent) => {
       setShowPaste(false);

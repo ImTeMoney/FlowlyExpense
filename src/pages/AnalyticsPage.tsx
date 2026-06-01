@@ -185,7 +185,12 @@ export default function AnalyticsPage() {
   function openEditRec(r: RecurringExpense) {
     setEditRec(r);
     setEditRecDesc(r.description);
-    setEditRecAmount(String(r.amount));
+    // Show the mainCurrency equivalent so user edits in their currency (not raw ILS)
+    setEditRecAmount(String(
+      r.currency === state.mainCurrency && r.originalAmount !== undefined
+        ? r.originalAmount
+        : r.amount * displayRate
+    ));
     setEditRecDay(String(r.dayOfMonth));
     setEditRecCat(r.categoryId);
     setEditRecPm((r.paymentMethod && (PAYMENT_METHODS as string[]).includes(r.paymentMethod)) ? r.paymentMethod : '');
@@ -193,18 +198,21 @@ export default function AnalyticsPage() {
 
   function saveEditRec() {
     if (!editRec) return;
-    const amt = parseFloat(editRecAmount);
+    const amt = parseFloat(editRecAmount); // amt is in mainCurrency
     const day = parseInt(editRecDay);
     if (!editRecDesc.trim() || isNaN(amt) || amt <= 0 || isNaN(day) || day < 1 || day > 28) return;
+    const ilsAmt = state.mainCurrency === 'ILS' || displayRate <= 0 ? amt : amt / displayRate;
     dispatch({
       type: 'UPDATE_RECURRING',
       payload: {
         ...editRec,
         description: editRecDesc.trim(),
-        amount: amt,
+        amount: ilsAmt,
         dayOfMonth: day,
         categoryId: editRecCat,
         paymentMethod: (editRecPm || undefined) as PaymentMethod | undefined,
+        // Preserve exact original amount so display avoids ILS round-trip imprecision
+        ...(state.mainCurrency !== 'ILS' ? { currency: state.mainCurrency, originalAmount: amt } : { currency: undefined, originalAmount: undefined }),
       },
     });
     setEditRec(null);
