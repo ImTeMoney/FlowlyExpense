@@ -98,17 +98,13 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
 
     let headline: string, subline: string, urgency: Urgency;
 
-    const projectedEnd = hasHistory && daysLeft > 0 ? Math.round(spent + histDailyAvg * daysLeft) : 0;
-
     if (income === 0 && spent === 0) {
       headline = iHe ? 'ברוך הבא — התחל לרשום הוצאות' : 'Welcome — start by adding expenses';
       subline  = iHe ? 'הוסף הכנסות כדי לחשב את החיסכון' : 'Add income to calculate your savings';
       urgency  = 'neutral';
     } else if (income === 0) {
       headline = iHe ? 'הוסף הכנסה לתמונה המלאה' : 'Add your income to see the full picture';
-      subline  = projectedEnd > 0
-        ? (iHe ? `הוצאת ${formatCurrencyDirect(Math.round(spent))} · צפי: ~${formatCurrencyDirect(projectedEnd)}` : `Spent ${formatCurrencyDirect(Math.round(spent))} · Projected: ~${formatCurrencyDirect(projectedEnd)}`)
-        : (iHe ? `הוצאת ${formatCurrencyDirect(Math.round(spent))} החודש` : `Spent ${formatCurrencyDirect(Math.round(spent))} this month`);
+      subline  = iHe ? `הוצאת ${formatCurrencyDirect(Math.round(spent))} החודש` : `Spent ${formatCurrencyDirect(Math.round(spent))} this month`;
       urgency  = 'neutral';
     } else if (savings < 0) {
       headline = iHe ? 'ההוצאות עולות על ההכנסות' : 'Spending more than you\'re earning';
@@ -116,9 +112,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       urgency  = 'warning';
     } else if (savings > 0) {
       headline = iHe ? 'אתה בדרך טובה החודש' : 'You\'re on a good track this month';
-      subline  = projectedEnd > 0
-        ? (iHe ? `חיסכון: ${formatCurrencyDirect(Math.round(savings))} · צפי: ~${formatCurrencyDirect(projectedEnd)}` : `Saving ${formatCurrencyDirect(Math.round(savings))} · Projected: ~${formatCurrencyDirect(projectedEnd)}`)
-        : (iHe ? `חיסכון: ${formatCurrencyDirect(Math.round(savings))} · עוד ${daysLeft} ימים` : `Saving ${formatCurrencyDirect(Math.round(savings))} · ${daysLeft} days left`);
+      subline  = iHe ? `חיסכון: ${formatCurrencyDirect(Math.round(savings))} · עוד ${daysLeft} ימים` : `Saving ${formatCurrencyDirect(Math.round(savings))} · ${daysLeft} days left`;
       urgency  = 'good';
     } else {
       headline = iHe ? 'הכנסות והוצאות בשיווי משקל' : 'Income and expenses are balanced';
