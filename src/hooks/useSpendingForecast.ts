@@ -98,15 +98,19 @@ export function useSpendingForecast(
       historicalRates.push(robust);
     }
 
-    // Current month pace (robust: exclude outlier days from current month too)
-    const elapsedDays = Math.max(1, today);
-    const currentRobust = robustDailyRate(transactions, currentMs, elapsedDays);
-    const currentPace = spentSoFar / elapsedDays;
-    // Use robust pace for current month if we have enough days, else use raw
-    let currentRate = today >= 5 ? currentRobust : currentPace;
+    // Recurring fixed costs already due this month (dayOfMonth <= today).
+    // These are known amounts — rent, insurance, etc. — and should NOT drive
+    // the variable daily rate. Strip them out before computing pace.
+    const paidRecurring = recurringExpenses
+      .filter(r => !r.isIncome && r.dayOfMonth <= today)
+      .reduce((s, r) => s + r.amount, 0);
+    const variableSpent = Math.max(0, spentSoFar - paidRecurring);
 
-    // Early in the month a single large day (rent, insurance) inflates currentRate wildly.
-    // Cap it at 3× the historical average so it can't dominate before we have real data.
+    // Variable daily rate for the current month
+    const elapsedDays = Math.max(1, today);
+    let currentRate = variableSpent / elapsedDays;
+
+    // Cap early-month rate at 3× historical average — noise guard for first few days
     if (historicalRates.length > 0 && today <= 10) {
       const histAvg = historicalRates.reduce((s, r) => s + r, 0) / historicalRates.length;
       currentRate = Math.min(currentRate, histAvg * 3);
