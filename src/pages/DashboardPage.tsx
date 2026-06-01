@@ -6,7 +6,7 @@ import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone,
   GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
-  Search, ArrowDownToLine,
+  Search, ArrowDownToLine, Upload,
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import LangToggle from '../components/LangToggle';
@@ -80,7 +80,7 @@ function groupByDate(txns: Transaction[]) {
 // ── Component ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
-  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, todayFullLabel, catName } = useLang();
+  const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, monthLabel, todayFullLabel, catName } = useLang();
   const { categories, recurringExpenses, transactions, mainCurrency, streakData, debtModeEnabled, cards } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
@@ -132,6 +132,10 @@ export default function DashboardPage() {
   const [filterPayMs,   setFilterPayMs]   = useState<string[]>([]);
   const [showCatDrop,   setShowCatDrop]   = useState(false);
   const [showPayDrop,   setShowPayDrop]   = useState(false);
+  // Month navigation
+  const [viewMonth,     setViewMonth]     = useState(currentMonthStr);
+  // IO menu (export/import)
+  const [showIoMenu,    setShowIoMenu]    = useState(false);
 
   // Lock body scroll when any modal is open.
   // On iOS, overflow:hidden alone doesn't stop rubber-band bounce on fixed elements.
@@ -180,11 +184,11 @@ export default function DashboardPage() {
     return () => clearTimeout(t);
   }, [fabHint]);
 
-  const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
+  const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(viewMonth)), [transactions, viewMonth]);
 
   // Welcome banner — shown whenever the current month has no expense transactions yet; auto-hides when one is added
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const showWelcome = !welcomeDismissed && !monthTxns.some(tx => !tx.isIncome);
+  const showWelcome = !welcomeDismissed && viewMonth === currentMonthStr() && !monthTxns.some(tx => !tx.isIncome);
   function dismissWelcome() { setWelcomeDismissed(true); }
   // Transactions entered in mainCurrency have originalAmount set; everything else is ILS × displayRate.
   const toMainAmt = useCallback((tx: Transaction) =>
@@ -194,12 +198,11 @@ export default function DashboardPage() {
     [mainCurrency, displayRate]
   );
 
-  // "הוצאות עד כה" — exact mainCurrency total for the current month
+  // "הוצאות עד כה" — exact mainCurrency total for the viewed month
   const spentSoFarDisplay = useMemo(() => {
-    const ms = currentMonthStr();
-    return transactions.filter(t => !t.isIncome && t.date.startsWith(ms))
+    return transactions.filter(t => !t.isIncome && t.date.startsWith(viewMonth))
       .reduce((s, t) => s + toMainAmt(t), 0);
-  }, [transactions, toMainAmt]);
+  }, [transactions, toMainAmt, viewMonth]);
 
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
@@ -717,9 +720,34 @@ export default function DashboardPage() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [showCatDrop, showPayDrop]);
 
+  // Close IO menu when clicking outside
+  useEffect(() => {
+    if (!showIoMenu) return;
+    function onOutside(e: MouseEvent) {
+      if (!(e.target as Element).closest('.header-io-wrap')) setShowIoMenu(false);
+    }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [showIoMenu]);
+
+  // Reset collapsed days when switching months
+  useEffect(() => { setCollapsedDays(new Set()); }, [viewMonth]);
+
   const PM_LABEL_HE: Record<string, string> = {
     cash: 'מזומן', credit: 'אשראי', check: "צ'ק", transfer: 'העברה', bit: 'ביט',
   };
+
+  // Month navigation helpers
+  function prevMonthOf(ms: string) {
+    const [y, m] = ms.split('-').map(Number);
+    return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+  }
+  function nextMonthOf(ms: string) {
+    const [y, m] = ms.split('-').map(Number);
+    return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+  }
+  const [vy, vm] = viewMonth.split('-').map(Number);
+  const viewMonthLabel = monthLabel(vy, vm);
 
   function handleExport() {
     if (displayTxns.length === 0) return;
@@ -742,11 +770,65 @@ export default function DashboardPage() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `הוצאות_${currentMonthStr()}.csv`;
+    a.download = `הוצאות_${viewMonth}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setShowIoMenu(false);
+  }
+
+  function parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let inQ = false, cur = '';
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+      cur += ch;
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = (ev.target?.result as string).replace(/^﻿/, '');
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) return;
+      const PM_MAP: Record<string, PaymentMethod> = {
+        'מזומן': 'cash', 'אשראי': 'credit', "צ'ק": 'check', 'העברה': 'transfer', 'ביט': 'bit',
+        cash: 'cash', credit: 'credit', check: 'check', transfer: 'transfer', bit: 'bit',
+      };
+      const imported: Transaction[] = [];
+      for (const line of lines.slice(1)) {
+        const cols = parseCsvLine(line);
+        if (cols.length < 5) continue;
+        const [dateStr, desc, catNameStr, pmStr, amtStr] = cols;
+        const amount = parseFloat(amtStr);
+        if (isNaN(amount) || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+        const cat = categories.find(c =>
+          catName(c.id, c.name, c.isRenamed).toLowerCase() === catNameStr.trim().toLowerCase()
+        ) ?? categories[0];
+        imported.push({
+          id: `tx_imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          amount,
+          categoryId: cat?.id ?? categories[0]?.id ?? '',
+          date: dateStr,
+          description: desc.trim(),
+          paymentMethod: PM_MAP[pmStr.trim()] ?? 'cash',
+        });
+      }
+      if (imported.length > 0) {
+        dispatch({ type: 'MERGE_TRANSACTIONS', payload: imported });
+        showToast(lang === 'he' ? `יובאו ${imported.length} עסקאות` : `Imported ${imported.length} transactions`);
+      }
+      setShowIoMenu(false);
+      e.target.value = '';
+    };
+    reader.readAsText(file, 'utf-8');
   }
 
   return (
@@ -757,9 +839,37 @@ export default function DashboardPage() {
         <div className="header-row">
           <div>
             <div className="header-brand">Flowly</div>
-            <div className="header-month">{todayFullLabel()}</div>
+            <div className="header-month-nav">
+              <button className="month-nav-btn" onClick={() => setViewMonth(prevMonthOf(viewMonth))}>‹</button>
+              <span
+                className={`header-month${viewMonth !== currentMonthStr() ? ' header-month--past' : ''}`}
+                onClick={() => setViewMonth(currentMonthStr())}
+                title={viewMonth !== currentMonthStr() ? (lang === 'he' ? 'חזור לחודש נוכחי' : 'Back to current month') : undefined}
+              >
+                {viewMonthLabel}
+              </span>
+              <button className="month-nav-btn" onClick={() => setViewMonth(nextMonthOf(viewMonth))} disabled={viewMonth >= currentMonthStr()}>›</button>
+            </div>
           </div>
           <div className="header-actions">
+            <div className="header-io-wrap">
+              <button className="header-naked-btn" onClick={() => setShowIoMenu(v => !v)} aria-label="Export / Import">
+                <ArrowDownToLine size={18} />
+              </button>
+              {showIoMenu && (
+                <div className="header-io-drop">
+                  <button className="header-io-item" onClick={handleExport} disabled={displayTxns.length === 0}>
+                    <ArrowDownToLine size={14} />
+                    {lang === 'he' ? 'ייצוא CSV' : 'Export CSV'}
+                  </button>
+                  <label className="header-io-item">
+                    <Upload size={14} />
+                    {lang === 'he' ? 'יבוא CSV' : 'Import CSV'}
+                    <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
+                  </label>
+                </div>
+              )}
+            </div>
             <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -976,14 +1086,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <button
-          className="txn-filter-export"
-          onClick={handleExport}
-          disabled={displayTxns.length === 0}
-          title={lang === 'he' ? 'ייצוא CSV' : 'Export CSV'}
-        >
-          <ArrowDownToLine size={15} />
-        </button>
       </div>
 
       {(filterSearch || filterCatIds.length > 0 || filterPayMs.length > 0) && (
