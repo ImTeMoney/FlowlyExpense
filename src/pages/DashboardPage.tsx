@@ -51,8 +51,10 @@ const URGENCY_BAR: Record<Urgency, string> = {
   neutral: '#64748B',
 };
 
-function isTxPending(tx: { isPending?: boolean; date: string }): boolean {
-  return tx.isPending === true && tx.date > new Date().toISOString().split('T')[0];
+function isTxPending(tx: { isPending?: boolean; date: string; description?: string }): boolean {
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (tx.date <= todayStr) return false;
+  return tx.isPending === true || (tx.description?.startsWith('(קבועה)') ?? false);
 }
 
 // ── Payment method icons ────────────────────────────────────────
