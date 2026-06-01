@@ -3851,6 +3851,54 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   font-size: 13px; color: var(--text-muted); text-align: center; margin: 4px 0 0;
 }
 
+/* ── Income row (amount + day picker side-by-side) ── */
+.ob-income-row {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+}
+.ob-income-day-col {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;
+}
+
+/* ── Day drum picker ── */
+.day-drum-outer {
+  position: relative;
+  width: 52px; height: 108px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--glass-border);
+  overflow: hidden;
+}
+.day-drum-scroll {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.day-drum-scroll::-webkit-scrollbar { display: none; }
+.day-drum-pad { height: 36px; flex-shrink: 0; }
+.day-drum-item {
+  height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 500; color: var(--text-muted);
+  scroll-snap-align: center; cursor: pointer;
+  transition: color 0.15s;
+}
+.day-drum-item.sel { color: var(--text); font-weight: 700; }
+.day-drum-fade {
+  position: absolute; inset-inline: 0; height: 36px; pointer-events: none; z-index: 1;
+}
+.day-drum-fade-top { top: 0; background: linear-gradient(to bottom, var(--bg-card) 20%, transparent); }
+.day-drum-fade-bot { bottom: 0; background: linear-gradient(to top, var(--bg-card) 20%, transparent); }
+.day-drum-selector {
+  position: absolute; inset-inline: 6px;
+  top: 36px; height: 36px;
+  border-top: 1.5px solid var(--purple);
+  border-bottom: 1.5px solid var(--purple);
+  border-radius: 6px;
+  pointer-events: none; z-index: 2;
+}
+
 /* ─────────────────────────────────────────────────────
    STEP 2 — Currency picker
    ───────────────────────────────────────────────────── */

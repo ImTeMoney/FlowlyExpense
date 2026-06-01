@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
@@ -187,6 +187,50 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
   );
 }
 
+// ── Day drum picker ───────────────────────────────────────────────────────────
+
+const DRUM_ITEM_H = 36;
+
+function DayPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const days = Array.from({ length: 28 }, (_, i) => i + 1);
+  const ref   = useRef<HTMLDivElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const idx = Math.max(0, (parseInt(value) || 1) - 1);
+    ref.current.scrollTop = idx * DRUM_ITEM_H;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleScroll() {
+    if (!ref.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      if (!ref.current) return;
+      const idx = Math.round(ref.current.scrollTop / DRUM_ITEM_H);
+      onChange(String(Math.max(1, Math.min(28, idx + 1))));
+    }, 80);
+  }
+
+  const selected = parseInt(value) || 1;
+
+  return (
+    <div className="day-drum-outer">
+      <div className="day-drum-scroll" ref={ref} onScroll={handleScroll}>
+        <div className="day-drum-pad" />
+        {days.map(d => (
+          <div key={d} className={`day-drum-item${d === selected ? ' sel' : ''}`}>{d}</div>
+        ))}
+        <div className="day-drum-pad" />
+      </div>
+      <div className="day-drum-fade day-drum-fade-top" />
+      <div className="day-drum-fade day-drum-fade-bot" />
+      <div className="day-drum-selector" />
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const TOTAL = 4;
@@ -203,6 +247,7 @@ export default function Onboarding({ onDone }: Props) {
   const [step, setStep]               = useState(0);
   const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
   const [income, setIncome]           = useState('');
+  const [incomeDay, setIncomeDay]     = useState('1');
   const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
@@ -212,7 +257,7 @@ export default function Onboarding({ onDone }: Props) {
     dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
     const defaultCatId = state.categories[0]?.id ?? 'cat_other';
     const incomeVal = parseFloat(income);
-    const incomeDayVal = 1;
+    const incomeDayVal = Math.min(28, Math.max(1, parseInt(incomeDay) || 1));
     if (!isNaN(incomeVal) && incomeVal > 0) {
       dispatch({ type: 'SET_BUDGET', payload: incomeVal });
       dispatch({ type: 'ADD_RECURRING', payload: {
@@ -367,19 +412,25 @@ export default function Onboarding({ onDone }: Props) {
           <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
           <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-        <div className="ob-goal-wrap">
-          <span className="ob-goal-currency">{currencySymbol}</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            className="ob-goal-input"
-            style={{ fontSize: '22px' }}
-            placeholder={he ? 'סכום' : 'Amount'}
-            value={income}
-            min="0"
-            max="9999999"
-            onChange={e => setIncome(e.target.value)}
-          />
+        <div className="ob-income-row">
+          <div className="ob-goal-wrap" style={{ flex: 1 }}>
+            <span className="ob-goal-currency">{currencySymbol}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              className="ob-goal-input"
+              style={{ fontSize: '22px' }}
+              placeholder={he ? 'סכום' : 'Amount'}
+              value={income}
+              min="0"
+              max="9999999"
+              onChange={e => setIncome(e.target.value)}
+            />
+          </div>
+          <div className="ob-income-day-col">
+            <span className="ob-recurring-day-lbl">{he ? 'יום בחודש' : 'Day'}</span>
+            <DayPicker value={incomeDay} onChange={setIncomeDay} />
+          </div>
         </div>
 
         {/* Recurring expenses */}
@@ -424,20 +475,11 @@ export default function Onboarding({ onDone }: Props) {
                     onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
                   />
                 </div>
-                <div className="ob-recurring-day-wrap">
-                  <span className="ob-recurring-day-lbl">{he ? 'יום בחודש' : 'Day of month'}</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    className="ob-recurring-day"
-                    placeholder="1"
+                <div className="ob-income-day-col">
+                  <span className="ob-recurring-day-lbl">{he ? 'יום בחודש' : 'Day'}</span>
+                  <DayPicker
                     value={row.day}
-                    onFocus={e => e.target.select()}
-                    onChange={e => {
-                      const v = e.target.value.replace(/\D/g, '').slice(0, 2);
-                      setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r));
-                    }}
+                    onChange={v => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r))}
                   />
                 </div>
               </div>
