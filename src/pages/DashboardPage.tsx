@@ -378,6 +378,25 @@ export default function DashboardPage() {
     rec.start();
   }
 
+  // Debounced auto-parse for iOS keyboard mic: text arrives via onChange, not rec.onresult.
+  // After 800 ms of inactivity, if something is parseable, fill the form and clear the field.
+  useEffect(() => {
+    if (!pasteText.trim()) return;
+    const id = setTimeout(() => {
+      const parsed = parseExpenseText(pasteText);
+      const catMatch = suggestCategory(pasteText, categories);
+      if (parsed.amount || parsed.desc || catMatch) {
+        if (parsed.amount)    setAmount(String(parsed.amount));
+        if (parsed.desc)      setDesc(parsed.desc);
+        if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+        if (catMatch)         setCatId(catMatch);
+        setPasteText('');
+        setShowPaste(false);
+      }
+    }, 800);
+    return () => clearTimeout(id);
+  }, [pasteText]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function openModal() {
     const draft = readDraft();
     setIsIncome(false);

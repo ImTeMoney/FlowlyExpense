@@ -440,6 +440,22 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     setStreakData({ currentStreak: newStreak, longestStreak: newLongest, lastCheckedDate: todayStr });
   }, [transactions, monthlyBudget, mainCurrency, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Migrate existing recurring expenses created before originalAmount was tracked.
+  // When mainCurrency !== ILS and displayRate is available, back-fill originalAmount
+  // so display is lossless (avoids 50.01 instead of 50 from round-trip conversion).
+  useEffect(() => {
+    if (mainCurrency === 'ILS' || displayRate <= 0 || displayRate === 1) return;
+    const toMigrate = recurringExpenses.filter(r => r.originalAmount === undefined);
+    if (toMigrate.length === 0) return;
+    setRecurringExpenses(prev => prev.map(r => {
+      if (r.originalAmount !== undefined) return r;
+      const raw = r.amount * displayRate;
+      const rounded = Math.round(raw);
+      const originalAmount = Math.abs(raw - rounded) <= 0.02 ? rounded : Math.round(raw * 100) / 100;
+      return { ...r, currency: mainCurrency, originalAmount };
+    }));
+  }, [displayRate, mainCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-post recurring expenses whenever the recurring list changes.
   // Using `recurringExpenses` as a dependency (instead of []) means newly added
   // recurring items are posted immediately — not only on the next app boot.
