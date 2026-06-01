@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
@@ -187,42 +187,28 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
   );
 }
 
-// ── Day drum picker ───────────────────────────────────────────────────────────
+// ── Day picker — native select styled as a tap-to-open drum box ──────────────
+// Uses the OS-native scroll picker on iOS/Android. Reliable across all contexts.
 
-const DRUM_ITEM_H = 36;
-
-function DayPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function DayPicker({ value, onChange, label }: {
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
+}) {
   const days = Array.from({ length: 28 }, (_, i) => i + 1);
-  const ref   = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-    const idx = Math.max(0, (parseInt(value) || 1) - 1);
-    ref.current.scrollTop = idx * DRUM_ITEM_H;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleScroll() {
-    if (!ref.current) return;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      if (!ref.current) return;
-      const idx = Math.round(ref.current.scrollTop / DRUM_ITEM_H);
-      onChange(String(Math.max(1, Math.min(28, idx + 1))));
-    }, 80);
-  }
-
-  const selected = parseInt(value) || 1;
-
   return (
-    <div className="day-drum-outer">
-      <div className="day-drum-scroll" ref={ref} onScroll={handleScroll}>
-        <div className="day-drum-pad" />
-        {days.map(d => (
-          <div key={d} className={`day-drum-item${d === selected ? ' sel' : ''}`}>{d}</div>
-        ))}
-        <div className="day-drum-pad" />
+    <div className="day-pick-wrap">
+      {label && <span className="ob-recurring-day-lbl">{label}</span>}
+      <div className="day-pick-box">
+        <span className="day-pick-val">{parseInt(value) || 1}</span>
+        <ChevronDown size={10} className="day-pick-chevron" />
+        <select
+          className="day-pick-select"
+          value={value || '1'}
+          onChange={e => onChange(e.target.value)}
+        >
+          {days.map(d => <option key={d} value={String(d)}>{d}</option>)}
+        </select>
       </div>
     </div>
   );
@@ -424,10 +410,7 @@ export default function Onboarding({ onDone }: Props) {
               onChange={e => setIncome(e.target.value)}
             />
           </div>
-          <div className="ob-income-day-col">
-            <span className="ob-recurring-day-lbl">{he ? 'יום בחודש' : 'Day'}</span>
-            <DayPicker value={incomeDay} onChange={setIncomeDay} />
-          </div>
+          <DayPicker value={incomeDay} onChange={setIncomeDay} label={he ? 'יום בחודש' : 'Day'} />
         </div>
 
         {/* Recurring expenses */}

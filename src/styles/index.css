@@ -3855,39 +3855,34 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-income-row {
   display: flex; align-items: center; gap: 10px; width: 100%;
 }
-.ob-income-day-col {
+
+/* ── Day picker — native-select tap box ── */
+.day-pick-wrap {
   display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;
 }
-
-/* ── Day drum picker ── */
-/* 56px tall: 10px pad + 36px item + 10px pad — shows the selected number
-   with a sliver of the adjacent item above/below as a scroll affordance.    */
-.day-drum-outer {
-  width: 52px; height: 56px;
+.day-pick-box {
+  position: relative;
+  width: 52px; height: 52px;
   border-radius: 10px;
   background: var(--bg-card);
   border: 1.5px solid var(--glass-border);
-  overflow: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+  cursor: pointer;
   transition: border-color 0.15s;
 }
-.day-drum-outer:active { border-color: var(--purple); }
-.day-drum-scroll {
-  height: 100%;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+.day-pick-box:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-dim); }
+.day-pick-val {
+  font-size: 18px; font-weight: 700; color: var(--text);
+  line-height: 1; pointer-events: none;
 }
-.day-drum-scroll::-webkit-scrollbar { display: none; }
-.day-drum-pad { height: 10px; flex-shrink: 0; }
-.day-drum-item {
-  height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 500; color: var(--text-muted);
-  scroll-snap-align: center; cursor: pointer;
-  transition: color 0.12s;
+.day-pick-chevron { color: var(--text-muted); pointer-events: none; flex-shrink: 0; }
+.day-pick-select {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+  -webkit-appearance: none; appearance: none;
+  font-size: 16px; /* prevent iOS zoom on focus */
 }
-.day-drum-item.sel { color: var(--text); font-weight: 700; }
 
 /* ─────────────────────────────────────────────────────
    STEP 2 — Currency picker
