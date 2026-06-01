@@ -249,6 +249,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 
 .header-brand {
@@ -326,7 +327,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 
 /* ── Month navigation ── */
 .header-month-nav {
-  display: flex; align-items: center; gap: 4px; margin-top: 2px;
+  display: flex; align-items: center; gap: 4px;
+  position: absolute; left: 50%; transform: translateX(-50%);
 }
 .month-nav-btn {
   background: none; border: none; cursor: pointer;

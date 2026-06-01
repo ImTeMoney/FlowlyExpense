@@ -837,19 +837,17 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="aether-header">
         <div className="header-row">
-          <div>
-            <div className="header-brand">Flowly</div>
-            <div className="header-month-nav">
-              <button className="month-nav-btn" onClick={() => setViewMonth(prevMonthOf(viewMonth))}>‹</button>
-              <span
-                className={`header-month${viewMonth !== currentMonthStr() ? ' header-month--past' : ''}`}
-                onClick={() => setViewMonth(currentMonthStr())}
-                title={viewMonth !== currentMonthStr() ? (lang === 'he' ? 'חזור לחודש נוכחי' : 'Back to current month') : undefined}
-              >
-                {viewMonthLabel}
-              </span>
-              <button className="month-nav-btn" onClick={() => setViewMonth(nextMonthOf(viewMonth))} disabled={viewMonth >= currentMonthStr()}>›</button>
-            </div>
+          <div className="header-brand">Flowly</div>
+          <div className="header-month-nav">
+            <button className="month-nav-btn" onClick={() => setViewMonth(prevMonthOf(viewMonth))}>‹</button>
+            <span
+              className={`header-month${viewMonth !== currentMonthStr() ? ' header-month--past' : ''}`}
+              onClick={() => setViewMonth(currentMonthStr())}
+              title={viewMonth !== currentMonthStr() ? (lang === 'he' ? 'חזור לחודש נוכחי' : 'Back to current month') : undefined}
+            >
+              {viewMonthLabel}
+            </span>
+            <button className="month-nav-btn" onClick={() => setViewMonth(nextMonthOf(viewMonth))} disabled={viewMonth >= currentMonthStr()}>›</button>
           </div>
           <div className="header-actions">
             <div className="header-io-wrap">
