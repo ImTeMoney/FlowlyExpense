@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, ChevronRight, ChevronLeft, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, ChevronRight, ChevronLeft, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown, Tag, CreditCard, Users } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import LangToggle from './LangToggle';
 
@@ -281,7 +281,7 @@ function SlideButton({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const TOTAL = 4;
+const TOTAL = 5;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
@@ -630,6 +630,70 @@ export default function Onboarding({ onDone }: Props) {
       <div className="ob-bottom">
         <button
           className="ob-btn-primary ob-btn-launch"
+          onClick={advance}
+        >
+          <Sparkles size={16} />
+          {he ? 'המשך' : 'Continue'}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 4: Settings intro ────────────────────────────────────────────────
+
+  if (step === 4) return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
+      <div className="ob-screen ob-screen-settings" key={4}>
+        <h1 className="ob-title ob-title-grad">
+          {he ? 'כוח ב-הגדרות' : 'Power in Settings'}
+        </h1>
+        <p className="ob-sub ob-mode-intro">
+          {he
+            ? 'ב-הגדרות תוכל להתאים את האפליקציה לצרכים שלך.'
+            : 'In Settings you can tailor the app to your needs.'}
+        </p>
+        <div className="ob-settings-features">
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#8B5CF620', border: '1px solid #8B5CF640' }}>
+              <Tag size={22} color="#8B5CF6" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'קטגוריות' : 'Categories'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'הוסף, שנה שם ובחר צבעים לקטגוריות שלך' : 'Add, rename and color-code your categories'}
+              </span>
+            </div>
+          </div>
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#3B82F620', border: '1px solid #3B82F640' }}>
+              <CreditCard size={22} color="#3B82F6" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'נהל כרטיסים ועקוב אחר הוצאות לפי כרטיס' : 'Manage cards and track spending per card'}
+              </span>
+            </div>
+          </div>
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#F59E0B20', border: '1px solid #F59E0B40' }}>
+              <Users size={22} color="#F59E0B" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'מצב חובות' : 'Debt Mode'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'עקוב אחרי חובות והלוואות בינך לבין אנשים' : 'Track debts and loans between you and others'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="ob-bottom">
+        <button
+          className="ob-btn-primary ob-btn-launch"
           onClick={canPrompt || isIOSSafari ? advance : handleLaunch}
         >
           <Sparkles size={16} />
@@ -641,7 +705,7 @@ export default function Onboarding({ onDone }: Props) {
     </div>
   );
 
-  // ── Step 4: Add to home screen ────────────────────────────────────────────
+  // ── Step 5: Add to home screen ────────────────────────────────────────────
 
   const installSteps = he
     ? [
