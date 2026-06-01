@@ -600,53 +600,14 @@ export default function Onboarding({ onDone }: Props) {
     </div>
   );
 
-  // ── Step 3: Add expense tutorial ─────────────────────────────────────────
+  // ── Step 3: Settings intro ────────────────────────────────────────────────
 
   if (step === 3) return (
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
       {headerActions}
-      <div className="ob-screen ob-screen-add" key={3}>
-        <h1 className="ob-title ob-title-grad" style={{ marginBottom: 4 }}>
-          {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
-        </h1>
-        <AddExpensePreview he={he} currSym={currencySymbol} />
-        <div className="ob-add-steps" dir={he ? 'rtl' : 'ltr'}>
-          <div className="ob-add-step">
-            <span className="ob-add-step-num">1</span>
-            <span>{he ? 'לחץ על +' : 'Tap +'}</span>
-          </div>
-          <div className="ob-add-step">
-            <span className="ob-add-step-num">2</span>
-            <span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span>
-          </div>
-          <div className="ob-add-step">
-            <span className="ob-add-step-num">3</span>
-            <span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span>
-          </div>
-        </div>
-      </div>
-      <div className="ob-bottom">
-        <button
-          className="ob-btn-primary ob-btn-launch"
-          onClick={advance}
-        >
-          <Sparkles size={16} />
-          {he ? 'המשך' : 'Continue'}
-        </button>
-      </div>
-    </div>
-  );
-
-  // ── Step 4: Settings intro ────────────────────────────────────────────────
-
-  if (step === 4) return (
-    <div className="ob-overlay" dir={dir}>
-      {aurora}
-      {progressBar}
-      {headerActions}
-      <div className="ob-screen ob-screen-settings" key={4}>
+      <div className="ob-screen ob-screen-settings" key={3}>
         <h1 className="ob-title ob-title-grad">
           {he ? 'כוח ב-הגדרות' : 'Power in Settings'}
         </h1>
@@ -688,6 +649,45 @@ export default function Onboarding({ onDone }: Props) {
                 {he ? 'עקוב אחרי חובות והלוואות בינך לבין אנשים' : 'Track debts and loans between you and others'}
               </span>
             </div>
+          </div>
+        </div>
+      </div>
+      <div className="ob-bottom">
+        <button
+          className="ob-btn-primary ob-btn-launch"
+          onClick={advance}
+        >
+          <Sparkles size={16} />
+          {he ? 'המשך' : 'Continue'}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 4: Add expense tutorial ─────────────────────────────────────────
+
+  if (step === 4) return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
+      <div className="ob-screen ob-screen-add" key={4}>
+        <h1 className="ob-title ob-title-grad" style={{ marginBottom: 4 }}>
+          {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
+        </h1>
+        <AddExpensePreview he={he} currSym={currencySymbol} />
+        <div className="ob-add-steps" dir={he ? 'rtl' : 'ltr'}>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">1</span>
+            <span>{he ? 'לחץ על +' : 'Tap +'}</span>
+          </div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">2</span>
+            <span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span>
+          </div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">3</span>
+            <span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span>
           </div>
         </div>
       </div>
