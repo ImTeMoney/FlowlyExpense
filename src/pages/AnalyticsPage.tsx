@@ -180,12 +180,12 @@ export default function AnalyticsPage() {
   const [editRecAmount, setEditRecAmount] = useState('');
   const [editRecDay, setEditRecDay] = useState('');
   const [editRecCat, setEditRecCat] = useState('');
-  const [editRecPm, setEditRecPm] = useState<PaymentMethod | ''>('');
+  const [editRecPm, setEditRecPm]         = useState<PaymentMethod | ''>('');
+  const [editRecCardId, setEditRecCardId] = useState<string | undefined>(undefined);
 
   function openEditRec(r: RecurringExpense) {
     setEditRec(r);
     setEditRecDesc(r.description);
-    // Show the mainCurrency equivalent so user edits in their currency (not raw ILS)
     setEditRecAmount(String(
       r.currency === state.mainCurrency && r.originalAmount !== undefined
         ? r.originalAmount
@@ -194,6 +194,7 @@ export default function AnalyticsPage() {
     setEditRecDay(String(r.dayOfMonth));
     setEditRecCat(r.categoryId);
     setEditRecPm((r.paymentMethod && (PAYMENT_METHODS as string[]).includes(r.paymentMethod)) ? r.paymentMethod : '');
+    setEditRecCardId(r.cardId);
   }
 
   function saveEditRec() {
@@ -202,6 +203,7 @@ export default function AnalyticsPage() {
     const day = parseInt(editRecDay);
     if (!editRecDesc.trim() || isNaN(amt) || amt <= 0 || isNaN(day) || day < 1 || day > 28) return;
     const ilsAmt = state.mainCurrency === 'ILS' || displayRate <= 0 ? amt : amt / displayRate;
+    const pm = (editRecPm || undefined) as PaymentMethod | undefined;
     dispatch({
       type: 'UPDATE_RECURRING',
       payload: {
@@ -210,8 +212,8 @@ export default function AnalyticsPage() {
         amount: ilsAmt,
         dayOfMonth: day,
         categoryId: editRecCat,
-        paymentMethod: (editRecPm || undefined) as PaymentMethod | undefined,
-        // Preserve exact original amount so display avoids ILS round-trip imprecision
+        paymentMethod: pm,
+        cardId: pm === 'credit' ? editRecCardId : undefined,
         ...(state.mainCurrency !== 'ILS' ? { currency: state.mainCurrency, originalAmount: amt } : { currency: undefined, originalAmount: undefined }),
       },
     });
@@ -820,7 +822,7 @@ export default function AnalyticsPage() {
                 <select
                   className="set-input"
                   value={editRecPm}
-                  onChange={e => setEditRecPm(e.target.value as PaymentMethod)}
+                  onChange={e => { setEditRecPm(e.target.value as PaymentMethod); if (e.target.value !== 'credit') setEditRecCardId(undefined); }}
                   style={{ textAlign: 'right', width: '100%', direction: 'rtl' }}
                 >
                   <option value="">{lang === 'he' ? '— אמצעי תשלום —' : '— Payment method —'}</option>
@@ -828,6 +830,27 @@ export default function AnalyticsPage() {
                     <option key={pm} value={pm}>{pmLabel(pm)}</option>
                   ))}
                 </select>
+              )}
+              {!editRec.isIncome && editRecPm === 'credit' && cards.length > 0 && (
+                <div className="card-picker">
+                  <button
+                    className={`card-chip${!editRecCardId ? ' selected' : ''}`}
+                    onClick={() => setEditRecCardId(undefined)}
+                  >
+                    {lang === 'he' ? 'ללא כרטיס' : 'No card'}
+                  </button>
+                  {cards.map(c => (
+                    <button
+                      key={c.id}
+                      className={`card-chip${editRecCardId === c.id ? ' selected' : ''}`}
+                      style={editRecCardId === c.id ? { borderColor: c.color, background: `${c.color}22`, color: c.color } : {}}
+                      onClick={() => setEditRecCardId(c.id)}
+                    >
+                      <span>{c.name}</span>
+                      <span className="card-chip-last4">•••• {c.last4}</span>
+                    </button>
+                  ))}
+                </div>
               )}
               <button className="submit-btn" onClick={saveEditRec} style={{ marginTop: 4 }}>
                 <Check size={15} />

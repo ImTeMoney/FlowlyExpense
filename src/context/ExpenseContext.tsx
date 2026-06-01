@@ -91,6 +91,7 @@ export interface RecurringExpense {
   postedCount?: number;        // how many months have been posted so far
   currency?: string;           // original currency when entered (if not ILS)
   originalAmount?: number;     // amount in original currency for lossless display
+  cardId?: string;             // credit card to charge each month
 }
 
 /**
@@ -481,6 +482,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       description:   `(קבועה) ${r.description}`,
       isIncome:      r.isIncome,
       paymentMethod: r.paymentMethod,
+      ...(r.cardId ? { cardId: r.cardId } : {}),
     }));
     setTransactions(prev => [...newTxns, ...prev]);
     setRecurringExpenses(prev => {
