@@ -184,6 +184,10 @@ export default function DashboardPage() {
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isTxPending = (tx: { isPending?: boolean; date: string }) =>
+    tx.isPending === true && tx.date > todayStr;
+
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
@@ -807,8 +811,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           Array.from(grouped.entries()).map(([dateKey, txns]) => {
-            const dayIncome  = txns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-            const dayExpense = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+            const dayIncome  = txns.filter(tx =>  tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
+            const dayExpense = txns.filter(tx => !tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
             const dayNet = dayIncome - dayExpense;
             const isCollapsed = collapsedDays.has(dateKey);
             const dayCatColors = [...new Set(
@@ -851,7 +855,7 @@ export default function DashboardPage() {
                     r.description === tx.description && r.isIncome === !!tx.isIncome
                   );
                   return (
-                    <div key={tx.id} className="txn-item chromatic-edge" style={{ '--i': txIdx } as React.CSSProperties}>
+                    <div key={tx.id} className={`txn-item chromatic-edge${isTxPending(tx) ? ' pending' : ''}`} style={{ '--i': txIdx } as React.CSSProperties}>
                       <div
                         className="txn-icon"
                         style={{
@@ -867,6 +871,9 @@ export default function DashboardPage() {
                           <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed)}</span>
                           {isRecurringTx && (
                             <span className="txn-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>
+                          )}
+                          {isTxPending(tx) && (
+                            <span className="txn-pending-badge">{lang === 'he' ? 'עתידי' : 'upcoming'}</span>
                           )}
                           {tx.installments && (
                             <span className="inst-badge">

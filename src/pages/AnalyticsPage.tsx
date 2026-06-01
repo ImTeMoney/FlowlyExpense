@@ -76,8 +76,12 @@ export default function AnalyticsPage() {
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(ms)), [transactions, ms]);
   const prevTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(prevMs)), [transactions, prevMs]);
 
-  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+  const todayStr = now.toISOString().split('T')[0];
+  const isTxPending = (tx: { isPending?: boolean; date: string }) =>
+    tx.isPending === true && tx.date > todayStr;
+
+  const spent  = monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
+  const income = monthTxns.filter(tx =>  tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
   const savings = income - spent;
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -88,7 +92,7 @@ export default function AnalyticsPage() {
   const catTotals = useMemo(() => {
     return categories
       .map(cat => {
-        const catTxns   = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id);
+        const catTxns   = monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx) && tx.categoryId === cat.id);
         const total     = catTxns.reduce((s,tx) => s + tx.amount, 0);
         const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0);
         return { cat, total, prevTotal };
@@ -111,7 +115,7 @@ export default function AnalyticsPage() {
 
   const pmTotals = useMemo(() => {
     const map = new Map<PaymentMethod, number>();
-    monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
+    monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx)).forEach(tx => {
       resolvePaymentSplits(tx).forEach(s => {
         map.set(s.paymentMethod, (map.get(s.paymentMethod) ?? 0) + s.amount);
       });
@@ -128,7 +132,7 @@ export default function AnalyticsPage() {
   // Per-card breakdown
   const cardTotals = useMemo(() => {
     const map = new Map<string, number>();
-    monthTxns.filter(tx => !tx.isIncome && tx.cardId).forEach(tx => {
+    monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx) && tx.cardId).forEach(tx => {
       map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + tx.amount);
     });
     return Array.from(map)
@@ -148,7 +152,7 @@ export default function AnalyticsPage() {
       const end = Math.min(start + 6, daysInMonth);
       const total = monthTxns
         .filter(tx => {
-          if (tx.isIncome) return false;
+          if (tx.isIncome || isTxPending(tx)) return false;
           const day = parseInt(tx.date.split('-')[2]);
           return day >= start && day <= end;
         })

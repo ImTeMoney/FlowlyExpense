@@ -76,6 +76,7 @@ export interface Transaction {
   exchangeRate?: number;      // rate used: 1 original = rate main
   /** Links to CreditCard.id when paymentMethod is credit/debit */
   cardId?: string;
+  isPending?: boolean;
 }
 
 export interface RecurringExpense {
@@ -446,6 +447,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const currentDay = today.getDate();
     const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const toPost = recurringExpenses.filter(r => {
       if (r.lastPostedMonth === currentMonthStr) return false;
@@ -461,6 +463,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       description:   `(קבועה) ${r.description}`,
       isIncome:      r.isIncome,
       paymentMethod: r.paymentMethod,
+      isPending:     currentDay < r.dayOfMonth,
     }));
     setTransactions(prev => [...newTxns, ...prev]);
     setRecurringExpenses(prev => {
