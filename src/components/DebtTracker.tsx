@@ -22,8 +22,10 @@ export default function DebtTracker() {
   const [editForm, setEditForm]         = useState({ ...EMPTY_FORM });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  const now = new Date();
+  const currentMs = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const active   = debts.filter(d => !d.settled);
-  const settled  = debts.filter(d => d.settled);
+  const settled  = debts.filter(d => d.settled && (d.settledDate?.startsWith(currentMs) ?? false));
   const owesMe   = active.filter(d => d.direction === 'owes_me').reduce((s, d) => s + d.amount, 0);
   const iOwe     = active.filter(d => d.direction === 'i_owe').reduce((s, d) => s + d.amount, 0);
 

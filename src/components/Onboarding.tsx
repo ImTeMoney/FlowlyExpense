@@ -282,7 +282,7 @@ interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
   const { lang, t, toggleLang } = useLang();
-  const { dispatch, state }    = useExpense();
+  const { dispatch, state, displayRate } = useExpense();
   const [theme, toggleTheme]   = useTheme();
   const he                     = lang !== 'en';
   const dir                   = he ? 'rtl' : 'ltr';
@@ -301,13 +301,15 @@ export default function Onboarding({ onDone }: Props) {
   function saveSetupAndAdvance() {
     dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
     const defaultCatId = state.categories[0]?.id ?? 'cat_other';
+    // User enters amounts in mainCurrency; convert to ILS for storage (ILS is the base currency)
+    const toILS = (amt: number) => displayRate > 0 ? amt / displayRate : amt;
     const incomeVal = parseFloat(income);
     const incomeDayVal = Math.min(28, Math.max(1, parseInt(incomeDay) || 1));
     if (!isNaN(incomeVal) && incomeVal > 0) {
-      dispatch({ type: 'SET_BUDGET', payload: incomeVal });
+      dispatch({ type: 'SET_BUDGET', payload: incomeVal }); // budget stays in mainCurrency
       dispatch({ type: 'ADD_RECURRING', payload: {
         id: `rec_income_${Date.now()}`,
-        amount: incomeVal,
+        amount: toILS(incomeVal),
         categoryId: defaultCatId,
         dayOfMonth: incomeDayVal,
         description: incomeDesc.trim() || (he ? 'משכורת' : 'Salary'),
@@ -320,7 +322,7 @@ export default function Onboarding({ onDone }: Props) {
       if (row.name.trim() && !isNaN(amt) && amt > 0) {
         dispatch({ type: 'ADD_RECURRING', payload: {
           id: `rec_${Date.now()}_${i}`,
-          amount: amt,
+          amount: toILS(amt),
           categoryId: defaultCatId,
           dayOfMonth: day,
           description: row.name.trim(),
