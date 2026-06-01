@@ -187,32 +187,8 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
   );
 }
 
-// ── Day picker — native select styled as a tap-to-open drum box ──────────────
-// Uses the OS-native scroll picker on iOS/Android. Reliable across all contexts.
-
-function DayPicker({ value, onChange, label }: {
-  value: string;
-  onChange: (v: string) => void;
-  label?: string;
-}) {
-  const days = Array.from({ length: 28 }, (_, i) => i + 1);
-  return (
-    <div className="day-pick-wrap">
-      {label && <span className="ob-recurring-day-lbl">{label}</span>}
-      <div className="day-pick-box">
-        <span className="day-pick-val">{parseInt(value) || 1}</span>
-        <ChevronDown size={10} className="day-pick-chevron" />
-        <select
-          className="day-pick-select"
-          value={value || '1'}
-          onChange={e => onChange(e.target.value)}
-        >
-          {days.map(d => <option key={d} value={String(d)}>{d}</option>)}
-        </select>
-      </div>
-    </div>
-  );
-}
+// ── Day options ───────────────────────────────────────────────────────────────
+const DAY_OPTS = Array.from({ length: 28 }, (_, i) => i + 1);
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -395,23 +371,30 @@ export default function Onboarding({ onDone }: Props) {
           <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
           <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-        <div className="ob-income-row">
-          <div className="ob-goal-wrap" style={{ flex: 1 }}>
-            <span className="ob-goal-currency">{currencySymbol}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              className="ob-goal-input"
-              style={{ fontSize: '22px' }}
-              placeholder={he ? 'סכום' : 'Amount'}
-              value={income}
-              min="0"
-              max="9999999"
-              onChange={e => setIncome(e.target.value)}
-            />
-          </div>
-          <DayPicker value={incomeDay} onChange={setIncomeDay} label={he ? 'יום בחודש' : 'Day'} />
+        <div className="ob-goal-wrap">
+          <span className="ob-goal-currency">{currencySymbol}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            className="ob-goal-input"
+            style={{ fontSize: '22px' }}
+            placeholder={he ? 'סכום' : 'Amount'}
+            value={income}
+            min="0"
+            max="9999999"
+            onChange={e => setIncome(e.target.value)}
+          />
         </div>
+        <label className="ob-income-day-row">
+          <span>{he ? 'יום קבלה:' : 'Received on day'}</span>
+          <select
+            className="ob-income-day-select"
+            value={incomeDay}
+            onChange={e => setIncomeDay(e.target.value)}
+          >
+            {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
+          </select>
+        </label>
 
         {/* Recurring expenses */}
         <div className="ob-section-label" style={{ marginTop: 20 }}>
@@ -455,10 +438,16 @@ export default function Onboarding({ onDone }: Props) {
                     onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
                   />
                 </div>
-                <DayPicker
-                  value={row.day}
-                  onChange={v => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r))}
-                />
+                <label className="ob-day-pill">
+                  <span>{he ? 'יום' : 'day'}</span>
+                  <select
+                    className="ob-day-pill-select"
+                    value={row.day}
+                    onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: e.target.value } : r))}
+                  >
+                    {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
+                  </select>
+                </label>
               </div>
             </div>
           ))}
