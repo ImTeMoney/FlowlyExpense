@@ -1171,7 +1171,12 @@ export default function DashboardPage() {
                       <div className="txn-info">
                         <div className="txn-name">{tx.description}</div>
                         <div className="txn-meta">
-                          <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed)}</span>
+                          {(() => {
+                            const catLabel = tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed);
+                            return catLabel && catLabel !== tx.description
+                              ? <span className="txn-cat">{catLabel}</span>
+                              : null;
+                          })()}
                           {isRecurringTx && (
                             <span className="txn-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>
                           )}
