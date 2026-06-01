@@ -371,30 +371,31 @@ export default function Onboarding({ onDone }: Props) {
           <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
           <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-        <div className="ob-goal-wrap">
-          <span className="ob-goal-currency">{currencySymbol}</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            className="ob-goal-input"
-            style={{ fontSize: '22px' }}
-            placeholder={he ? 'סכום' : 'Amount'}
-            value={income}
-            min="0"
-            max="9999999"
-            onChange={e => setIncome(e.target.value)}
-          />
+        <div className="ob-recurring-card-bottom">
+          <div className="ob-recurring-amt-wrap" style={{ flex: 1 }}>
+            <span className="ob-recurring-sym">{currencySymbol}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              className="ob-recurring-amt"
+              placeholder={he ? 'סכום' : 'Amount'}
+              value={income}
+              min="0"
+              max="9999999"
+              onChange={e => setIncome(e.target.value)}
+            />
+          </div>
+          <label className="ob-day-pill">
+            <span>{he ? 'יום' : 'day'}</span>
+            <select
+              className="ob-day-pill-select"
+              value={incomeDay}
+              onChange={e => setIncomeDay(e.target.value)}
+            >
+              {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
+            </select>
+          </label>
         </div>
-        <label className="ob-income-day-row">
-          <span>{he ? 'יום קבלה:' : 'Received on day'}</span>
-          <select
-            className="ob-income-day-select"
-            value={incomeDay}
-            onChange={e => setIncomeDay(e.target.value)}
-          >
-            {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
-          </select>
-        </label>
 
         {/* Recurring expenses */}
         <div className="ob-section-label" style={{ marginTop: 20 }}>
