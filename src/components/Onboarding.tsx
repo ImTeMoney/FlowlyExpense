@@ -114,25 +114,36 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
 
   const s = currSym;
   const txns = he
-    ? [['#22C55E','קניות סופר',`${s}340`],['#8B5CF6','שכירות',`${s}3,500`],['#F59E0B','דלק',`${s}180`]]
-    : [['#22C55E','Groceries',`${s}95`],['#8B5CF6','Rent',`${s}1,200`],['#F59E0B','Fuel',`${s}55`]];
+    ? [{ color:'#22C55E', icon:'🛒', name:'קניות סופר', cat:'קניות',  amt:`${s}340`   },
+       { color:'#8B5CF6', icon:'🏠', name:'שכירות',     cat:'דיור',   amt:`${s}3,500` },
+       { color:'#F59E0B', icon:'⛽', name:'דלק',         cat:'רכב',    amt:`${s}180`   }]
+    : [{ color:'#22C55E', icon:'🛒', name:'Groceries',  cat:'Shopping',amt:`${s}95`    },
+       { color:'#8B5CF6', icon:'🏠', name:'Rent',       cat:'Housing', amt:`${s}1,200` },
+       { color:'#F59E0B', icon:'⛽', name:'Fuel',       cat:'Car',     amt:`${s}55`    }];
 
   return (
     <div className="ob-phone-wrap">
       <div className="ob-phone-frame" dir={he ? 'rtl' : 'ltr'}>
-        {/* App header */}
-        <div className="ob-phone-header">
-          <span className="ob-phone-month">{he ? 'אפריל 2026' : 'Apr 2026'}</span>
-          <span className="ob-phone-brand">Flowly</span>
+
+        {/* Mini filter bar — matches real app */}
+        <div className="ob-preview-filterbar">
+          <div className="ob-preview-chip">{he ? 'תשלום' : 'Payment'} ›</div>
+          <div className="ob-preview-chip">{he ? 'קטגוריות' : 'Categories'} ›</div>
+          <div className="ob-preview-search">🔍</div>
         </div>
 
-        {/* Transaction rows */}
+        {/* Transaction rows — styled like real .txn-item */}
         <div className="ob-phone-txns">
-          {txns.map(([color, name, amt], i) => (
-            <div key={i} className="ob-phone-txn">
-              <div className="ob-phone-txn-dot" style={{ background: color as string }} />
-              <span className="ob-phone-txn-name">{name}</span>
-              <span className="ob-phone-txn-amt">{amt}</span>
+          {txns.map(({ color, icon, name, cat, amt }, i) => (
+            <div key={i} className="ob-preview-txn">
+              <div className="ob-preview-txn-icon" style={{ background: color + '20', border: `1px solid ${color}40` }}>
+                <span style={{ fontSize: 11 }}>{icon}</span>
+              </div>
+              <div className="ob-preview-txn-body">
+                <span className="ob-preview-txn-name">{name}</span>
+                <span className="ob-preview-txn-cat">{cat}</span>
+              </div>
+              <span className="ob-preview-txn-amt" style={{ color: '#EF4444' }}>-{amt}</span>
             </div>
           ))}
         </div>
@@ -148,13 +159,6 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
             style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 0.22s cubic-bezier(0.22,1,0.36,1)' }}
           />
         </button>
-
-        {/* Bottom nav mock */}
-        <div className="ob-phone-nav">
-          {['🏠','📊','🌱','⚙️'].map((ic, i) => (
-            <div key={i} className={`ob-phone-nav-tab${i === 0 ? ' active' : ''}`}>{ic}</div>
-          ))}
-        </div>
 
         {/* Sheet slides up from bottom */}
         <div className={`ob-phone-sheet${open ? ' open' : ''}`}>

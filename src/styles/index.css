@@ -4267,62 +4267,68 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 /* ── Phone mock — always light-UI regardless of app theme ── */
 .ob-phone-wrap { width: 100%; display: flex; justify-content: center; }
 .ob-phone-frame {
-  position: relative; width: 240px; height: 300px;
-  background: #F8F9FB;
-  border: 1px solid rgba(0,0,0,0.09);
+  position: relative; width: 240px; height: 270px;
+  background: var(--bg);
+  border: 1.5px solid var(--glass-border);
   border-radius: 22px; overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.12);
 }
 
-/* header */
-.ob-phone-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 11px 14px 7px; border-bottom: 1px solid rgba(0,0,0,0.06);
-  background: #fff;
+/* filter bar — matches real app */
+.ob-preview-filterbar {
+  display: flex; gap: 5px; padding: 8px 10px 5px;
+  background: var(--bg); align-items: center; direction: rtl;
 }
-.ob-phone-month { font-size: 11px; font-weight: 500; color: #8E8E93; }
-.ob-phone-brand { font-size: 13px; font-weight: 800; color: #0A84FF; letter-spacing: 0.01em; }
-
-/* transaction rows */
-.ob-phone-txns { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
-.ob-phone-txn  { display: flex; align-items: center; gap: 9px; }
-.ob-phone-txn-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.ob-phone-txn-name { flex: 1; font-size: 12px; font-weight: 500; color: #1C1C1E; }
-.ob-phone-txn-amt  { font-size: 12px; font-weight: 700; color: #1C1C1E; font-variant-numeric: tabular-nums; }
-
-/* bottom nav */
-.ob-phone-nav {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 44px;
-  background: rgba(255,255,255,0.95); border-top: 1px solid rgba(0,0,0,0.07);
-  display: flex; align-items: center; justify-content: space-around;
-  backdrop-filter: blur(8px);
+.ob-preview-chip {
+  background: var(--bg-input); border: 1px solid var(--glass-border);
+  border-radius: 12px; padding: 4px 8px;
+  font-size: 9px; font-weight: 600; color: var(--text-muted); white-space: nowrap;
 }
-.ob-phone-nav-tab        { font-size: 16px; opacity: 0.28; }
-.ob-phone-nav-tab.active { opacity: 1; }
+.ob-preview-search {
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-input); border: 1px solid var(--glass-border);
+  border-radius: 8px; font-size: 10px; flex-shrink: 0;
+}
 
-/* FAB */
+/* transaction rows — match real .txn-item */
+.ob-phone-txns { padding: 4px 8px; display: flex; flex-direction: column; gap: 5px; background: var(--bg); }
+.ob-preview-txn {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: 10px; padding: 7px 10px;
+}
+.ob-preview-txn-icon {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ob-preview-txn-body { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ob-preview-txn-name { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ob-preview-txn-cat  { font-size: 9px; color: var(--text-muted); }
+.ob-preview-txn-amt  { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+
+/* FAB — matches real app purple FAB */
 .ob-phone-fab {
-  position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   width: 42px; height: 42px; border-radius: 50%;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,0.10);
-  color: #0A84FF; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.9);
+  background: var(--purple);
+  border: none;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(139,92,246,0.45);
   cursor: pointer; transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s;
   z-index: 2;
 }
 .ob-phone-fab:active { transform: translateX(-50%) scale(0.94); }
 @keyframes ob-phone-fab-pulse {
-  0%,100% { box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 0   rgba(10,132,255,0.35), inset 0 1px 0 rgba(255,255,255,0.9); }
-  60%     { box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 10px rgba(10,132,255,0),    inset 0 1px 0 rgba(255,255,255,0.9); }
+  0%,100% { box-shadow: 0 4px 16px rgba(139,92,246,0.4), 0 0 0 0   rgba(139,92,246,0.35); }
+  60%     { box-shadow: 0 4px 16px rgba(139,92,246,0.4), 0 0 0 10px rgba(139,92,246,0);   }
 }
 .ob-phone-fab-pulse { animation: ob-phone-fab-pulse 1.6s ease-out infinite; }
 
-/* sheet slides up — always light */
+/* sheet slides up — theme-aware */
 .ob-phone-sheet {
   position: absolute; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.98);
-  border-top: 1px solid rgba(0,0,0,0.08);
+  background: var(--bg-card);
+  border-top: 1px solid var(--glass-border);
   border-radius: 14px 14px 0 0;
   padding: 8px 14px 16px;
   transform: translateY(100%);
@@ -4333,11 +4339,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-phone-sheet.open { transform: translateY(0); }
 .ob-phone-sheet-handle {
   width: 32px; height: 3px; border-radius: 2px;
-  background: rgba(0,0,0,0.12); margin-bottom: 2px;
+  background: var(--glass-border); margin-bottom: 2px;
 }
 .ob-phone-sheet-amount { display: flex; align-items: baseline; gap: 3px; }
-.ob-phone-sheet-sym { font-size: 16px; font-weight: 700; color: #8E8E93; }
-.ob-phone-sheet-num { font-size: 30px; font-weight: 800; color: #1C1C1E; font-variant-numeric: tabular-nums; }
+.ob-phone-sheet-sym { font-size: 16px; font-weight: 700; color: var(--text-muted); }
+.ob-phone-sheet-num { font-size: 30px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 .ob-phone-sheet-cats { display: flex; gap: 7px; }
 .ob-phone-sheet-cat {
   width: 32px; height: 32px; border-radius: 8px; font-size: 15px;
