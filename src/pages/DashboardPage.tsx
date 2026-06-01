@@ -51,12 +51,6 @@ const URGENCY_BAR: Record<Urgency, string> = {
   neutral: '#64748B',
 };
 
-function isTxPending(tx: { isPending?: boolean; date: string; description?: string }): boolean {
-  const todayStr = new Date().toISOString().split('T')[0];
-  if (tx.date <= todayStr) return false;
-  return tx.isPending === true || (tx.description?.startsWith('(קבועה)') ?? false);
-}
-
 // ── Payment method icons ────────────────────────────────────────
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
   cash:     Banknote,
@@ -813,8 +807,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           Array.from(grouped.entries()).map(([dateKey, txns]) => {
-            const dayIncome  = txns.filter(tx =>  tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
-            const dayExpense = txns.filter(tx => !tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
+            const dayIncome  = txns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+            const dayExpense = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
             const dayNet = dayIncome - dayExpense;
             const isCollapsed = collapsedDays.has(dateKey);
             const dayCatColors = [...new Set(
@@ -857,7 +851,7 @@ export default function DashboardPage() {
                     r.description === tx.description && r.isIncome === !!tx.isIncome
                   );
                   return (
-                    <div key={tx.id} className={`txn-item chromatic-edge${isTxPending(tx) ? ' pending' : ''}`} style={{ '--i': txIdx } as React.CSSProperties}>
+                    <div key={tx.id} className="txn-item chromatic-edge" style={{ '--i': txIdx } as React.CSSProperties}>
                       <div
                         className="txn-icon"
                         style={{
@@ -873,9 +867,6 @@ export default function DashboardPage() {
                           <span className="txn-cat">{tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed)}</span>
                           {isRecurringTx && (
                             <span className="txn-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>
-                          )}
-                          {isTxPending(tx) && (
-                            <span className="txn-pending-badge">{lang === 'he' ? 'עתידי' : 'upcoming'}</span>
                           )}
                           {tx.installments && (
                             <span className="inst-badge">

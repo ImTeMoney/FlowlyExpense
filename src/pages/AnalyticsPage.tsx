@@ -8,12 +8,6 @@ import { resolveCatIcon } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import CalendarHeatmap from '../components/CalendarHeatmap';
 
-function isTxPending(tx: { isPending?: boolean; date: string; description?: string }): boolean {
-  const todayStr = new Date().toISOString().split('T')[0];
-  if (tx.date <= todayStr) return false;
-  return tx.isPending === true || (tx.description?.startsWith('(קבועה)') ?? false);
-}
-
 // ── Side donut with % inside + small context label ───────────────────────────
 
 function SideDonut({ pct, color, sublabel }: { pct: number; color: string; sublabel?: string }) {
@@ -82,8 +76,8 @@ export default function AnalyticsPage() {
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(ms)), [transactions, ms]);
   const prevTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(prevMs)), [transactions, prevMs]);
 
-  const spent  = monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
-  const income = monthTxns.filter(tx =>  tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
+  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
   const savings = income - spent;
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -94,7 +88,7 @@ export default function AnalyticsPage() {
   const catTotals = useMemo(() => {
     return categories
       .map(cat => {
-        const catTxns   = monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx) && tx.categoryId === cat.id);
+        const catTxns   = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id);
         const total     = catTxns.reduce((s,tx) => s + tx.amount, 0);
         const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0);
         return { cat, total, prevTotal };
@@ -117,7 +111,7 @@ export default function AnalyticsPage() {
 
   const pmTotals = useMemo(() => {
     const map = new Map<PaymentMethod, number>();
-    monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx)).forEach(tx => {
+    monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
       resolvePaymentSplits(tx).forEach(s => {
         map.set(s.paymentMethod, (map.get(s.paymentMethod) ?? 0) + s.amount);
       });
@@ -134,7 +128,7 @@ export default function AnalyticsPage() {
   // Per-card breakdown
   const cardTotals = useMemo(() => {
     const map = new Map<string, number>();
-    monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx) && tx.cardId).forEach(tx => {
+    monthTxns.filter(tx => !tx.isIncome && tx.cardId).forEach(tx => {
       map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + tx.amount);
     });
     return Array.from(map)
@@ -154,7 +148,7 @@ export default function AnalyticsPage() {
       const end = Math.min(start + 6, daysInMonth);
       const total = monthTxns
         .filter(tx => {
-          if (tx.isIncome || isTxPending(tx)) return false;
+          if (tx.isIncome) return false;
           const day = parseInt(tx.date.split('-')[2]);
           return day >= start && day <= end;
         })
@@ -646,7 +640,7 @@ export default function AnalyticsPage() {
                           )}
                         </div>
                         <div className="rec-meta">
-                          {!r.isIncome && !dueUrgent && !dueSoon ? `${t.day} ${r.dayOfMonth}` : dueLabel}
+                          {dueLabel}
                           {!r.isIncome && cat ? ` · ${catName(cat.id, cat.name, cat.isRenamed)}` : ''}
                           {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
                           {!r.isIncome && <span className="rec-annual-note"> · {formatCurrency(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
