@@ -266,6 +266,8 @@ interface ExpenseContextProps {
   formatCurrency: (amount: number) => string;
   /** Format an amount that is already in mainCurrency (no displayRate applied) */
   formatCurrencyDirect: (amount: number) => string;
+  /** Convert a transaction's stored ILS amount to mainCurrency, preserving originalAmount when available */
+  toMainAmt: (tx: Transaction) => number;
   filteredDashboardTransactions: Transaction[];
   isLoading: boolean;
   deviceId: string;
@@ -425,16 +427,16 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     if (streakData.lastCheckedDate === todayStr) return; // already checked today
 
     const daysInMonth = new Date(yyyy, today.getMonth() + 1, 0).getDate();
-    const dailyQuota = monthlyBudget / daysInMonth;
+    const dailyQuota = monthlyBudget / daysInMonth; // monthlyBudget is in mainCurrency
     const yesterdaySpend = transactions
       .filter(t => !t.isIncome && t.date === yesterdayStr)
-      .reduce((s, t) => s + t.amount, 0);
+      .reduce((s, t) => s + (t.currency === mainCurrency && t.originalAmount !== undefined ? t.originalAmount : t.amount * displayRate), 0);
 
     const underBudget = yesterdaySpend <= dailyQuota;
     const newStreak = underBudget ? streakData.currentStreak + 1 : 0;
     const newLongest = Math.max(streakData.longestStreak, newStreak);
     setStreakData({ currentStreak: newStreak, longestStreak: newLongest, lastCheckedDate: todayStr });
-  }, [transactions, monthlyBudget]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions, monthlyBudget, mainCurrency, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-post recurring expenses whenever the recurring list changes.
   // Using `recurringExpenses` as a dependency (instead of []) means newly added
@@ -727,8 +729,16 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }, [mainCurrency]);
 
+  /** Convert a transaction's ILS-stored amount to mainCurrency, using originalAmount when available to avoid round-trip precision loss */
+  const toMainAmt = useCallback((tx: Transaction): number =>
+    tx.currency === mainCurrency && tx.originalAmount !== undefined
+      ? tx.originalAmount
+      : tx.amount * displayRate,
+    [mainCurrency, displayRate]
+  );
+
   return (
-    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, formatCurrencyDirect, filteredDashboardTransactions, isLoading: false, deviceId, displayRate }}>
+    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, formatCurrencyDirect, toMainAmt, filteredDashboardTransactions, isLoading: false, deviceId, displayRate }}>
       {children}
     </ExpenseContext.Provider>
   );

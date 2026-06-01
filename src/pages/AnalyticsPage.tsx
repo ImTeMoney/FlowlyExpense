@@ -47,7 +47,7 @@ function SideDonut({ pct, color, sublabel }: { pct: number; color: string; subla
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const { state, dispatch, formatCurrency } = useExpense();
+  const { state, dispatch, formatCurrency, formatCurrencyDirect, toMainAmt } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
   const navigate = useNavigate();
   const { transactions, categories, recurringExpenses, categoryBudgets, cards } = state;
@@ -76,8 +76,8 @@ export default function AnalyticsPage() {
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(ms)), [transactions, ms]);
   const prevTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(prevMs)), [transactions, prevMs]);
 
-  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
+  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
   const savings = income - spent;
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -89,13 +89,13 @@ export default function AnalyticsPage() {
     return categories
       .map(cat => {
         const catTxns   = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id);
-        const total     = catTxns.reduce((s,tx) => s + tx.amount, 0);
-        const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0);
+        const total     = catTxns.reduce((s,tx) => s + toMainAmt(tx), 0);
+        const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + toMainAmt(tx), 0);
         return { cat, total, prevTotal };
       })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
-  }, [categories, monthTxns, prevTxns]);
+  }, [categories, monthTxns, prevTxns, toMainAmt]);
 
   const maxCat        = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
@@ -112,15 +112,23 @@ export default function AnalyticsPage() {
   const pmTotals = useMemo(() => {
     const map = new Map<PaymentMethod, number>();
     monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
-      resolvePaymentSplits(tx).forEach(s => {
-        map.set(s.paymentMethod, (map.get(s.paymentMethod) ?? 0) + s.amount);
-      });
+      const mainAmt = toMainAmt(tx);
+      const splits = resolvePaymentSplits(tx);
+      if (splits.length === 1) {
+        map.set(splits[0].paymentMethod, (map.get(splits[0].paymentMethod) ?? 0) + mainAmt);
+      } else {
+        const ilsTotal = splits.reduce((s, sp) => s + sp.amount, 0);
+        splits.forEach(sp => {
+          const portion = ilsTotal > 0 ? mainAmt * (sp.amount / ilsTotal) : mainAmt / splits.length;
+          map.set(sp.paymentMethod, (map.get(sp.paymentMethod) ?? 0) + portion);
+        });
+      }
     });
     return Array.from(map)
       .map(([pm, total]) => ({ pm, total }))
       .filter(x => x.total > 0)
       .sort((a, b) => b.total - a.total);
-  }, [monthTxns]);
+  }, [monthTxns, toMainAmt]);
 
   const maxPm        = pmTotals[0]?.total || 1;
   const totalPmSpent = pmTotals.reduce((s, x) => s + x.total, 0);
@@ -129,13 +137,13 @@ export default function AnalyticsPage() {
   const cardTotals = useMemo(() => {
     const map = new Map<string, number>();
     monthTxns.filter(tx => !tx.isIncome && tx.cardId).forEach(tx => {
-      map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + tx.amount);
+      map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + toMainAmt(tx));
     });
     return Array.from(map)
       .map(([id, total]) => ({ card: cards.find(c => c.id === id), total }))
       .filter((x): x is { card: CreditCardType; total: number } => !!x.card)
       .sort((a, b) => b.total - a.total);
-  }, [monthTxns, cards]);
+  }, [monthTxns, cards, toMainAmt]);
 
   const maxCard        = cardTotals[0]?.total || 1;
   const totalCardSpent = cardTotals.reduce((s, x) => s + x.total, 0);
@@ -152,11 +160,11 @@ export default function AnalyticsPage() {
           const day = parseInt(tx.date.split('-')[2]);
           return day >= start && day <= end;
         })
-        .reduce((s, tx) => s + tx.amount, 0);
+        .reduce((s, tx) => s + toMainAmt(tx), 0);
       weeks.push({ label: `${start}–${end}`, total });
     }
     return weeks;
-  }, [monthTxns, daysInMonth]);
+  }, [monthTxns, daysInMonth, toMainAmt]);
   const maxWeek = Math.max(...weeklyTotals.map(w => w.total), 1);
 
   // UI state
@@ -227,13 +235,13 @@ export default function AnalyticsPage() {
     heroRemainingColor = 'var(--text-muted)';
   } else if (savings >= 0) {
     heroRemaining      = lang === 'he'
-      ? `חסכת ${formatCurrency(savings)} החודש`
-      : `Saved ${formatCurrency(savings)} this month`;
+      ? `חסכת ${formatCurrencyDirect(savings)} החודש`
+      : `Saved ${formatCurrencyDirect(savings)} this month`;
     heroRemainingColor = '#30D158';
   } else {
     heroRemaining      = lang === 'he'
-      ? `גירעון של ${formatCurrency(Math.abs(savings))}`
-      : `Deficit of ${formatCurrency(Math.abs(savings))}`;
+      ? `גירעון של ${formatCurrencyDirect(Math.abs(savings))}`
+      : `Deficit of ${formatCurrencyDirect(Math.abs(savings))}`;
     heroRemainingColor = '#FF3B30';
   }
 
@@ -300,12 +308,12 @@ export default function AnalyticsPage() {
               {income > 0 && (
                 <div className="an-kpi-row">
                   <span className="an-kpi-lbl">{t.income}</span>
-                  <span className="an-kpi-val" style={{ color: '#30D158' }}>{formatCurrency(income)}</span>
+                  <span className="an-kpi-val" style={{ color: '#30D158' }}>{formatCurrencyDirect(income)}</span>
                 </div>
               )}
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'הוצאות' : 'Expenses'}</span>
-                <span className="an-kpi-val" style={{ color: '#FF3B30' }}>{formatCurrency(spent)}</span>
+                <span className="an-kpi-val" style={{ color: '#FF3B30' }}>{formatCurrencyDirect(spent)}</span>
               </div>
               {income > 0 && (
                 <div className="an-kpi-row">
@@ -318,15 +326,15 @@ export default function AnalyticsPage() {
                     color: savings >= 0 ? '#8B5CF6' : '#FF3B30',
                   }}>
                     {savings >= 0
-                      ? formatCurrency(savings)
-                      : `−${formatCurrency(Math.abs(savings))}`}
+                      ? formatCurrencyDirect(savings)
+                      : `−${formatCurrencyDirect(Math.abs(savings))}`}
                   </span>
                 </div>
               )}
               <div className="an-kpi-divider" />
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'ממוצע יומי' : 'Daily avg'}</span>
-                <span className="an-kpi-val an-kpi-val-sm">{formatCurrency(dailyAvg)}</span>
+                <span className="an-kpi-val an-kpi-val-sm">{formatCurrencyDirect(dailyAvg)}</span>
               </div>
             </div>
           </div>
@@ -365,7 +373,7 @@ export default function AnalyticsPage() {
                         </div>
                       </div>
                       <div className="an-cb-amount-side">
-                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
                         {budgetInfo.status !== 'none' ? (
                           <span className={`an-cb-budget-badge ${budgetInfo.status}`}>
                             {Math.round(budgetInfo.pct * 100)}%
@@ -470,7 +478,7 @@ export default function AnalyticsPage() {
                         <span className="an-cb-name">{label}</span>
                       </div>
                       <div className="an-cb-amount-side">
-                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
                         <span className="an-cb-pct">{pct}%</span>
                       </div>
                     </div>
@@ -505,7 +513,7 @@ export default function AnalyticsPage() {
                         </div>
                       </div>
                       <div className="an-cb-amount-side">
-                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
                         <span className="an-cb-pct">{pct}%</span>
                       </div>
                     </div>
@@ -545,8 +553,8 @@ export default function AnalyticsPage() {
                 return (
                   <div className="an-insight">
                     {lang === 'he'
-                      ? `שיא בשבוע ${peak.label} — ${formatCurrency(peak.total)} (${pct}%)`
-                      : `Peak week ${peak.label} — ${formatCurrency(peak.total)} (${pct}%)`}
+                      ? `שיא בשבוע ${peak.label} — ${formatCurrencyDirect(peak.total)} (${pct}%)`
+                      : `Peak week ${peak.label} — ${formatCurrencyDirect(peak.total)} (${pct}%)`}
                   </div>
                 );
               })()}
@@ -577,7 +585,7 @@ export default function AnalyticsPage() {
                           <li key={tx.id} className="cal-day-detail-item">
                             <span className="cal-day-detail-dot" style={{ background: cat?.color ?? 'var(--purple)' }} />
                             <span className="cal-day-detail-desc">{tx.description}</span>
-                            <span className="cal-day-detail-amt">{formatCurrency(tx.amount)}</span>
+                            <span className="cal-day-detail-amt">{formatCurrencyDirect(toMainAmt(tx))}</span>
                           </li>
                         );
                       })}

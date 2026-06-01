@@ -37,7 +37,7 @@ function toStr(d: Date) {
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 export function useInsights(): { statusCard: StatusCard; insights: InsightCard[] } {
-  const { state, formatCurrency } = useExpense();
+  const { state, formatCurrencyDirect, toMainAmt } = useExpense();
   const { lang, catName } = useLang();
   const { transactions, categories } = state;
   const iHe = lang === 'he';
@@ -58,9 +58,9 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     const monthTxns    = transactions.filter(tx => tx.date.startsWith(ms));
     const lastMoTxns   = transactions.filter(tx => tx.date.startsWith(lms));
 
-    const spent     = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-    const income    = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-    const lmSpent   = lastMoTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+    const spent     = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
+    const income    = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
+    const lmSpent   = lastMoTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
 
     // ── Status card ──────────────────────────────────────────────────────────
 
@@ -75,19 +75,19 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       urgency  = 'neutral';
     } else if (income === 0) {
       headline = iHe ? 'הוסף הכנסה לתמונה המלאה' : 'Add your income to see the full picture';
-      subline  = iHe ? `הוצאת ${formatCurrency(spent)} החודש` : `Spent ${formatCurrency(spent)} this month`;
+      subline  = iHe ? `הוצאת ${formatCurrencyDirect(spent)} החודש` : `Spent ${formatCurrencyDirect(spent)} this month`;
       urgency  = 'neutral';
     } else if (savings < 0) {
       headline = iHe ? 'ההוצאות עולות על ההכנסות' : 'Spending more than you\'re earning';
-      subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
+      subline  = iHe ? `הכנסה ${formatCurrencyDirect(income)} · הוצאות ${formatCurrencyDirect(spent)}` : `Income ${formatCurrencyDirect(income)} · Spent ${formatCurrencyDirect(spent)}`;
       urgency  = 'warning';
     } else if (savings > 0) {
       headline = iHe ? 'אתה בדרך טובה החודש' : 'You\'re on a good track this month';
-      subline  = iHe ? `חיסכון: ${formatCurrency(savings)} · עוד ${daysLeft} ימים` : `Saving ${formatCurrency(savings)} · ${daysLeft} days left`;
+      subline  = iHe ? `חיסכון: ${formatCurrencyDirect(savings)} · עוד ${daysLeft} ימים` : `Saving ${formatCurrencyDirect(savings)} · ${daysLeft} days left`;
       urgency  = 'good';
     } else {
       headline = iHe ? 'הכנסות והוצאות בשיווי משקל' : 'Income and expenses are balanced';
-      subline  = iHe ? `הכנסה ${formatCurrency(income)} · הוצאות ${formatCurrency(spent)}` : `Income ${formatCurrency(income)} · Spent ${formatCurrency(spent)}`;
+      subline  = iHe ? `הכנסה ${formatCurrencyDirect(income)} · הוצאות ${formatCurrencyDirect(spent)}` : `Income ${formatCurrencyDirect(income)} · Spent ${formatCurrencyDirect(spent)}`;
       urgency  = 'neutral';
     }
 
@@ -109,8 +109,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     const startLastWeek  = new Date(startThisWeek); startLastWeek.setDate(startThisWeek.getDate() - 7);
     const endLastWeek    = new Date(startThisWeek.getTime() - 86_400_000);
 
-    const thisWeekSpend = transactions.filter(tx => !tx.isIncome && tx.date >= toStr(startThisWeek)).reduce((s,tx) => s + tx.amount, 0);
-    const lastWeekSpend = transactions.filter(tx => !tx.isIncome && tx.date >= toStr(startLastWeek) && tx.date <= toStr(endLastWeek)).reduce((s,tx) => s + tx.amount, 0);
+    const thisWeekSpend = transactions.filter(tx => !tx.isIncome && tx.date >= toStr(startThisWeek)).reduce((s,tx) => s + toMainAmt(tx), 0);
+    const lastWeekSpend = transactions.filter(tx => !tx.isIncome && tx.date >= toStr(startLastWeek) && tx.date <= toStr(endLastWeek)).reduce((s,tx) => s + toMainAmt(tx), 0);
 
     const daysInThisWeek   = Math.max(1, dayOfWeek + 1);
     const thisWeekDailyAvg = thisWeekSpend / daysInThisWeek;
@@ -123,8 +123,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
         icon:  'zap',
         line1: iHe ? 'ההוצאות השבוע גבוהות מהרגיל' : 'Spending higher than usual this week',
         line2: iHe
-          ? `ממוצע יומי ${formatCurrency(Math.round(thisWeekDailyAvg))} לעומת ${formatCurrency(Math.round(lastWeekDailyAvg))} שבוע שעבר`
-          : `${formatCurrency(Math.round(thisWeekDailyAvg))}/day vs ${formatCurrency(Math.round(lastWeekDailyAvg))} last week`,
+          ? `ממוצע יומי ${formatCurrencyDirect(Math.round(thisWeekDailyAvg))} לעומת ${formatCurrencyDirect(Math.round(lastWeekDailyAvg))} שבוע שעבר`
+          : `${formatCurrencyDirect(Math.round(thisWeekDailyAvg))}/day vs ${formatCurrencyDirect(Math.round(lastWeekDailyAvg))} last week`,
         line3: iHe ? 'כדאי לאט קצת עד סוף השבוע' : 'Try slowing down until the weekend',
       });
     }
@@ -134,7 +134,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       const nonRecTxns = expenseTxns.filter(tx => !tx.description.startsWith('(קבועה) '));
       const byCatNR = new Map<string, number>();
       for (const tx of nonRecTxns) {
-        byCatNR.set(tx.categoryId, (byCatNR.get(tx.categoryId) ?? 0) + tx.amount);
+        byCatNR.set(tx.categoryId, (byCatNR.get(tx.categoryId) ?? 0) + toMainAmt(tx));
       }
       let topCatNRId = '', topCatNRTotal = 0;
       for (const [catId, total] of byCatNR.entries()) {
@@ -148,8 +148,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
           type:  'top_cat_nonrecurring',
           icon:  'zap',
           line1: iHe
-            ? `הוצאת ${formatCurrency(Math.round(topCatNRTotal))} על ${resolvedName} החודש`
-            : `Spent ${formatCurrency(Math.round(topCatNRTotal))} on ${resolvedName} this month`,
+            ? `הוצאת ${formatCurrencyDirect(Math.round(topCatNRTotal))} על ${resolvedName} החודש`
+            : `Spent ${formatCurrencyDirect(Math.round(topCatNRTotal))} on ${resolvedName} this month`,
           line2: iHe
             ? 'תשים לב — נסה לחסוך בקטגוריה הזו'
             : 'Consider cutting back in this category',
@@ -162,8 +162,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     if (insights.length < 2 && lmSpent > 0) {
       const thisByCat = new Map<string, number>();
       const lastByCat = new Map<string, number>();
-      expenseTxns.forEach(tx => thisByCat.set(tx.categoryId, (thisByCat.get(tx.categoryId) ?? 0) + tx.amount));
-      lastMoTxns.filter(tx => !tx.isIncome).forEach(tx => lastByCat.set(tx.categoryId, (lastByCat.get(tx.categoryId) ?? 0) + tx.amount));
+      expenseTxns.forEach(tx => thisByCat.set(tx.categoryId, (thisByCat.get(tx.categoryId) ?? 0) + toMainAmt(tx)));
+      lastMoTxns.filter(tx => !tx.isIncome).forEach(tx => lastByCat.set(tx.categoryId, (lastByCat.get(tx.categoryId) ?? 0) + toMainAmt(tx)));
 
       let topCatId = '', topRatio = 0, topDelta = 0;
       for (const [catId, amt] of thisByCat.entries()) {
@@ -183,8 +183,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
           icon:  'zap',
           line1: iHe ? `${resolvedCatName} — יותר מהחודש שעבר` : `${resolvedCatName} up vs last month`,
           line2: iHe
-            ? `כ־${formatCurrency(Math.round(topDelta))} יותר — עלייה של ${Math.round((topRatio - 1) * 100)}%`
-            : `About ${formatCurrency(Math.round(topDelta))} more — ${Math.round((topRatio - 1) * 100)}% increase`,
+            ? `כ־${formatCurrencyDirect(Math.round(topDelta))} יותר — עלייה של ${Math.round((topRatio - 1) * 100)}%`
+            : `About ${formatCurrencyDirect(Math.round(topDelta))} more — ${Math.round((topRatio - 1) * 100)}% increase`,
           line3: iHe ? 'זה הגורם העיקרי לשינוי החודש' : 'That\'s the main driver of change this month',
         });
       }
@@ -193,7 +193,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     // ── 4. Category dominance (>40% of total spend) ───────────────────────────
     if (insights.length < 2 && totalSpent > 200) {
       const byCat = new Map<string, number>();
-      expenseTxns.forEach(tx => byCat.set(tx.categoryId, (byCat.get(tx.categoryId) ?? 0) + tx.amount));
+      expenseTxns.forEach(tx => byCat.set(tx.categoryId, (byCat.get(tx.categoryId) ?? 0) + toMainAmt(tx)));
       let domCatId = '', domAmt = 0;
       for (const [catId, amt] of byCat.entries()) {
         if (amt > domAmt) { domAmt = amt; domCatId = catId; }
@@ -210,8 +210,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
             ? `${resolvedCatName} = ${Math.round(domPct * 100)}% מסך ההוצאות החודש`
             : `${resolvedCatName} is ${Math.round(domPct * 100)}% of total spending`,
           line2: iHe
-            ? `${formatCurrency(Math.round(domAmt))} מתוך ${formatCurrency(Math.round(totalSpent))} סה״כ`
-            : `${formatCurrency(Math.round(domAmt))} out of ${formatCurrency(Math.round(totalSpent))} total`,
+            ? `${formatCurrencyDirect(Math.round(domAmt))} מתוך ${formatCurrencyDirect(Math.round(totalSpent))} סה״כ`
+            : `${formatCurrencyDirect(Math.round(domAmt))} out of ${formatCurrencyDirect(Math.round(totalSpent))} total`,
           line3: iHe
             ? `פיזור הוצאות יותר מאוזן יעזור לשמור על יציבות`
             : `More balanced spending helps maintain stability`,
@@ -223,7 +223,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     if (insights.length < 2 && income > 0 && spent > income) {
       const deficit = spent - income;
       const byCat = new Map<string, number>();
-      expenseTxns.forEach(tx => byCat.set(tx.categoryId, (byCat.get(tx.categoryId) ?? 0) + tx.amount));
+      expenseTxns.forEach(tx => byCat.set(tx.categoryId, (byCat.get(tx.categoryId) ?? 0) + toMainAmt(tx)));
       let topCatId = '', topAmt = 0;
       for (const [catId, amt] of byCat.entries()) {
         if (amt > topAmt) { topAmt = amt; topCatId = catId; }
@@ -237,7 +237,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
           id:    'saving_tip',
           type:  'saving_tip',
           icon:  'piggy',
-          line1: iHe ? `כדי לאזן: הפחת ${formatCurrency(cutNeeded)} מ${resolvedCatName}` : `To break even: cut ${formatCurrency(cutNeeded)} from ${resolvedCatName}`,
+          line1: iHe ? `כדי לאזן: הפחת ${formatCurrencyDirect(cutNeeded)} מ${resolvedCatName}` : `To break even: cut ${formatCurrencyDirect(cutNeeded)} from ${resolvedCatName}`,
           line2: iHe
             ? `זה ${cutPct}% פחות מהסכום שהוצאת שם החודש`
             : `That's a ${cutPct}% reduction in ${resolvedCatName} spending`,
@@ -258,7 +258,7 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
           id:       'opportunity',
           type:     'opportunity',
           icon:     'piggy',
-          line1:    iHe ? `יש לך ${formatCurrency(Math.round(toShow))} פנויים החודש` : `You have ${formatCurrency(Math.round(toShow))} extra this month`,
+          line1:    iHe ? `יש לך ${formatCurrencyDirect(Math.round(toShow))} פנויים החודש` : `You have ${formatCurrencyDirect(Math.round(toShow))} extra this month`,
           line2:    iHe ? 'זה כסף שיכול לעבוד בשבילך' : 'That\'s money that could work for you',
           line3:    iHe ? 'שקול להעביר חלק לחיסכון עכשיו' : 'Consider moving some to savings',
           ctaLabel: iHe ? 'ראה איך זה יכול לצמוח' : 'See how it could grow',
@@ -280,5 +280,5 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     }
 
     return { statusCard, insights };
-  }, [transactions, categories, formatCurrency, iHe, catName]);
+  }, [transactions, categories, formatCurrencyDirect, toMainAmt, iHe, catName]);
 }

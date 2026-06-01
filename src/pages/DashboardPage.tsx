@@ -971,8 +971,8 @@ export default function DashboardPage() {
                               <strong>"{tx.description}"</strong>
                               {' '}
                               {lang === 'he'
-                                ? `— ${formatCurrency(tx.amount)}`
-                                : `· ${formatCurrency(tx.amount)}`}
+                                ? `— ${formatCurrencyDirect(toMainAmt(tx))}`
+                                : `· ${formatCurrencyDirect(toMainAmt(tx))}`}
                             </>
                           ),
                           onConfirm: () => { handleDelete(tx.id); setConfirm(null); },
