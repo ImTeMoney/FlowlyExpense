@@ -1028,13 +1028,13 @@ export default function DashboardPage() {
                 className={`type-btn ${!isIncome ? 'active-exp' : ''}`}
                 onClick={() => { setIsIncome(false); setCatId(categories[0]?.id ?? ''); }}
               >
-                <TrendingDown size={14} /> {t.expense}
+                <TrendingDown size={16} /> {t.expense}
               </button>
               <button
                 className={`type-btn ${isIncome ? 'active-inc' : ''}`}
                 onClick={() => { setIsIncome(true); setCatId('cat_other'); }}
               >
-                <TrendingUp size={14} /> {t.income}
+                <TrendingUp size={16} /> {t.income}
               </button>
             </div>
 
