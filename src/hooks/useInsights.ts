@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useExpense } from '../context/ExpenseContext';
+import type { Transaction } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -62,23 +63,33 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     const income    = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
     const lmSpent   = lastMoTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
 
+    // Recurring (fixed) transactions are tagged with recurringId or description prefix.
+    // They should NOT drive pace/weekly comparisons — they're predictable scheduled costs.
+    const isRecTx = (tx: Transaction) => !!tx.recurringId || tx.description.startsWith('(קבועה) ');
+
     // ── Historical baseline (last 1–3 months with enough data) ───────────────
-    const histMonths: Array<{ total: number; dailyAvg: number; byCat: Map<string, number> }> = [];
+    const histMonths: Array<{ total: number; dailyAvg: number; dailyAvgVar: number; byCat: Map<string, number> }> = [];
     for (let i = 1; i <= 3; i++) {
       const d   = new Date(year, month - 1 - i, 1);
       const hms = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
       const htxns = transactions.filter(tx => !tx.isIncome && tx.date.startsWith(hms));
       if (htxns.length < 3) continue;
-      const htotal = htxns.reduce((s,tx) => s + toMainAmt(tx), 0);
-      const hdays  = daysInMonth(d.getFullYear(), d.getMonth() + 1);
-      const hByCat = new Map<string, number>();
+      const htotal  = htxns.reduce((s,tx) => s + toMainAmt(tx), 0);
+      const hvtotal = htxns.filter(tx => !isRecTx(tx)).reduce((s,tx) => s + toMainAmt(tx), 0);
+      const hdays   = daysInMonth(d.getFullYear(), d.getMonth() + 1);
+      const hByCat  = new Map<string, number>();
       htxns.forEach(tx => hByCat.set(tx.categoryId, (hByCat.get(tx.categoryId) ?? 0) + toMainAmt(tx)));
-      histMonths.push({ total: htotal, dailyAvg: htotal / hdays, byCat: hByCat });
+      histMonths.push({ total: htotal, dailyAvg: htotal / hdays, dailyAvgVar: hvtotal / hdays, byCat: hByCat });
     }
-    const hasHistory     = histMonths.length >= 1;
-    const histMonthlyAvg = hasHistory ? histMonths.reduce((s,m) => s + m.total, 0) / histMonths.length : 0;
-    const histDailyAvg   = hasHistory ? histMonths.reduce((s,m) => s + m.dailyAvg, 0) / histMonths.length : 0;
-    const currentDailyRate = todayDay >= 3 ? spent / todayDay : 0;
+    const hasHistory      = histMonths.length >= 1;
+    const histMonthlyAvg  = hasHistory ? histMonths.reduce((s,m) => s + m.total, 0) / histMonths.length : 0;
+    const histDailyAvg    = hasHistory ? histMonths.reduce((s,m) => s + m.dailyAvg, 0) / histMonths.length : 0;
+    // Variable-only daily avg: excludes recurring fixed costs (for pace comparison)
+    const histDailyAvgVar = hasHistory ? histMonths.reduce((s,m) => s + m.dailyAvgVar, 0) / histMonths.length : histDailyAvg;
+    // Variable spending this month (strips recurring) — what actually drives discretionary pace
+    const variableTxns    = monthTxns.filter(tx => !tx.isIncome && !isRecTx(tx));
+    const variableSpent   = variableTxns.reduce((s,tx) => s + toMainAmt(tx), 0);
+    const currentDailyRate = todayDay >= 3 ? variableSpent / todayDay : 0;
 
     // ── Status card ──────────────────────────────────────────────────────────
 
@@ -129,9 +140,9 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
     const totalSpent  = spent;
 
     // ── H1. Historical daily pace vs norm ────────────────────────────────────
-    // Shows when the user is spending noticeably faster or slower than their pattern
-    if (insights.length < MAX && hasHistory && currentDailyRate > 0 && histDailyAvg > 0) {
-      const paceRatio = currentDailyRate / histDailyAvg;
+    // Compares variable (discretionary) daily spending to the same variable baseline
+    if (insights.length < MAX && hasHistory && currentDailyRate > 0 && histDailyAvgVar > 0) {
+      const paceRatio = currentDailyRate / histDailyAvgVar;
       if (paceRatio > 1.30) {
         const pct = Math.round((paceRatio - 1) * 100);
         insights.push({
@@ -142,8 +153,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
             ? `קצב הוצאות גבוה מהרגיל שלך ב-${pct}%`
             : `Spending ${pct}% above your usual pace`,
           line2: iHe
-            ? `מוציא ${formatCurrencyDirect(Math.round(currentDailyRate))}/יום — הממוצע שלך ${formatCurrencyDirect(Math.round(histDailyAvg))}/יום`
-            : `${formatCurrencyDirect(Math.round(currentDailyRate))}/day — your norm is ${formatCurrencyDirect(Math.round(histDailyAvg))}/day`,
+            ? `מוציא ${formatCurrencyDirect(Math.round(currentDailyRate))}/יום — הממוצע שלך ${formatCurrencyDirect(Math.round(histDailyAvgVar))}/יום`
+            : `${formatCurrencyDirect(Math.round(currentDailyRate))}/day — your norm is ${formatCurrencyDirect(Math.round(histDailyAvgVar))}/day`,
           line3: '',
         });
       } else if (paceRatio < 0.65 && todayDay >= 7) {
@@ -156,8 +167,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
             ? `קצב חיסכון טוב — ${pct}% פחות מהרגיל שלך`
             : `Great pace — spending ${pct}% below your norm`,
           line2: iHe
-            ? `מוציא ${formatCurrencyDirect(Math.round(currentDailyRate))}/יום — הממוצע שלך ${formatCurrencyDirect(Math.round(histDailyAvg))}/יום`
-            : `${formatCurrencyDirect(Math.round(currentDailyRate))}/day — your norm is ${formatCurrencyDirect(Math.round(histDailyAvg))}/day`,
+            ? `מוציא ${formatCurrencyDirect(Math.round(currentDailyRate))}/יום — הממוצע שלך ${formatCurrencyDirect(Math.round(histDailyAvgVar))}/יום`
+            : `${formatCurrencyDirect(Math.round(currentDailyRate))}/day — your norm is ${formatCurrencyDirect(Math.round(histDailyAvgVar))}/day`,
           line3: '',
         });
       }
@@ -248,8 +259,8 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       const startThisWeek  = new Date(now); startThisWeek.setDate(now.getDate() - dayOfWeek); startThisWeek.setHours(0,0,0,0);
       const startLastWeek  = new Date(startThisWeek); startLastWeek.setDate(startThisWeek.getDate() - 7);
       const endLastWeek    = new Date(startThisWeek.getTime() - 86_400_000);
-      const thisWeekSpend  = transactions.filter(tx => !tx.isIncome && tx.date >= toStr(startThisWeek)).reduce((s,tx) => s + toMainAmt(tx), 0);
-      const lastWeekSpend  = transactions.filter(tx => !tx.isIncome && tx.date >= toStr(startLastWeek) && tx.date <= toStr(endLastWeek)).reduce((s,tx) => s + toMainAmt(tx), 0);
+      const thisWeekSpend  = transactions.filter(tx => !tx.isIncome && !isRecTx(tx) && tx.date >= toStr(startThisWeek)).reduce((s,tx) => s + toMainAmt(tx), 0);
+      const lastWeekSpend  = transactions.filter(tx => !tx.isIncome && !isRecTx(tx) && tx.date >= toStr(startLastWeek) && tx.date <= toStr(endLastWeek)).reduce((s,tx) => s + toMainAmt(tx), 0);
       const daysInThisWeek   = Math.max(1, dayOfWeek + 1);
       const thisWeekDailyAvg = thisWeekSpend / daysInThisWeek;
       const lastWeekDailyAvg = lastWeekSpend / 7;
