@@ -218,7 +218,11 @@ function SlideButton({
   const fire = () => {
     setSnap(true);
     setOffset(max());
-    setTimeout(() => onConfirm(), 260);
+    setTimeout(() => {
+      setOffset(0);
+      setSnap(false);
+      onConfirm();
+    }, 260);
   };
 
   const reset = () => {
