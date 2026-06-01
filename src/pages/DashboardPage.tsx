@@ -750,27 +750,28 @@ export default function DashboardPage() {
   const viewMonthLabel = monthLabel(vy, vm);
 
   function handleExport() {
-    if (displayTxns.length === 0) return;
+    if (transactions.length === 0) return;
     const BOM = '﻿';
     const headers = lang === 'he'
-      ? 'תאריך,תיאור,קטגוריה,אמצעי תשלום,סכום'
-      : 'Date,Description,Category,Payment,Amount';
-    const rows = displayTxns
+      ? 'תאריך,תיאור,קטגוריה,אמצעי תשלום,סוג,סכום'
+      : 'Date,Description,Category,Payment,Type,Amount';
+    const rows = transactions
       .slice()
       .sort((a, b) => b.date.localeCompare(a.date))
       .map(tx => {
-        const cat = categories.find(c => c.id === tx.categoryId);
-        const catLabel = tx.isIncome ? t.income : (cat?.name ?? '');
-        const pm  = tx.paymentMethod ? (lang === 'he' ? PM_LABEL_HE[tx.paymentMethod] : tx.paymentMethod) : '';
-        const amt = tx.originalAmount !== undefined && tx.currency ? tx.originalAmount : tx.amount;
-        return [tx.date, `"${tx.description.replace(/"/g, '""')}"`, `"${catLabel}"`, pm, amt].join(',');
+        const cat      = categories.find(c => c.id === tx.categoryId);
+        const catLabel = tx.isIncome ? (lang === 'he' ? 'הכנסה' : 'Income') : (cat?.name ?? '');
+        const pm       = tx.paymentMethod ? (lang === 'he' ? PM_LABEL_HE[tx.paymentMethod] : tx.paymentMethod) : '';
+        const type     = tx.isIncome ? (lang === 'he' ? 'הכנסה' : 'income') : (lang === 'he' ? 'הוצאה' : 'expense');
+        const amt      = tx.originalAmount !== undefined && tx.currency ? tx.originalAmount : tx.amount;
+        return [tx.date, `"${tx.description.replace(/"/g, '""')}"`, `"${catLabel}"`, pm, type, amt].join(',');
       });
     const csv = BOM + headers + '\n' + rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `הוצאות_${viewMonth}.csv`;
+    a.download = `flowly_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -806,10 +807,17 @@ export default function DashboardPage() {
       for (const line of lines.slice(1)) {
         const cols = parseCsvLine(line);
         if (cols.length < 5) continue;
-        const [dateStr, desc, catNameStr, pmStr, amtStr] = cols;
+        const [dateStr, desc, catNameStr, pmStr] = cols;
+        // Support old format (5 cols: no type) and new format (6 cols: type before amount)
+        const hasTypeCol = cols.length >= 6;
+        const typeStr    = hasTypeCol ? cols[4].trim().toLowerCase() : '';
+        const amtStr     = hasTypeCol ? cols[5] : cols[4];
         const amount = parseFloat(amtStr);
         if (isNaN(amount) || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
-        const cat = categories.find(c =>
+        // Detect income: explicit type column, or legacy detection via category name
+        const txIsIncome = typeStr === 'הכנסה' || typeStr === 'income' ||
+          (!hasTypeCol && (catNameStr.trim() === 'הכנסה' || catNameStr.trim() === 'Income'));
+        const cat = txIsIncome ? null : categories.find(c =>
           catName(c.id, c.name, c.isRenamed).toLowerCase() === catNameStr.trim().toLowerCase()
         ) ?? categories[0];
         imported.push({
@@ -819,6 +827,7 @@ export default function DashboardPage() {
           date: dateStr,
           description: desc.trim(),
           paymentMethod: PM_MAP[pmStr.trim()] ?? 'cash',
+          isIncome: txIsIncome,
         });
       }
       if (imported.length > 0) {
@@ -856,7 +865,7 @@ export default function DashboardPage() {
               </button>
               {showIoMenu && (
                 <div className="header-io-drop">
-                  <button className="header-io-item" onClick={handleExport} disabled={displayTxns.length === 0}>
+                  <button className="header-io-item" onClick={handleExport} disabled={transactions.length === 0}>
                     <ArrowDownToLine size={14} />
                     {lang === 'he' ? 'ייצוא CSV' : 'Export CSV'}
                   </button>
