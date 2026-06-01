@@ -184,6 +184,22 @@ export default function DashboardPage() {
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
+  // Returns a transaction's value in mainCurrency without round-trip ILS precision loss.
+  // Transactions entered in mainCurrency have originalAmount set; everything else is ILS × displayRate.
+  const toMainAmt = useCallback((tx: Transaction) =>
+    tx.currency === mainCurrency && tx.originalAmount !== undefined
+      ? tx.originalAmount
+      : tx.amount * displayRate,
+    [mainCurrency, displayRate]
+  );
+
+  // "הוצאות עד כה" — exact mainCurrency total for the current month
+  const spentSoFarDisplay = useMemo(() => {
+    const ms = currentMonthStr();
+    return transactions.filter(t => !t.isIncome && t.date.startsWith(ms))
+      .reduce((s, t) => s + toMainAmt(t), 0);
+  }, [transactions, toMainAmt]);
+
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
@@ -726,7 +742,7 @@ export default function DashboardPage() {
           <div className="forecast-split-row">
             <div className="forecast-spent-block">
               <div className="forecast-block-label">{lang === 'he' ? 'הוצאת עד כה' : 'Spent so far'}</div>
-              <div className="forecast-spent-amount">{formatCurrency(Math.round(forecast.spentSoFar))}</div>
+              <div className="forecast-spent-amount">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</div>
             </div>
             <div className="forecast-split-divider" />
             <div className="forecast-proj-block">
@@ -807,8 +823,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           Array.from(grouped.entries()).map(([dateKey, txns]) => {
-            const dayIncome  = txns.filter(tx => tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-            const dayExpense = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+            const dayIncome  = txns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
+            const dayExpense = txns.filter(tx => !tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
             const dayNet = dayIncome - dayExpense;
             const isCollapsed = collapsedDays.has(dateKey);
             const dayCatColors = [...new Set(
