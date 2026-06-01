@@ -6,6 +6,7 @@ import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone,
   GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
+  Search, ArrowDownToLine,
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
 import LangToggle from '../components/LangToggle';
@@ -125,6 +126,12 @@ export default function DashboardPage() {
   const [voiceError, setVoiceError]   = useState('');
   // Category bottom sheet
   const [catSheetOpen, setCatSheetOpen] = useState(false);
+  // Transaction filters
+  const [filterSearch,  setFilterSearch]  = useState('');
+  const [filterCatIds,  setFilterCatIds]  = useState<string[]>([]);
+  const [filterPayMs,   setFilterPayMs]   = useState<string[]>([]);
+  const [showCatDrop,   setShowCatDrop]   = useState(false);
+  const [showPayDrop,   setShowPayDrop]   = useState(false);
 
   // Lock body scroll when any modal is open.
   // On iOS, overflow:hidden alone doesn't stop rubber-band bounce on fixed elements.
@@ -197,7 +204,22 @@ export default function DashboardPage() {
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
   const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
-  const grouped    = useMemo(() => groupByDate(monthTxns), [monthTxns]);
+  const displayTxns = useMemo(() => {
+    let txns = monthTxns;
+    if (filterSearch.trim()) {
+      const q = filterSearch.trim().toLowerCase();
+      txns = txns.filter(tx => tx.description.toLowerCase().includes(q));
+    }
+    if (filterCatIds.length > 0) {
+      txns = txns.filter(tx => filterCatIds.includes(tx.categoryId ?? ''));
+    }
+    if (filterPayMs.length > 0) {
+      txns = txns.filter(tx => filterPayMs.includes(tx.paymentMethod ?? ''));
+    }
+    return txns;
+  }, [monthTxns, filterSearch, filterCatIds, filterPayMs]);
+
+  const grouped    = useMemo(() => groupByDate(displayTxns), [displayTxns]);
   const allCollapsed = grouped.size > 0 && collapsedDays.size === grouped.size;
 
   function toggleDay(dateKey: string) {
@@ -681,6 +703,52 @@ export default function DashboardPage() {
     return (t[key] as string | undefined) ?? pm;
   };
 
+  // Close filter dropdowns when clicking outside
+  useEffect(() => {
+    if (!showCatDrop && !showPayDrop) return;
+    function onClickOutside(e: MouseEvent) {
+      const el = e.target as Element;
+      if (!el.closest('.txn-filter-chip-wrap')) {
+        setShowCatDrop(false);
+        setShowPayDrop(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [showCatDrop, showPayDrop]);
+
+  const PM_LABEL_HE: Record<string, string> = {
+    cash: 'מזומן', credit: 'אשראי', check: "צ'ק", transfer: 'העברה', bit: 'ביט',
+  };
+
+  function handleExport() {
+    if (displayTxns.length === 0) return;
+    const BOM = '﻿';
+    const headers = lang === 'he'
+      ? 'תאריך,תיאור,קטגוריה,אמצעי תשלום,סכום'
+      : 'Date,Description,Category,Payment,Amount';
+    const rows = displayTxns
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .map(tx => {
+        const cat = categories.find(c => c.id === tx.categoryId);
+        const catLabel = tx.isIncome ? t.income : (cat?.name ?? '');
+        const pm  = tx.paymentMethod ? (lang === 'he' ? PM_LABEL_HE[tx.paymentMethod] : tx.paymentMethod) : '';
+        const amt = tx.originalAmount !== undefined && tx.currency ? tx.originalAmount : tx.amount;
+        return [tx.date, `"${tx.description.replace(/"/g, '""')}"`, `"${catLabel}"`, pm, amt].join(',');
+      });
+    const csv = BOM + headers + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `הוצאות_${currentMonthStr()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="page">
 
@@ -820,6 +888,111 @@ export default function DashboardPage() {
 
       {/* Debt tracker — visible only when debt mode is enabled */}
       {debtModeEnabled && <DebtTracker />}
+
+      {/* Filter bar */}
+      <div className="txn-filters">
+        <div className="txn-filter-search">
+          <Search size={14} className="txn-filter-search-icon" />
+          <input
+            className="txn-filter-search-input"
+            type="text"
+            placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
+            value={filterSearch}
+            onChange={e => setFilterSearch(e.target.value)}
+          />
+          {filterSearch && (
+            <button className="txn-filter-clear" onClick={() => setFilterSearch('')}>
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        <div className="txn-filter-chip-wrap">
+          <button
+            className={`txn-filter-chip${filterCatIds.length > 0 ? ' txn-filter-chip--active' : ''}`}
+            onClick={() => { setShowCatDrop(v => !v); setShowPayDrop(false); }}
+          >
+            {lang === 'he' ? 'קטגוריות' : 'Categories'}
+            {filterCatIds.length > 0 && <span className="txn-filter-badge">{filterCatIds.length}</span>}
+            <ChevronDown size={12} />
+          </button>
+          {showCatDrop && (
+            <div className="txn-filter-drop">
+              {categories.map(cat => (
+                <label key={cat.id} className="txn-filter-drop-item">
+                  <input
+                    type="checkbox"
+                    checked={filterCatIds.includes(cat.id)}
+                    onChange={() => setFilterCatIds(prev =>
+                      prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id]
+                    )}
+                  />
+                  <span className="txn-filter-drop-dot" style={{ background: cat.color }} />
+                  {catName(cat.id, cat.name, cat.isRenamed)}
+                </label>
+              ))}
+              {filterCatIds.length > 0 && (
+                <button className="txn-filter-drop-clear" onClick={() => setFilterCatIds([])}>
+                  {lang === 'he' ? 'נקה' : 'Clear'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="txn-filter-chip-wrap">
+          <button
+            className={`txn-filter-chip${filterPayMs.length > 0 ? ' txn-filter-chip--active' : ''}`}
+            onClick={() => { setShowPayDrop(v => !v); setShowCatDrop(false); }}
+          >
+            {lang === 'he' ? 'תשלום' : 'Payment'}
+            {filterPayMs.length > 0 && <span className="txn-filter-badge">{filterPayMs.length}</span>}
+            <ChevronDown size={12} />
+          </button>
+          {showPayDrop && (
+            <div className="txn-filter-drop">
+              {PAYMENT_METHODS.map(pm => {
+                const PmIcon = PM_ICON[pm];
+                return (
+                  <label key={pm} className="txn-filter-drop-item">
+                    <input
+                      type="checkbox"
+                      checked={filterPayMs.includes(pm)}
+                      onChange={() => setFilterPayMs(prev =>
+                        prev.includes(pm) ? prev.filter(x => x !== pm) : [...prev, pm]
+                      )}
+                    />
+                    {PmIcon && <PmIcon size={13} color={PM_COLOR[pm]} />}
+                    <span>{lang === 'he' ? PM_LABEL_HE[pm] : pm}</span>
+                  </label>
+                );
+              })}
+              {filterPayMs.length > 0 && (
+                <button className="txn-filter-drop-clear" onClick={() => setFilterPayMs([])}>
+                  {lang === 'he' ? 'נקה' : 'Clear'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <button
+          className="txn-filter-export"
+          onClick={handleExport}
+          disabled={displayTxns.length === 0}
+          title={lang === 'he' ? 'ייצוא CSV' : 'Export CSV'}
+        >
+          <ArrowDownToLine size={15} />
+        </button>
+      </div>
+
+      {(filterSearch || filterCatIds.length > 0 || filterPayMs.length > 0) && (
+        <div className="txn-filter-count">
+          {lang === 'he'
+            ? `מציג ${displayTxns.length} מתוך ${monthTxns.length} עסקאות`
+            : `Showing ${displayTxns.length} of ${monthTxns.length} transactions`}
+        </div>
+      )}
 
       {/* Transaction feed */}
       <div className="txn-section">

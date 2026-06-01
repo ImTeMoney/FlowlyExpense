@@ -1061,6 +1061,82 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .submit-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
 
 /* =====================================================
+   TRANSACTION FILTER BAR
+   ===================================================== */
+.txn-filters {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 13px 12px 13px; flex-wrap: wrap; direction: rtl;
+}
+.txn-filter-search {
+  flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px;
+  background: var(--bg-input); border: 1.5px solid var(--glass-border);
+  border-radius: 12px; padding: 8px 12px;
+}
+.txn-filter-search:focus-within { border-color: var(--purple); }
+.txn-filter-search-icon { color: var(--text-muted); flex-shrink: 0; }
+.txn-filter-search-input {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 14px; color: var(--text); font-family: inherit;
+}
+.txn-filter-search-input::placeholder { color: var(--text-dim); }
+.txn-filter-clear {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); display: flex; align-items: center; padding: 0;
+}
+.txn-filter-chip-wrap { position: relative; }
+.txn-filter-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-input); border: 1.5px solid var(--glass-border);
+  border-radius: 20px; padding: 7px 14px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; white-space: nowrap; transition: border-color 0.15s;
+}
+.txn-filter-chip--active {
+  border-color: var(--purple); color: var(--purple);
+  background: rgba(139,92,246,0.1);
+}
+.txn-filter-badge {
+  background: var(--purple); color: #fff;
+  border-radius: 10px; font-size: 11px; font-weight: 700;
+  padding: 1px 6px; line-height: 1.4;
+}
+.txn-filter-drop {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 200;
+  background: var(--bg-card); border: 1.5px solid var(--glass-border);
+  border-radius: 14px; padding: 8px; min-width: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.txn-filter-drop-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  font-size: 14px; color: var(--text);
+  transition: background 0.12s;
+}
+.txn-filter-drop-item:hover { background: var(--bg-input); }
+.txn-filter-drop-item input[type="checkbox"] { accent-color: var(--purple); }
+.txn-filter-drop-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.txn-filter-drop-clear {
+  margin-top: 4px; width: 100%; padding: 7px; border-radius: 10px;
+  background: none; border: 1px solid var(--glass-border);
+  font-size: 13px; color: var(--text-muted); cursor: pointer;
+}
+.txn-filter-drop-clear:hover { background: var(--bg-input); }
+.txn-filter-export {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-input); border: 1.5px solid var(--glass-border);
+  border-radius: 12px; padding: 8px 10px; cursor: pointer;
+  color: var(--text-muted); transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.txn-filter-export:hover:not(:disabled) { border-color: var(--purple); color: var(--purple); }
+.txn-filter-export:disabled { opacity: 0.4; cursor: not-allowed; }
+.txn-filter-count {
+  width: 100%; font-size: 12px; color: var(--text-dim);
+  padding: 0 13px 8px 13px; direction: rtl;
+}
+
+/* =====================================================
    TRANSACTION FEED
    ===================================================== */
 .txn-section { padding: 4px 13px calc(155px + env(safe-area-inset-bottom)); }
