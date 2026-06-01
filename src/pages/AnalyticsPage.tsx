@@ -258,11 +258,14 @@ export default function AnalyticsPage() {
 
   const pmLabel = (pm: string) => { const k = `pm_${pm}` as keyof typeof t; return (t[k] as string | undefined) ?? pm; };
 
-  // Convert a recurring expense's ILS amount to mainCurrency, using originalAmount when available
-  const recToMain = (r: { amount: number; currency?: string; originalAmount?: number }) =>
-    r.currency === state.mainCurrency && r.originalAmount !== undefined
-      ? r.originalAmount
-      : r.amount * displayRate;
+  // Convert a recurring expense's ILS amount to mainCurrency, using originalAmount when available.
+  // When falling back to amount*displayRate, snap near-integers to avoid floating-point drift (e.g. $50.01→$50).
+  const recToMain = (r: { amount: number; currency?: string; originalAmount?: number }) => {
+    if (r.currency === state.mainCurrency && r.originalAmount !== undefined) return r.originalAmount;
+    const raw = r.amount * displayRate;
+    const rounded = Math.round(raw);
+    return Math.abs(raw - rounded) <= 0.02 ? rounded : raw;
+  };
   const fmtRec = (r: { amount: number; currency?: string; originalAmount?: number }) =>
     formatCurrencyDirect(recToMain(r));
 

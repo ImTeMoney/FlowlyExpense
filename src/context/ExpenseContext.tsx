@@ -528,9 +528,15 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         const curMs = new Date().toISOString().slice(0, 7);
         setTransactions(prev => prev.map(tx => {
           if (!tx.date.startsWith(curMs)) return tx;
-          const byId   = tx.recurringId === upd.id;
-          const byDesc = !tx.recurringId && !!oldDesc && tx.description === `(קבועה) ${oldDesc}`;
-          if (!byId && !byDesc) return tx;
+          const byId       = tx.recurringId === upd.id;
+          const byDesc     = !tx.recurringId && !!oldDesc && tx.description === `(קבועה) ${oldDesc}`;
+          // Category+amount fallback: catches legacy txns where description may differ
+          const byCategory = !tx.recurringId && !byDesc &&
+            tx.description.startsWith('(קבועה) ') &&
+            tx.categoryId === upd.categoryId &&
+            !!tx.isIncome === !!upd.isIncome &&
+            Math.abs(tx.amount - upd.amount) < 1;
+          if (!byId && !byDesc && !byCategory) return tx;
           return { ...tx, paymentMethod: upd.paymentMethod, cardId: upd.cardId, recurringId: upd.id };
         }));
         break;
