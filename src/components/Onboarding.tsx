@@ -224,9 +224,6 @@ function DayPicker({ value, onChange }: { value: string; onChange: (v: string) =
         ))}
         <div className="day-drum-pad" />
       </div>
-      <div className="day-drum-fade day-drum-fade-top" />
-      <div className="day-drum-fade day-drum-fade-bot" />
-      <div className="day-drum-selector" />
     </div>
   );
 }
@@ -475,13 +472,10 @@ export default function Onboarding({ onDone }: Props) {
                     onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
                   />
                 </div>
-                <div className="ob-income-day-col">
-                  <span className="ob-recurring-day-lbl">{he ? 'יום בחודש' : 'Day'}</span>
-                  <DayPicker
-                    value={row.day}
-                    onChange={v => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r))}
-                  />
-                </div>
+                <DayPicker
+                  value={row.day}
+                  onChange={v => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r))}
+                />
               </div>
             </div>
           ))}

@@ -3853,21 +3853,24 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 /* ── Income row (amount + day picker side-by-side) ── */
 .ob-income-row {
-  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+  display: flex; align-items: center; gap: 10px; width: 100%;
 }
 .ob-income-day-col {
   display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;
 }
 
 /* ── Day drum picker ── */
+/* 56px tall: 10px pad + 36px item + 10px pad — shows the selected number
+   with a sliver of the adjacent item above/below as a scroll affordance.    */
 .day-drum-outer {
-  position: relative;
-  width: 52px; height: 108px;
+  width: 52px; height: 56px;
   border-radius: 10px;
   background: var(--bg-card);
   border: 1.5px solid var(--glass-border);
   overflow: hidden;
+  transition: border-color 0.15s;
 }
+.day-drum-outer:active { border-color: var(--purple); }
 .day-drum-scroll {
   height: 100%;
   overflow-y: scroll;
@@ -3876,28 +3879,15 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   -webkit-overflow-scrolling: touch;
 }
 .day-drum-scroll::-webkit-scrollbar { display: none; }
-.day-drum-pad { height: 36px; flex-shrink: 0; }
+.day-drum-pad { height: 10px; flex-shrink: 0; }
 .day-drum-item {
   height: 36px;
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; font-weight: 500; color: var(--text-muted);
   scroll-snap-align: center; cursor: pointer;
-  transition: color 0.15s;
+  transition: color 0.12s;
 }
 .day-drum-item.sel { color: var(--text); font-weight: 700; }
-.day-drum-fade {
-  position: absolute; inset-inline: 0; height: 36px; pointer-events: none; z-index: 1;
-}
-.day-drum-fade-top { top: 0; background: linear-gradient(to bottom, var(--bg-card) 20%, transparent); }
-.day-drum-fade-bot { bottom: 0; background: linear-gradient(to top, var(--bg-card) 20%, transparent); }
-.day-drum-selector {
-  position: absolute; inset-inline: 6px;
-  top: 36px; height: 36px;
-  border-top: 1.5px solid var(--purple);
-  border-bottom: 1.5px solid var(--purple);
-  border-radius: 6px;
-  pointer-events: none; z-index: 2;
-}
 
 /* ─────────────────────────────────────────────────────
    STEP 2 — Currency picker
