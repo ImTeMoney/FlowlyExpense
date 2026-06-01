@@ -904,7 +904,6 @@ export default function DashboardPage() {
           ref={tilt.ref} onPointerMove={tilt.onPointerMove} onPointerLeave={tilt.onPointerLeave}>
           <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
           <div className="smart-status-headline">{statusCard.headline}</div>
-          <div className="smart-status-subline">{statusCard.subline}</div>
           {statusCard.progress > 0 && (
             <div className="smart-status-bar">
               <div
@@ -924,7 +923,6 @@ export default function DashboardPage() {
             <div className="forecast-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
             <div className="forecast-status-text">
               <span className="forecast-status-headline">{statusCard.headline}</span>
-              <span className="forecast-status-subline">{statusCard.subline}</span>
             </div>
             <span className={`forecast-confidence ${forecast.confidence}`}>
               {lang === 'he'
