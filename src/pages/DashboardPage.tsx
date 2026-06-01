@@ -444,9 +444,9 @@ export default function DashboardPage() {
       const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name, cat.isRenamed) : '');
       let finalAmount = num;
       let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
-      if (txCurrency !== mainCurrency) {
+      if (txCurrency !== 'ILS') {
         try {
-          const { convertedAmount, rate } = await convertAmount(num, txCurrency, mainCurrency, date);
+          const { convertedAmount, rate } = await convertAmount(num, txCurrency, 'ILS', date);
           finalAmount = convertedAmount;
           txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
         } catch {
@@ -521,12 +521,12 @@ export default function DashboardPage() {
     const cat = categories.find(c => c.id === catId);
     const baseDesc = desc.trim() || (cat ? catName(cat.id, cat.name, cat.isRenamed) : '');
 
-    // Resolve amount in main currency
+    // Resolve amount in ILS (base storage currency — formatCurrency converts ILS → display)
     let finalAmount = num;
     let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
-    if (txCurrency !== mainCurrency) {
+    if (txCurrency !== 'ILS') {
       try {
-        const { convertedAmount, rate } = await convertAmount(num, txCurrency, mainCurrency, date);
+        const { convertedAmount, rate } = await convertAmount(num, txCurrency, 'ILS', date);
         finalAmount = convertedAmount;
         txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
       } catch {

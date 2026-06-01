@@ -62,7 +62,7 @@ export interface InstallmentInfo {
 
 export interface Transaction {
   id: string;
-  amount: number;             // always stored in mainCurrency
+  amount: number;             // always stored in ILS (base currency)
   categoryId: string;
   date: string;
   description: string;
