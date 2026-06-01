@@ -173,18 +173,12 @@ export default function DashboardPage() {
     return () => clearTimeout(t);
   }, [fabHint]);
 
-  // Welcome banner — shown once until dismissed
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return !localStorage.getItem('finio_welcome_seen') && transactions.length === 0;
-  });
-  function dismissWelcome() {
-    localStorage.setItem('finio_welcome_seen', '1');
-    setShowWelcome(false);
-  }
-
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
 
-  // Returns a transaction's value in mainCurrency without round-trip ILS precision loss.
+  // Welcome banner — shown whenever the current month has no expense transactions yet; auto-hides when one is added
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const showWelcome = !welcomeDismissed && !monthTxns.some(tx => !tx.isIncome);
+  function dismissWelcome() { setWelcomeDismissed(true); }
   // Transactions entered in mainCurrency have originalAmount set; everything else is ILS × displayRate.
   const toMainAmt = useCallback((tx: Transaction) =>
     tx.currency === mainCurrency && tx.originalAmount !== undefined
