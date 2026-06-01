@@ -99,14 +99,22 @@ export function useSpendingForecast(
     }
 
     // Current month pace (robust: exclude outlier days from current month too)
-    const elapsedDays = Math.max(1, today - 1);
+    const elapsedDays = Math.max(1, today);
     const currentRobust = robustDailyRate(transactions, currentMs, elapsedDays);
     const currentPace = spentSoFar / elapsedDays;
     // Use robust pace for current month if we have enough days, else use raw
-    const currentRate = today >= 5 ? currentRobust : currentPace;
+    let currentRate = today >= 5 ? currentRobust : currentPace;
 
-    // Dynamic weight: trust current month more as days accumulate
-    const currentWeight = Math.min(0.70, 0.35 + (today / totalDays) * 0.55);
+    // Early in the month a single large day (rent, insurance) inflates currentRate wildly.
+    // Cap it at 3× the historical average so it can't dominate before we have real data.
+    if (historicalRates.length > 0 && today <= 10) {
+      const histAvg = historicalRates.reduce((s, r) => s + r, 0) / historicalRates.length;
+      currentRate = Math.min(currentRate, histAvg * 3);
+    }
+
+    // Dynamic weight: ramp from ~2% on day 1 to 70% by month end.
+    // Starting near zero prevents a single early-month spike from dominating.
+    const currentWeight = Math.min(0.70, (today / totalDays) * 0.72);
 
     let dailyAvg: number;
     if (historicalRates.length === 0) {
