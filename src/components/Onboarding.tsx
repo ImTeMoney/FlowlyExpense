@@ -207,6 +207,7 @@ export default function Onboarding({ onDone }: Props) {
   const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
   const [income, setIncome]           = useState('');
   const [incomeDay, setIncomeDay]     = useState('1');
+  const [incomeDesc, setIncomeDesc]   = useState('');
   const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
@@ -224,7 +225,7 @@ export default function Onboarding({ onDone }: Props) {
         amount: incomeVal,
         categoryId: defaultCatId,
         dayOfMonth: incomeDayVal,
-        description: he ? 'משכורת' : 'Salary',
+        description: incomeDesc.trim() || (he ? 'משכורת' : 'Salary'),
         isIncome: true,
       }});
     }
@@ -371,22 +372,30 @@ export default function Onboarding({ onDone }: Props) {
           <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
           <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-        <div className="ob-setup-row">
-          <label className="ob-setup-amt">
-            <span className="ob-setup-sym">{currencySymbol}</span>
-            <input
-              type="number" inputMode="numeric" className="ob-setup-input"
-              placeholder={he ? 'סכום' : 'Amount'} value={income} min="0" max="9999999"
-              onChange={e => setIncome(e.target.value)}
-            />
-          </label>
-          <label className="ob-setup-day">
-            <span>{he ? 'יום' : 'day'}</span>
-            <select className="ob-setup-day-select" value={incomeDay}
-              onChange={e => setIncomeDay(e.target.value)}>
-              {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
-            </select>
-          </label>
+        <div className="ob-setup-card">
+          <input
+            type="text" className="ob-setup-name"
+            placeholder={he ? 'תיאור (משכורת, פרילנס...)' : 'Description (salary, freelance...)'}
+            value={incomeDesc} maxLength={50}
+            onChange={e => setIncomeDesc(e.target.value)}
+          />
+          <div className="ob-setup-row">
+            <label className="ob-setup-amt">
+              <span className="ob-setup-sym">{currencySymbol}</span>
+              <input
+                type="number" inputMode="numeric" className="ob-setup-input"
+                placeholder={he ? 'סכום' : 'Amount'} value={income} min="0" max="9999999"
+                onChange={e => setIncome(e.target.value)}
+              />
+            </label>
+            <label className="ob-setup-day">
+              <span>{he ? 'יום' : 'day'}</span>
+              <select className="ob-setup-day-select" value={incomeDay}
+                onChange={e => setIncomeDay(e.target.value)}>
+                {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
+              </select>
+            </label>
+          </div>
         </div>
 
         {/* Recurring expenses */}
