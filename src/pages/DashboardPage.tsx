@@ -51,6 +51,10 @@ const URGENCY_BAR: Record<Urgency, string> = {
   neutral: '#64748B',
 };
 
+function isTxPending(tx: { isPending?: boolean; date: string }): boolean {
+  return tx.isPending === true && tx.date > new Date().toISOString().split('T')[0];
+}
+
 // ── Payment method icons ────────────────────────────────────────
 const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
   cash:     Banknote,
@@ -183,10 +187,6 @@ export default function DashboardPage() {
   }
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(currentMonthStr())), [transactions]);
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const isTxPending = (tx: { isPending?: boolean; date: string }) =>
-    tx.isPending === true && tx.date > todayStr;
 
   // Planned recurring totals for the current month
   const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);

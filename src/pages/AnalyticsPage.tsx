@@ -8,6 +8,10 @@ import { resolveCatIcon } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import CalendarHeatmap from '../components/CalendarHeatmap';
 
+function isTxPending(tx: { isPending?: boolean; date: string }): boolean {
+  return tx.isPending === true && tx.date > new Date().toISOString().split('T')[0];
+}
+
 // ── Side donut with % inside + small context label ───────────────────────────
 
 function SideDonut({ pct, color, sublabel }: { pct: number; color: string; sublabel?: string }) {
@@ -75,10 +79,6 @@ export default function AnalyticsPage() {
 
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(ms)), [transactions, ms]);
   const prevTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(prevMs)), [transactions, prevMs]);
-
-  const todayStr = now.toISOString().split('T')[0];
-  const isTxPending = (tx: { isPending?: boolean; date: string }) =>
-    tx.isPending === true && tx.date > todayStr;
 
   const spent  = monthTxns.filter(tx => !tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
   const income = monthTxns.filter(tx =>  tx.isIncome && !isTxPending(tx)).reduce((s,tx) => s + tx.amount, 0);
