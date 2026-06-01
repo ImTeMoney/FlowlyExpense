@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, ChevronRight, ChevronLeft, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import LangToggle from './LangToggle';
 
@@ -190,6 +190,87 @@ function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
 // ── Day options ───────────────────────────────────────────────────────────────
 const DAY_OPTS = Array.from({ length: 28 }, (_, i) => i + 1);
 
+// ── SlideButton ───────────────────────────────────────────────────────────────
+const SLIDE_THUMB_W = 46;
+const SLIDE_MARGIN  = 4;
+
+function SlideButton({
+  label,
+  onConfirm,
+  className = '',
+  dir = 'ltr',
+}: {
+  label: string;
+  onConfirm: () => void;
+  className?: string;
+  dir?: string;
+}) {
+  const rtl   = dir === 'rtl';
+  const elRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState(0);
+  const [snap,   setSnap]   = useState(false);
+  const dragging = useRef(false);
+  const startX   = useRef(0);
+  const moved    = useRef(false);
+
+  const max = () => (elRef.current?.offsetWidth ?? 320) - SLIDE_THUMB_W - SLIDE_MARGIN * 2;
+
+  const fire = () => {
+    setSnap(true);
+    setOffset(max());
+    setTimeout(() => onConfirm(), 260);
+  };
+
+  const reset = () => {
+    setSnap(true);
+    setOffset(0);
+    setTimeout(() => setSnap(false), 360);
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragging.current = true;
+    moved.current    = false;
+    startX.current   = e.clientX;
+    setSnap(false);
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    e.stopPropagation();
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    const delta = rtl ? startX.current - e.clientX : e.clientX - startX.current;
+    if (Math.abs(delta) > 6) moved.current = true;
+    setOffset(Math.max(0, Math.min(delta, max())));
+  };
+
+  const onPointerUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (!moved.current) { fire(); return; }
+    offset >= max() * 0.72 ? fire() : reset();
+  };
+
+  const thumbStyle: React.CSSProperties = rtl
+    ? { right: SLIDE_MARGIN + offset }
+    : { left:  SLIDE_MARGIN + offset };
+
+  return (
+    <div
+      ref={elRef}
+      className={`ob-slide-btn${snap ? ' ob-slide-btn--snap' : ''}${className ? ' ' + className : ''}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      style={{ touchAction: 'none' }}
+    >
+      <span className="ob-slide-label">{label}</span>
+      <div className="ob-slide-thumb" style={thumbStyle}>
+        {rtl ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const TOTAL = 4;
@@ -335,9 +416,7 @@ export default function Onboarding({ onDone }: Props) {
         </div>
 
         <div className="ob-bottom">
-          <button className="ob-btn-primary" onClick={advance}>
-            {he ? 'מתחילים' : 'Get started'} <ChevronRight size={16} />
-          </button>
+          <SlideButton label={he ? 'מתחילים' : 'Get started'} onConfirm={advance} dir={dir} />
           <button className="ob-dont-show" onClick={onDone}>
             {he ? 'דלג' : 'Skip'}
           </button>
@@ -450,9 +529,7 @@ export default function Onboarding({ onDone }: Props) {
         </div>
       </div>
       <div className="ob-bottom">
-        <button className="ob-btn-primary" onClick={saveSetupAndAdvance}>
-          {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
-        </button>
+        <SlideButton label={he ? 'המשך' : 'Continue'} onConfirm={saveSetupAndAdvance} dir={dir} />
       </div>
     </div>
   );
@@ -501,9 +578,7 @@ export default function Onboarding({ onDone }: Props) {
         </div>
       </div>
       <div className="ob-bottom">
-        <button className="ob-btn-primary" onClick={advance}>
-          {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
-        </button>
+        <SlideButton label={he ? 'המשך' : 'Continue'} onConfirm={advance} dir={dir} />
       </div>
     </div>
   );

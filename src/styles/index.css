@@ -3364,6 +3364,60 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ob-btn-primary:active  { opacity: 0.85; transform: scale(0.98); }
 .ob-btn-primary:disabled { opacity: 0.35; cursor: default; }
 
+/* ── Slide-to-confirm button ── */
+.ob-slide-btn {
+  position: relative;
+  width: 100%;
+  height: 54px;
+  background: linear-gradient(135deg, var(--purple), rgba(10,132,255,0.75));
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.30), 0 4px 20px rgba(10,132,255,0.32);
+}
+.ob-slide-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  animation: ob-btn-shimmer 2.8s ease-in-out 0.6s infinite;
+  pointer-events: none;
+}
+.ob-slide-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  pointer-events: none;
+  z-index: 1;
+}
+.ob-slide-thumb {
+  position: absolute;
+  top: 4px;
+  width: 46px;
+  height: calc(100% - 8px);
+  background: rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.38);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  z-index: 2;
+}
+.ob-slide-btn--snap .ob-slide-thumb {
+  transition: right 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              left  0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Launch CTA */
 .ob-btn-launch {
   background: linear-gradient(135deg, var(--purple), rgba(10,132,255,0.75));
