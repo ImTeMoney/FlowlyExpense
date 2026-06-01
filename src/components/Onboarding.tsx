@@ -371,27 +371,19 @@ export default function Onboarding({ onDone }: Props) {
           <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
           <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-        <div className="ob-recurring-card-bottom">
-          <div className="ob-recurring-amt-wrap" style={{ flex: 1 }}>
-            <span className="ob-recurring-sym">{currencySymbol}</span>
+        <div className="ob-setup-row">
+          <label className="ob-setup-amt">
+            <span className="ob-setup-sym">{currencySymbol}</span>
             <input
-              type="number"
-              inputMode="numeric"
-              className="ob-recurring-amt"
-              placeholder={he ? 'סכום' : 'Amount'}
-              value={income}
-              min="0"
-              max="9999999"
+              type="number" inputMode="numeric" className="ob-setup-input"
+              placeholder={he ? 'סכום' : 'Amount'} value={income} min="0" max="9999999"
               onChange={e => setIncome(e.target.value)}
             />
-          </div>
-          <label className="ob-day-pill">
+          </label>
+          <label className="ob-setup-day">
             <span>{he ? 'יום' : 'day'}</span>
-            <select
-              className="ob-day-pill-select"
-              value={incomeDay}
-              onChange={e => setIncomeDay(e.target.value)}
-            >
+            <select className="ob-setup-day-select" value={incomeDay}
+              onChange={e => setIncomeDay(e.target.value)}>
               {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
             </select>
           </label>
@@ -405,47 +397,34 @@ export default function Onboarding({ onDone }: Props) {
         </div>
         <div className="ob-recurring-rows">
           {recurringRows.map((row, i) => (
-            <div key={i} className="ob-recurring-card">
-              <div className="ob-recurring-card-top">
+            <div key={i} className="ob-setup-card">
+              <div className="ob-setup-name-row">
                 <input
-                  type="text"
-                  className="ob-recurring-name"
+                  type="text" className="ob-setup-name"
                   placeholder={he ? 'שם ההוצאה (שכירות, חשמל...)' : 'Expense name (rent, electricity...)'}
-                  value={row.name}
-                  maxLength={50}
+                  value={row.name} maxLength={50}
                   onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
                 />
                 {recurringRows.length > 1 && (
-                  <button
-                    type="button"
-                    className="ob-recurring-remove"
-                    onClick={() => setRecurringRows(rs => rs.filter((_, j) => j !== i))}
-                  >
+                  <button type="button" className="ob-recurring-remove"
+                    onClick={() => setRecurringRows(rs => rs.filter((_, j) => j !== i))}>
                     <X size={14} />
                   </button>
                 )}
               </div>
-              <div className="ob-recurring-card-bottom">
-                <div className="ob-recurring-amt-wrap" style={{ flex: 1 }}>
-                  <span className="ob-recurring-sym">{currencySymbol}</span>
+              <div className="ob-setup-row">
+                <label className="ob-setup-amt">
+                  <span className="ob-setup-sym">{currencySymbol}</span>
                   <input
-                    type="number"
-                    inputMode="numeric"
-                    className="ob-recurring-amt"
-                    placeholder="0"
-                    value={row.amount}
-                    min="0"
-                    max="9999999"
+                    type="number" inputMode="numeric" className="ob-setup-input"
+                    placeholder="0" value={row.amount} min="0" max="9999999"
                     onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
                   />
-                </div>
-                <label className="ob-day-pill">
+                </label>
+                <label className="ob-setup-day">
                   <span>{he ? 'יום' : 'day'}</span>
-                  <select
-                    className="ob-day-pill-select"
-                    value={row.day}
-                    onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: e.target.value } : r))}
-                  >
+                  <select className="ob-setup-day-select" value={row.day}
+                    onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: e.target.value } : r))}>
                     {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
                   </select>
                 </label>

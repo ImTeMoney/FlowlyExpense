@@ -3851,20 +3851,48 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   font-size: 13px; color: var(--text-muted); text-align: center; margin: 4px 0 0;
 }
 
-/* ── Recurring day pill (matches ob-recurring-amt-wrap height) ── */
-.ob-day-pill {
-  display: flex; align-items: center; gap: 6px;
+/* ── Onboarding setup section (step 1) ── */
+.ob-setup-row { display: flex; align-items: stretch; gap: 10px; width: 100%; }
+.ob-setup-amt {
+  flex: 1; display: flex; align-items: center; gap: 10px;
   background: var(--bg-input); border: 1.5px solid var(--glass-border);
-  border-radius: 12px; padding: 10px 12px; flex-shrink: 0;
+  border-radius: 14px; padding: 14px 18px;
+  transition: border-color 0.15s; cursor: text;
+}
+.ob-setup-amt:focus-within { border-color: var(--purple); }
+.ob-setup-sym { font-size: 18px; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; }
+.ob-setup-input {
+  flex: 1; min-width: 0; background: none; border: none; outline: none;
+  font-size: 20px; font-weight: 700; color: var(--text); font-family: inherit;
+  -moz-appearance: textfield;
+}
+.ob-setup-input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 18px; }
+.ob-setup-input::-webkit-outer-spin-button,
+.ob-setup-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.ob-setup-day {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  background: var(--bg-input); border: 1.5px solid var(--glass-border);
+  border-radius: 14px; padding: 14px 16px;
   font-size: 13px; font-weight: 600; color: var(--text-muted);
   cursor: pointer; transition: border-color 0.15s;
 }
-.ob-day-pill:focus-within { border-color: var(--purple); }
-.ob-day-pill-select {
+.ob-setup-day:focus-within { border-color: var(--purple); }
+.ob-setup-day-select {
   background: transparent; border: none; outline: none; cursor: pointer;
   font-size: 16px; font-family: inherit; font-weight: 700; color: var(--text);
-  -webkit-appearance: none; appearance: none; min-width: 20px; text-align: center;
+  -webkit-appearance: none; appearance: none; min-width: 22px; text-align: center;
 }
+.ob-setup-card {
+  background: var(--bg-card); border: 1.5px solid var(--glass-border);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ob-setup-name-row { display: flex; align-items: center; gap: 8px; }
+.ob-setup-name {
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  font-size: 16px; font-family: inherit; color: var(--text);
+}
+.ob-setup-name::placeholder { color: var(--text-dim); }
 
 /* ─────────────────────────────────────────────────────
    STEP 2 — Currency picker
