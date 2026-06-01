@@ -8,6 +8,8 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import GrowPage from './pages/GrowPage';
 import Onboarding, { hasSeenOnboarding, markOnboardingDone } from './components/Onboarding';
+import PWAInstallModal from './components/PWAInstallModal';
+import { useInstallPrompt } from './hooks/useInstallPrompt';
 
 // ── Full-app Error Boundary ───────────────────────────────────────────────────
 // Catches any render error anywhere in the tree and shows a recovery screen
@@ -72,6 +74,27 @@ class ErrorBoundary extends React.Component<
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
+function PWAModalWrapper({ children }: { children: React.ReactNode }) {
+  const { canPrompt, isIOSSafari, isStandalone } = useInstallPrompt();
+  const [dismissed, setDismissed] = useState(
+    () => !!sessionStorage.getItem('pwa_prompt_dismissed')
+  );
+
+  const showPWAModal = !isStandalone && (canPrompt || isIOSSafari) && !dismissed;
+
+  function dismissPWAModal() {
+    sessionStorage.setItem('pwa_prompt_dismissed', '1');
+    setDismissed(true);
+  }
+
+  return (
+    <>
+      {showPWAModal && <PWAInstallModal onDismiss={dismissPWAModal} />}
+      {children}
+    </>
+  );
+}
+
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
 
@@ -91,16 +114,18 @@ function App() {
       <LanguageProvider>
         <ExpenseProvider>
           <Router>
-            {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/grow" element={<GrowPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AppLayout>
+            <PWAModalWrapper>
+              {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
+              <AppLayout>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/grow" element={<GrowPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </AppLayout>
+            </PWAModalWrapper>
           </Router>
         </ExpenseProvider>
       </LanguageProvider>

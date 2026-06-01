@@ -4318,6 +4318,76 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 
+/* ── PWA Install Modal ────────────────────────────────────────────────────── */
+.pwa-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: pwa-fade-in 0.2s ease;
+}
+@keyframes pwa-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.pwa-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 20px 36px;
+  padding-bottom: max(36px, env(safe-area-inset-bottom, 0px) + 20px);
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: pwa-slide-up 0.32s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes pwa-slide-up {
+  from { transform: translateY(80px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.pwa-close {
+  position: absolute; top: 16px; left: 16px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg-input); border: 1px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); cursor: pointer;
+  transition: background 0.15s;
+}
+.pwa-close:hover { background: var(--bg-hover); }
+.pwa-steps {
+  width: 100%; display: flex; flex-direction: column; gap: 9px;
+  margin: 2px 0 4px;
+}
+.pwa-step {
+  display: flex; flex-direction: row; align-items: center; gap: 14px;
+  background: var(--bg-input); border: 1px solid var(--glass-border);
+  border-radius: 14px; padding: 14px 16px;
+}
+.pwa-step-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+}
+.pwa-step-text {
+  flex: 1; font-size: 15px; font-weight: 500; color: var(--text);
+  text-align: right; direction: rtl;
+}
+.pwa-step-num {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: var(--purple);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+}
+.pwa-dismiss {
+  width: 100%; padding: 16px 0; margin-top: 4px;
+  background: var(--purple); color: #fff; border: none;
+  border-radius: 14px; font-size: 16px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.pwa-dismiss:active { opacity: 0.85; }
+
 /* ── Credit card picker (in add-expense modal) ── */
 .card-picker {
   display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 2px;
