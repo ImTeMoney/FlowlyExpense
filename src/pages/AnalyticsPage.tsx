@@ -47,7 +47,7 @@ function SideDonut({ pct, color, sublabel }: { pct: number; color: string; subla
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const { state, dispatch, formatCurrency, formatCurrencyDirect, toMainAmt } = useExpense();
+  const { state, dispatch, formatCurrency, formatCurrencyDirect, toMainAmt, displayRate } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
   const navigate = useNavigate();
   const { transactions, categories, recurringExpenses, categoryBudgets, cards } = state;
@@ -247,25 +247,33 @@ export default function AnalyticsPage() {
 
   const pmLabel = (pm: string) => { const k = `pm_${pm}` as keyof typeof t; return (t[k] as string | undefined) ?? pm; };
 
+  // Convert a recurring expense's ILS amount to mainCurrency, using originalAmount when available
+  const recToMain = (r: { amount: number; currency?: string; originalAmount?: number }) =>
+    r.currency === state.mainCurrency && r.originalAmount !== undefined
+      ? r.originalAmount
+      : r.amount * displayRate;
+  const fmtRec = (r: { amount: number; currency?: string; originalAmount?: number }) =>
+    formatCurrencyDirect(recToMain(r));
+
   // Smart bill predictor: days until next occurrence for each recurring item
   const recurringWithDue = useMemo(() => {
     const todayDay = now.getDate();
     return recurringExpenses.map(r => {
       let daysUntil = r.dayOfMonth - todayDay;
       if (daysUntil < 0) daysUntil += daysInMonth; // next month occurrence
-      return { ...r, daysUntil, annualCost: r.amount * 12 };
+      return { ...r, daysUntil, annualCost: recToMain(r) * 12 };
     }).sort((a, b) => a.daysUntil - b.daysUntil);
-  }, [recurringExpenses, now, daysInMonth]);
+  }, [recurringExpenses, now, daysInMonth, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subscription health totals
   const subHealth = useMemo(() => {
     const expenses = recurringExpenses.filter(r => !r.isIncome);
-    const total = expenses.reduce((s, r) => s + r.amount, 0);
-    const streaming = expenses.filter(r => r.categoryId === 'cat_entertainment').reduce((s, r) => s + r.amount, 0);
-    const utilities = expenses.filter(r => ['cat_utilities', 'cat_rent'].includes(r.categoryId)).reduce((s, r) => s + r.amount, 0);
+    const total = expenses.reduce((s, r) => s + recToMain(r), 0);
+    const streaming = expenses.filter(r => r.categoryId === 'cat_entertainment').reduce((s, r) => s + recToMain(r), 0);
+    const utilities = expenses.filter(r => ['cat_utilities', 'cat_rent'].includes(r.categoryId)).reduce((s, r) => s + recToMain(r), 0);
     const other = total - streaming - utilities;
     return { total, annualCost: total * 12, streaming, utilities, other };
-  }, [recurringExpenses]);
+  }, [recurringExpenses, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="page analytics-page">
@@ -609,13 +617,13 @@ export default function AnalyticsPage() {
                 <div className="sub-health-card">
                   <div className="sub-health-main">
                     <div>
-                      <div className="sub-health-total">{formatCurrency(subHealth.total)}</div>
-                      <div className="sub-health-sub">{lang === 'he' ? `לחודש · ${formatCurrency(subHealth.annualCost)} לשנה` : `/mo · ${formatCurrency(subHealth.annualCost)}/yr`}</div>
+                      <div className="sub-health-total">{formatCurrencyDirect(subHealth.total)}</div>
+                      <div className="sub-health-sub">{lang === 'he' ? `לחודש · ${formatCurrencyDirect(subHealth.annualCost)} לשנה` : `/mo · ${formatCurrencyDirect(subHealth.annualCost)}/yr`}</div>
                     </div>
                     <div className="sub-health-chips">
-                      {subHealth.streaming > 0 && <span className="sub-health-chip ent">{lang === 'he' ? 'בידור' : 'Ent.'} {formatCurrency(subHealth.streaming)}</span>}
-                      {subHealth.utilities > 0 && <span className="sub-health-chip util">{lang === 'he' ? 'שירותים' : 'Utils'} {formatCurrency(subHealth.utilities)}</span>}
-                      {subHealth.other > 0 && <span className="sub-health-chip other">{lang === 'he' ? 'אחר' : 'Other'} {formatCurrency(subHealth.other)}</span>}
+                      {subHealth.streaming > 0 && <span className="sub-health-chip ent">{lang === 'he' ? 'בידור' : 'Ent.'} {formatCurrencyDirect(subHealth.streaming)}</span>}
+                      {subHealth.utilities > 0 && <span className="sub-health-chip util">{lang === 'he' ? 'שירותים' : 'Utils'} {formatCurrencyDirect(subHealth.utilities)}</span>}
+                      {subHealth.other > 0 && <span className="sub-health-chip other">{lang === 'he' ? 'אחר' : 'Other'} {formatCurrencyDirect(subHealth.other)}</span>}
                     </div>
                   </div>
                 </div>
@@ -651,11 +659,11 @@ export default function AnalyticsPage() {
                           {dueLabel}
                           {!r.isIncome && cat ? ` · ${catName(cat.id, cat.name, cat.isRenamed)}` : ''}
                           {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
-                          {!r.isIncome && <span className="rec-annual-note"> · {formatCurrency(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
+                          {!r.isIncome && <span className="rec-annual-note"> · {formatCurrencyDirect(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
                         </div>
                       </div>
                       <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>
-                        {r.isIncome ? '+' : ''}{formatCurrency(r.amount)}
+                        {r.isIncome ? '+' : ''}{fmtRec(r)}
                       </span>
                       {!r.isIncome && !r.totalInstallments && (
                         <button
@@ -683,7 +691,7 @@ export default function AnalyticsPage() {
                             <>
                               <strong>"{r.description}"</strong>
                               {' '}
-                              {lang === 'he' ? `— ${formatCurrency(r.amount)} לחודש` : `· ${formatCurrency(r.amount)}/mo`}
+                              {lang === 'he' ? `— ${fmtRec(r)} לחודש` : `· ${fmtRec(r)}/mo`}
                             </>
                           ),
                           onConfirm: () => { dispatch({ type: 'DELETE_RECURRING', payload: r.id }); setConfirm(null); },
@@ -722,7 +730,7 @@ export default function AnalyticsPage() {
             </div>
             <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{splitRec.description}</span>
-              {' — '}{formatCurrency(splitRec.amount)} {t.perMonth}
+              {' — '}{fmtRec(splitRec)} {t.perMonth}
             </div>
             <div className="inst-stepper" style={{ marginBottom: 12 }}>
               <button type="button" className="inst-step-btn"
@@ -738,7 +746,7 @@ export default function AnalyticsPage() {
               <span className="inst-step-lbl">{t.installments}</span>
             </div>
             <div className="split-preview" style={{ marginBottom: 16 }}>
-              {splitRecN} × {formatCurrency(splitRec.amount)} = {formatCurrency(splitRecN * splitRec.amount)} {t.total}
+              {splitRecN} × {fmtRec(splitRec)} = {formatCurrencyDirect(recToMain(splitRec) * splitRecN)} {t.total}
             </div>
             <button className="submit-btn" onClick={() => {
               dispatch({ type: 'SET_RECURRING_INSTALLMENTS', payload: { id: splitRec.id, totalInstallments: splitRecN } });

@@ -80,15 +80,17 @@ export interface Transaction {
 
 export interface RecurringExpense {
   id: string;
-  amount: number;
+  amount: number;              // always stored in ILS (base currency)
   categoryId: string;
   dayOfMonth: number;
   description: string;
   lastPostedMonth?: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
-  totalInstallments?: number;   // if set → limited recurring, auto-deletes when done
-  postedCount?: number;         // how many months have been posted so far
+  totalInstallments?: number;  // if set → limited recurring, auto-deletes when done
+  postedCount?: number;        // how many months have been posted so far
+  currency?: string;           // original currency when entered (if not ILS)
+  originalAmount?: number;     // amount in original currency for lossless display
 }
 
 /**

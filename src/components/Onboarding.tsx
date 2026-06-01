@@ -301,8 +301,13 @@ export default function Onboarding({ onDone }: Props) {
   function saveSetupAndAdvance() {
     dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
     const defaultCatId = state.categories[0]?.id ?? 'cat_other';
-    // User enters amounts in mainCurrency; convert to ILS for storage (ILS is the base currency)
-    const toILS = (amt: number) => displayRate > 0 ? amt / displayRate : amt;
+    // User enters amounts in mainCurrency; convert to ILS for storage (ILS is the base currency).
+    // Store originalAmount + currency so display can show the exact entered value.
+    const mainCurrency = state.mainCurrency;
+    const toILS = (amt: number) => mainCurrency === 'ILS' || displayRate <= 0 ? amt : amt / displayRate;
+    const currencyMeta = (amt: number) => mainCurrency !== 'ILS'
+      ? { currency: mainCurrency, originalAmount: amt }
+      : {};
     const incomeVal = parseFloat(income);
     const incomeDayVal = Math.min(28, Math.max(1, parseInt(incomeDay) || 1));
     if (!isNaN(incomeVal) && incomeVal > 0) {
@@ -314,6 +319,7 @@ export default function Onboarding({ onDone }: Props) {
         dayOfMonth: incomeDayVal,
         description: incomeDesc.trim() || (he ? 'משכורת' : 'Salary'),
         isIncome: true,
+        ...currencyMeta(incomeVal),
       }});
     }
     recurringRows.forEach((row, i) => {
@@ -327,6 +333,7 @@ export default function Onboarding({ onDone }: Props) {
           dayOfMonth: day,
           description: row.name.trim(),
           isIncome: false,
+          ...currencyMeta(amt),
         }});
       }
     });
