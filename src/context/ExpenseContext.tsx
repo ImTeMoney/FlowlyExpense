@@ -76,6 +76,8 @@ export interface Transaction {
   exchangeRate?: number;      // rate used: 1 original = rate main
   /** Links to CreditCard.id when paymentMethod is credit/debit */
   cardId?: string;
+  /** Links back to the RecurringExpense.id that auto-created this transaction */
+  recurringId?: string;
 }
 
 export interface RecurringExpense {
@@ -482,6 +484,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       description:   `(קבועה) ${r.description}`,
       isIncome:      r.isIncome,
       paymentMethod: r.paymentMethod,
+      recurringId:   r.id,
       ...(r.cardId ? { cardId: r.cardId } : {}),
     }));
     setTransactions(prev => [...newTxns, ...prev]);
@@ -516,9 +519,17 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setRecurringExpenses(prev => [...prev, { ...action.payload, id: generateId() }]);
         break;
 
-      case 'UPDATE_RECURRING':
-        setRecurringExpenses(prev => prev.map(r => r.id === action.payload.id ? action.payload : r));
+      case 'UPDATE_RECURRING': {
+        const upd = action.payload;
+        setRecurringExpenses(prev => prev.map(r => r.id === upd.id ? upd : r));
+        // Sync the already-posted transaction for the current month (if any)
+        const curMs = new Date().toISOString().slice(0, 7);
+        setTransactions(prev => prev.map(tx => {
+          if (tx.recurringId !== upd.id || !tx.date.startsWith(curMs)) return tx;
+          return { ...tx, paymentMethod: upd.paymentMethod, cardId: upd.cardId };
+        }));
         break;
+      }
 
       case 'DELETE_RECURRING':
         setRecurringExpenses(prev => prev.filter(r => r.id !== action.payload));

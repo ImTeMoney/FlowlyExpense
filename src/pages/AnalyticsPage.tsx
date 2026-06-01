@@ -671,6 +671,15 @@ export default function AnalyticsPage() {
                           {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
                           {!r.isIncome && <span className="rec-annual-note"> · {formatCurrencyDirect(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
                         </div>
+                        {r.cardId && (() => {
+                          const linkedCard = cards.find(c => c.id === r.cardId);
+                          return linkedCard ? (
+                            <div className="rec-card-chip" style={{ borderColor: linkedCard.color, color: linkedCard.color, background: `${linkedCard.color}18` }}>
+                              <CreditCard size={10} />
+                              <span>{linkedCard.name} ••{linkedCard.last4.slice(-2)}</span>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                       <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>
                         {r.isIncome ? '+' : ''}{fmtRec(r)}
