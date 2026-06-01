@@ -842,7 +842,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="dg-header-end">
                     <span className={`dg-total${dayNet > 0 ? ' dg-total--pos' : dayNet < 0 ? ' dg-total--neg' : ''}`}>
-                      {dayNet > 0 ? '+' : ''}{formatCurrency(dayNet)}
+                      {dayNet > 0 ? '+' : ''}{formatCurrencyDirect(dayNet)}
                     </span>
                     <ChevronRight
                       size={14}
