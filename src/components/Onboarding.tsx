@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home } from 'lucide-react';
+import { Plus, ChevronRight, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import LangToggle from './LangToggle';
 
@@ -203,7 +203,6 @@ export default function Onboarding({ onDone }: Props) {
   const [step, setStep]               = useState(0);
   const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
   const [income, setIncome]           = useState('');
-  const [incomeDay, setIncomeDay]     = useState('1');
   const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
   const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
@@ -213,7 +212,7 @@ export default function Onboarding({ onDone }: Props) {
     dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
     const defaultCatId = state.categories[0]?.id ?? 'cat_other';
     const incomeVal = parseFloat(income);
-    const incomeDayVal = Math.min(28, Math.max(1, parseInt(incomeDay) || 1));
+    const incomeDayVal = 1;
     if (!isNaN(incomeVal) && incomeVal > 0) {
       dispatch({ type: 'SET_BUDGET', payload: incomeVal });
       dispatch({ type: 'ADD_RECURRING', payload: {
@@ -358,106 +357,96 @@ export default function Onboarding({ onDone }: Props) {
         </h1>
         <p className="ob-sub ob-mode-intro">
           {he
-            ? 'ספר לנו על ההכנסה וההוצאות הקבועות שלך — נוכל לעקוב מיד.'
-            : "Tell us about your income and fixed expenses — we'll track from day one."}
+            ? 'כמה פרטים ותוכל לעקוב מיד — אפשר לדלג ולהוסיף מאוחר יותר.'
+            : 'A few details and you can track right away — or skip and add later.'}
         </p>
 
         {/* Income */}
-        <p className="ob-sub ob-goal-label">
-          {he ? 'הכנסה חודשית (אופציונלי):' : 'Monthly income (optional):'}
-        </p>
-        <div className="ob-recurring-row">
-          <div className="ob-goal-wrap" style={{ flex: 1 }}>
-            <span className="ob-goal-currency">{currencySymbol}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              className="ob-goal-input"
-              style={{ fontSize: '22px' }}
-              placeholder={he ? 'סכום' : 'Amount'}
-              value={income}
-              min="0"
-              max="9999999"
-              onChange={e => setIncome(e.target.value)}
-            />
-          </div>
-          <div className="ob-recurring-day-wrap">
-            <span className="ob-recurring-day-lbl">{he ? 'יום' : 'Day'}</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              className="ob-recurring-day"
-              placeholder="1"
-              value={incomeDay}
-              onFocus={e => e.target.select()}
-              onChange={e => {
-                const v = e.target.value.replace(/\D/g, '').slice(0, 2);
-                setIncomeDay(v);
-              }}
-            />
-          </div>
+        <div className="ob-section-label">
+          <TrendingUp size={14} color="var(--success)" />
+          <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
+          <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
+        </div>
+        <div className="ob-goal-wrap">
+          <span className="ob-goal-currency">{currencySymbol}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            className="ob-goal-input"
+            style={{ fontSize: '22px' }}
+            placeholder={he ? 'סכום' : 'Amount'}
+            value={income}
+            min="0"
+            max="9999999"
+            onChange={e => setIncome(e.target.value)}
+          />
         </div>
 
         {/* Recurring expenses */}
-        <p className="ob-sub ob-goal-label" style={{ marginTop: 20 }}>
-          {he ? 'הוצאות קבועות (אופציונלי):' : 'Fixed expenses (optional):'}
-        </p>
+        <div className="ob-section-label" style={{ marginTop: 20 }}>
+          <TrendingDown size={14} color="var(--danger)" />
+          <span>{he ? 'הוצאות קבועות' : 'Fixed expenses'}</span>
+          <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
+        </div>
         <div className="ob-recurring-rows">
           {recurringRows.map((row, i) => (
-            <div key={i} className="ob-recurring-row">
-              <input
-                type="text"
-                className="ob-recurring-name"
-                placeholder={he ? 'שכירות, חשמל...' : 'Rent, electricity...'}
-                value={row.name}
-                maxLength={50}
-                onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
-              />
-              <div className="ob-recurring-amt-wrap">
-                <span className="ob-recurring-sym">{currencySymbol}</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  className="ob-recurring-amt"
-                  placeholder="0"
-                  value={row.amount}
-                  min="0"
-                  max="9999999"
-                  onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
-                />
-              </div>
-              <div className="ob-recurring-day-wrap">
-                <span className="ob-recurring-day-lbl">{he ? 'יום' : 'Day'}</span>
+            <div key={i} className="ob-recurring-card">
+              <div className="ob-recurring-card-top">
                 <input
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className="ob-recurring-day"
-                  placeholder="1"
-                  value={row.day}
-                  onFocus={e => e.target.select()}
-                  onChange={e => {
-                    const v = e.target.value.replace(/\D/g, '').slice(0, 2);
-                    setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r));
-                  }}
+                  className="ob-recurring-name"
+                  placeholder={he ? 'שם ההוצאה (שכירות, חשמל...)' : 'Expense name (rent, electricity...)'}
+                  value={row.name}
+                  maxLength={50}
+                  onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
                 />
+                {recurringRows.length > 1 && (
+                  <button
+                    type="button"
+                    className="ob-recurring-remove"
+                    onClick={() => setRecurringRows(rs => rs.filter((_, j) => j !== i))}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
-              {recurringRows.length > 1 && (
-                <button
-                  type="button"
-                  className="ob-recurring-remove"
-                  onClick={() => setRecurringRows(rs => rs.filter((_, j) => j !== i))}
-                >
-                  <X size={14} />
-                </button>
-              )}
+              <div className="ob-recurring-card-bottom">
+                <div className="ob-recurring-amt-wrap" style={{ flex: 1 }}>
+                  <span className="ob-recurring-sym">{currencySymbol}</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="ob-recurring-amt"
+                    placeholder="0"
+                    value={row.amount}
+                    min="0"
+                    max="9999999"
+                    onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
+                  />
+                </div>
+                <div className="ob-recurring-day-wrap">
+                  <span className="ob-recurring-day-lbl">{he ? 'יום בחודש' : 'Day of month'}</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="ob-recurring-day"
+                    placeholder="1"
+                    value={row.day}
+                    onFocus={e => e.target.select()}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                      setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: v } : r));
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           ))}
           <button
             type="button"
             className="ob-recurring-add"
-            onClick={() => setRecurringRows(rs => [...rs, { name: '', amount: '' }])}
+            onClick={() => setRecurringRows(rs => [...rs, { name: '', amount: '', day: '1' }])}
           >
             + {he ? 'הוסף עוד' : 'Add another'}
           </button>
