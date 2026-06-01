@@ -927,6 +927,14 @@ export default function DashboardPage() {
                               {pmLabel(tx.paymentMethod)}
                             </span>
                           )}
+                          {tx.cardId && (() => {
+                            const txCard = cards.find(c => c.id === tx.cardId);
+                            return txCard ? (
+                              <span className="txn-card-chip" style={{ borderColor: txCard.color, color: txCard.color, background: `${txCard.color}18` }}>
+                                {txCard.name} •••• {txCard.last4}
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                       <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>

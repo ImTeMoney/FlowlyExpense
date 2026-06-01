@@ -133,7 +133,7 @@ type Action =
   | { type: 'DELETE_TRANSACTION';        payload: string }
   | { type: 'DELETE_INSTALLMENT_GROUP';  payload: string }   // groupId
   | { type: 'ADD_RECURRING';             payload: RecurringExpense }
-  | { type: 'UPDATE_RECURRING';          payload: RecurringExpense }
+  | { type: 'UPDATE_RECURRING';          payload: RecurringExpense; oldDescription?: string }
   | { type: 'DELETE_RECURRING';          payload: string }
   | { type: 'SET_BUDGET';                payload: number }
   | { type: 'SET_SAVINGS_GOAL';          payload: number }
@@ -521,12 +521,17 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'UPDATE_RECURRING': {
         const upd = action.payload;
+        const oldDesc = action.oldDescription;
         setRecurringExpenses(prev => prev.map(r => r.id === upd.id ? upd : r));
-        // Sync the already-posted transaction for the current month (if any)
+        // Sync the already-posted transaction for the current month (if any).
+        // Match by recurringId (new transactions) or by old description (legacy).
         const curMs = new Date().toISOString().slice(0, 7);
         setTransactions(prev => prev.map(tx => {
-          if (tx.recurringId !== upd.id || !tx.date.startsWith(curMs)) return tx;
-          return { ...tx, paymentMethod: upd.paymentMethod, cardId: upd.cardId };
+          if (!tx.date.startsWith(curMs)) return tx;
+          const byId   = tx.recurringId === upd.id;
+          const byDesc = !tx.recurringId && !!oldDesc && tx.description === `(קבועה) ${oldDesc}`;
+          if (!byId && !byDesc) return tx;
+          return { ...tx, paymentMethod: upd.paymentMethod, cardId: upd.cardId, recurringId: upd.id };
         }));
         break;
       }

@@ -206,6 +206,7 @@ export default function AnalyticsPage() {
     const pm = (editRecPm || undefined) as PaymentMethod | undefined;
     dispatch({
       type: 'UPDATE_RECURRING',
+      oldDescription: editRec.description,
       payload: {
         ...editRec,
         description: editRecDesc.trim(),
@@ -676,7 +677,7 @@ export default function AnalyticsPage() {
                           return linkedCard ? (
                             <div className="rec-card-chip" style={{ borderColor: linkedCard.color, color: linkedCard.color, background: `${linkedCard.color}18` }}>
                               <CreditCard size={10} />
-                              <span>{linkedCard.name} ••{linkedCard.last4.slice(-2)}</span>
+                              <span>{linkedCard.name} •••• {linkedCard.last4}</span>
                             </div>
                           ) : null;
                         })()}
