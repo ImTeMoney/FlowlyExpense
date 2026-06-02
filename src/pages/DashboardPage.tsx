@@ -736,6 +736,9 @@ export default function DashboardPage() {
   const PM_LABEL_HE: Record<string, string> = {
     cash: 'מזומן', credit: 'אשראי', check: "צ'ק", transfer: 'העברה', bit: 'ביט',
   };
+  const PM_LABEL_EN: Record<string, string> = {
+    cash: 'Cash', credit: 'Credit', check: 'Check', transfer: 'Transfer', bit: 'Bit',
+  };
 
   // Month navigation helpers
   function prevMonthOf(ms: string) {
@@ -1078,7 +1081,7 @@ export default function DashboardPage() {
                       )}
                     />
                     {PmIcon && <PmIcon size={13} color={PM_COLOR[pm]} />}
-                    <span>{lang === 'he' ? PM_LABEL_HE[pm] : pm}</span>
+                    <span>{lang === 'he' ? PM_LABEL_HE[pm] : PM_LABEL_EN[pm]}</span>
                   </label>
                 );
               })}

@@ -1099,7 +1099,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
    ===================================================== */
 .txn-filters {
   display: flex; align-items: center; gap: 8px;
-  padding: 0 13px 12px 13px; flex-wrap: wrap; direction: rtl;
+  padding: 0 13px 12px 13px; flex-wrap: nowrap;
 }
 .txn-filter-search {
   flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px;
