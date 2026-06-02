@@ -34,6 +34,7 @@ export interface Translations {
   cat_dining: string;
   cat_travel: string;
   cat_other: string;
+  cat_debt: string;
   // Analytics
   analytics: string;
   monthlyBudget: string;
@@ -266,6 +267,7 @@ const he: Translations = {
   cat_dining: 'מסעדות',
   cat_travel: 'טיולים',
   cat_other: 'אחר',
+  cat_debt: 'חוב',
   analytics: 'ניתוח',
   monthlyBudget: 'תקציב חודשי',
   recurringExpenses: 'תשלומים קבועים',
@@ -488,6 +490,7 @@ const en: Translations = {
   cat_dining: 'Dining Out',
   cat_travel: 'Travel',
   cat_other: 'Other',
+  cat_debt: 'Debt',
   analytics: 'Analytics',
   monthlyBudget: 'Monthly Budget',
   recurringExpenses: 'Recurring Expenses',
@@ -764,12 +767,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }
 
   function catName(catId: string, storedName: string, isRenamed?: boolean): string {
-    // User explicitly renamed this category — always respect their choice
-    if (isRenamed) return storedName;
-    // Custom categories: use stored name as-is
+    // Custom categories: use stored name as-is (no translation available)
     if (catId.includes('custom')) return storedName;
-    // Built-in: return live translation for language-switching support
+    // Built-in: in non-Hebrew mode always use the live translation so switching
+    // language shows the correct English name even if the user renamed in Hebrew
     const translated = (t as Record<string, unknown>)[catId];
+    if (lang !== 'he' && typeof translated === 'string') return translated;
+    // Hebrew mode: respect user's custom rename
+    if (isRenamed) return storedName;
+    // Hebrew mode, not renamed: use Hebrew translation
     if (typeof translated === 'string') return translated;
     return storedName;
   }
