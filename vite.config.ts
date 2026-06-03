@@ -18,6 +18,7 @@ export default defineConfig({
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
+        cleanupOutdatedCaches: true,
       },
       manifest: {
         name: 'Flowly',
