@@ -756,6 +756,11 @@ export default function DashboardPage() {
   const [vy, vm] = viewMonth.split('-').map(Number);
   const viewMonthLabel = monthLabel(vy, vm);
 
+  // Prefix cells that start with formula characters so spreadsheets don't execute them
+  function csvCell(value: string): string {
+    return /^[=+\-@\t\r]/.test(value) ? `"'${value.replace(/"/g, '""')}"` : `"${value.replace(/"/g, '""')}"`;
+  }
+
   function handleExport() {
     if (transactions.length === 0) return;
     const BOM = '﻿';
@@ -771,7 +776,7 @@ export default function DashboardPage() {
         const pm       = tx.paymentMethod ? (lang === 'he' ? PM_LABEL_HE[tx.paymentMethod] : tx.paymentMethod) : '';
         const type     = tx.isIncome ? (lang === 'he' ? 'הכנסה' : 'income') : (lang === 'he' ? 'הוצאה' : 'expense');
         const amt      = tx.originalAmount !== undefined && tx.currency ? tx.originalAmount : tx.amount;
-        return [tx.date, `"${tx.description.replace(/"/g, '""')}"`, `"${catLabel}"`, pm, type, amt].join(',');
+        return [tx.date, csvCell(tx.description), csvCell(catLabel), pm, type, amt].join(',');
       });
     const csv = BOM + headers + '\n' + rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -833,7 +838,7 @@ export default function DashboardPage() {
           amount,
           categoryId: cat?.id ?? categories[0]?.id ?? '',
           date: dateStr,
-          description: desc.trim(),
+          description: desc.trim().replace(/^[=+\-@\t\r]+/, '').slice(0, 200),
           paymentMethod: PM_MAP[pmStr.trim()] ?? 'cash',
           isIncome: txIsIncome,
         });

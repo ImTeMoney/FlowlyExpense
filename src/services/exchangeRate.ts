@@ -42,6 +42,8 @@ function isRatesMap(v: unknown): v is RatesMap {
     Object.values(v as object).every(x => typeof x === 'number');
 }
 
+const RATE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 async function fetchRates(base: string, date: string): Promise<RatesMap> {
   if (!VALID_CURRENCY.test(base)) throw new Error(`Invalid currency: ${base}`);
   if (!VALID_DATE.test(date)) throw new Error(`Invalid date: ${date}`);
@@ -51,7 +53,13 @@ async function fetchRates(base: string, date: string): Promise<RatesMap> {
     const cached = localStorage.getItem(key);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (isRatesMap(parsed) && Object.keys(parsed).length > 0) return parsed;
+      // Wrap with timestamp for 'latest' (historical dates never expire)
+      if (date !== 'latest') {
+        if (isRatesMap(parsed) && Object.keys(parsed).length > 0) return parsed;
+      } else if (parsed?._ts && Date.now() - parsed._ts < RATE_TTL_MS) {
+        const { _ts: _, ...rates } = parsed;
+        if (isRatesMap(rates) && Object.keys(rates).length > 0) return rates;
+      }
     }
   } catch {}
 
@@ -67,7 +75,8 @@ async function fetchRates(base: string, date: string): Promise<RatesMap> {
   }
 
   try {
-    localStorage.setItem(key, JSON.stringify(rates));
+    const toStore = date === 'latest' ? { ...rates, _ts: Date.now() } : rates;
+    localStorage.setItem(key, JSON.stringify(toStore));
   } catch {}
 
   return rates;
