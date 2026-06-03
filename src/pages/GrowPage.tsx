@@ -351,6 +351,12 @@ export default function GrowPage() {
                 ? 'הסימולציה מיועדת ללמידה בלבד ואינה ייעוץ השקעות. תשואות עבר אינן ערובה לעתיד. אחוזי התשואה הם ממוצעים היסטוריים. יש להתייעץ עם יועץ פיננסי מורשה.'
                 : 'For educational use only. Not investment advice. Past performance is no guarantee of future results. Return figures are historical averages. Consult a licensed financial advisor.'}
             </p>
+            <p className="grow-disclaimer-body" style={{ marginTop: 6, color: 'var(--text-dim)' }}>
+              {iHe
+                ? <>מקורות: תשואות S&P 500 / נאסד"ק / מניות עולמי — <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>Damodaran / NYU Stern</a>. שיעורי פיקדון ואג"ח — <a href="https://fiscaldata.treasury.gov" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>US Treasury FiscalData</a>.</>
+                : <>Sources: S&P 500 / Nasdaq / Global equity returns — <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>Damodaran / NYU Stern</a>. Deposit &amp; bond rates — <a href="https://fiscaldata.treasury.gov" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>US Treasury FiscalData</a>.</>
+              }
+            </p>
           </div>
         </div>
       </div>
