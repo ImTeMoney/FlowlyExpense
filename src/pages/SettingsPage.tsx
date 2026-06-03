@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { track } from '../services/analytics';
 import { createPortal } from 'react-dom';
 import { useExpense, CATEGORY_COLORS, STORAGE_KEYS, CreditCard as CreditCardType } from '../context/ExpenseContext';
 import { suggestIcon } from '../services/iconSuggest';
@@ -207,6 +208,7 @@ const SettingsPage: React.FC = () => {
     if (editingId && editingName.trim()) {
       const name = editingName.trim();
       dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name, color: editingColor, icon: suggestIcon(name) } });
+      track('category_renamed', {});
       showToast(t.categoryUpdated);
     }
     setEditingId(null);
@@ -273,6 +275,7 @@ const SettingsPage: React.FC = () => {
       type: 'ADD_CATEGORY',
       payload: { id: `cat_custom_${Date.now()}`, name, color: newCatColor, icon: suggestIcon(name), isCustom: true },
     });
+    track('category_added', {});
     setNewCatName('');
   }
 
@@ -284,7 +287,7 @@ const SettingsPage: React.FC = () => {
         <div className="header-row">
           <div className="header-brand">{t.settings}</div>
           <div className="header-actions">
-            <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
+            <button className="header-naked-btn" onClick={() => { track('theme_changed', { theme: theme === 'dark' ? 'light' : 'dark' }); toggleTheme(); }} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <LangToggle variant="inline" />
@@ -303,7 +306,7 @@ const SettingsPage: React.FC = () => {
               key={c}
               type="button"
               className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
-              onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
+              onClick={() => { track('currency_changed', { currency: c }); dispatch({ type: 'SET_MAIN_CURRENCY', payload: c }); }}
               style={{ textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {CURRENCY_SYMBOL[c]} {c}

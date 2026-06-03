@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { pageView } from './services/analytics';
 import { ExpenseProvider } from './context/ExpenseContext';
 import { LanguageProvider } from './context/LanguageContext';
 import AppLayout from './components/Layout/AppLayout';
@@ -72,6 +73,12 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+function RouteTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => { pageView(pathname); }, [pathname]);
+  return null;
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 function PWAModalWrapper({ children }: { children: React.ReactNode }) {
@@ -114,6 +121,7 @@ function App() {
       <LanguageProvider>
         <ExpenseProvider>
           <Router>
+            <RouteTracker />
             <PWAModalWrapper>
               {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
               <AppLayout>

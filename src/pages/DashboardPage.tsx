@@ -23,6 +23,7 @@ import CategoryPicker, { resolveCatIcon } from '../components/CategoryPicker';
 import DatePicker from '../components/DatePicker';
 import DebtTracker from '../components/DebtTracker';
 import { parseExpenseText, suggestCategory, todayStr, currentMonthStr, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
+import { track } from '../services/analytics';
 
 // ── Insight icon map ─────────────────────────────────────────────
 const INSIGHT_ICON: Record<InsightIcon, React.FC<{ size?: number; color?: string }>> = {
@@ -571,6 +572,7 @@ export default function DashboardPage() {
         const existing = recurringExpenses.find(r => r.description === baseDesc && r.isIncome === isIncome);
         if (existing) dispatch({ type: 'DELETE_RECURRING', payload: existing.id });
       }
+      track('expense_edited', { category: catId, is_income: isIncome });
       setEditingTx(null);
       setShowModal(false);
       clearDraft();
@@ -656,12 +658,14 @@ export default function DashboardPage() {
         lastPostedMonth: date.substring(0, 7),
       }});
     }
+    track('expense_added', { category: catId, payment_method: payMethod, is_income: isIncome, has_description: !!desc.trim(), currency: txCurrency });
     setShowModal(false);
     clearDraft();
     showToast(t.added);
   }
 
   function handleDelete(id: string) {
+    track('expense_deleted', {});
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
     showToast(t.deleted);
   }
@@ -779,6 +783,7 @@ export default function DashboardPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    track('csv_exported', { transaction_count: transactions.length });
     setShowIoMenu(false);
   }
 
@@ -835,6 +840,7 @@ export default function DashboardPage() {
       }
       if (imported.length > 0) {
         dispatch({ type: 'MERGE_TRANSACTIONS', payload: imported });
+        track('csv_imported', { imported_count: imported.length });
         showToast(lang === 'he' ? `יובאו ${imported.length} עסקאות` : `Imported ${imported.length} transactions`);
       }
       setShowIoMenu(false);
@@ -851,15 +857,15 @@ export default function DashboardPage() {
         <div className="header-row">
           <div className="header-brand">Flowly</div>
           <div className="header-month-nav">
-            <button className="month-nav-btn" onClick={() => setViewMonth(prevMonthOf(viewMonth))}>‹</button>
+            <button className="month-nav-btn" onClick={() => { track('month_navigated', { direction: 'prev' }); setViewMonth(prevMonthOf(viewMonth)); }}>‹</button>
             <span
               className={`header-month${viewMonth !== currentMonthStr() ? ' header-month--past' : ''}`}
-              onClick={() => setViewMonth(currentMonthStr())}
+              onClick={() => { track('month_navigated', { direction: 'current' }); setViewMonth(currentMonthStr()); }}
               title={viewMonth !== currentMonthStr() ? (lang === 'he' ? 'חזור לחודש נוכחי' : 'Back to current month') : undefined}
             >
               {viewMonthLabel}
             </span>
-            <button className="month-nav-btn" onClick={() => setViewMonth(nextMonthOf(viewMonth))} disabled={viewMonth >= currentMonthStr()}>›</button>
+            <button className="month-nav-btn" onClick={() => { track('month_navigated', { direction: 'next' }); setViewMonth(nextMonthOf(viewMonth)); }} disabled={viewMonth >= currentMonthStr()}>›</button>
           </div>
           <div className="header-actions">
             <div className="header-io-wrap">
@@ -1016,7 +1022,7 @@ export default function DashboardPage() {
             type="text"
             placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
             value={filterSearch}
-            onChange={e => setFilterSearch(e.target.value)}
+            onChange={e => { if (!filterSearch && e.target.value) track('search_used', {}); setFilterSearch(e.target.value); }}
           />
           {filterSearch && (
             <button className="txn-filter-clear" onClick={() => setFilterSearch('')}>
@@ -1041,9 +1047,11 @@ export default function DashboardPage() {
                   <input
                     type="checkbox"
                     checked={filterCatIds.includes(cat.id)}
-                    onChange={() => setFilterCatIds(prev =>
-                      prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id]
-                    )}
+                    onChange={() => setFilterCatIds(prev => {
+                      const next = prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id];
+                      track('filter_category_used', { count: next.length });
+                      return next;
+                    })}
                   />
                   <span className="txn-filter-drop-dot" style={{ background: cat.color }} />
                   {catName(cat.id, cat.name, cat.isRenamed)}
@@ -1076,9 +1084,11 @@ export default function DashboardPage() {
                     <input
                       type="checkbox"
                       checked={filterPayMs.includes(pm)}
-                      onChange={() => setFilterPayMs(prev =>
-                        prev.includes(pm) ? prev.filter(x => x !== pm) : [...prev, pm]
-                      )}
+                      onChange={() => setFilterPayMs(prev => {
+                        const next = prev.includes(pm) ? prev.filter(x => x !== pm) : [...prev, pm];
+                        track('filter_payment_used', { method: pm });
+                        return next;
+                      })}
                     />
                     {PmIcon && <PmIcon size={13} color={PM_COLOR[pm]} />}
                     <span>{lang === 'he' ? PM_LABEL_HE[pm] : PM_LABEL_EN[pm]}</span>

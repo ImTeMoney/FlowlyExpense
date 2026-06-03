@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LanguageContext';
+import { track } from '../services/analytics';
 import { FlagIL, FlagUS } from './Flags';
 
 interface Props {
@@ -30,13 +31,13 @@ export default function LangToggle({ variant = 'inline' }: Props) {
         <div className="lang-dropdown">
           <button
             className={`lang-option${!he ? ' active' : ''}`}
-            onClick={() => { if (he) toggleLang(); setOpen(false); }}
+            onClick={() => { if (he) { track('language_changed', { lang: 'en' }); toggleLang(); } setOpen(false); }}
           >
             <FlagUS size={20}/><span>English</span>
           </button>
           <button
             className={`lang-option${he ? ' active' : ''}`}
-            onClick={() => { if (!he) toggleLang(); setOpen(false); }}
+            onClick={() => { if (!he) { track('language_changed', { lang: 'he' }); toggleLang(); } setOpen(false); }}
           >
             <FlagIL size={20}/><span>עברית</span>
           </button>

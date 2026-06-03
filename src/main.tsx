@@ -42,6 +42,10 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+import { initAnalytics } from './services/analytics';
+const _deviceId = localStorage.getItem('expense_device_id') ?? 'anonymous';
+initAnalytics(_deviceId);
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
