@@ -10,6 +10,17 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor')) return 'vendor-charts';
+          if (id.includes('@dnd-kit')) return 'vendor-dnd';
+          if (id.includes('react-dom') || id.includes('react-router') || id.includes('node_modules/react/')) return 'vendor-react';
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

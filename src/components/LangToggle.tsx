@@ -24,7 +24,7 @@ export default function LangToggle({ variant = 'inline' }: Props) {
 
   return (
     <div ref={ref} className={variant === 'floating' ? 'ob-lang-wrap' : 'dash-lang-wrap'}>
-      <button className="lang-toggle-pill" onClick={() => setOpen(v => !v)}>
+      <button className="lang-toggle-pill" onClick={() => setOpen(v => !v)} aria-label={he ? 'שינוי שפה' : 'Change language'}>
         {he ? <FlagIL size={22}/> : <FlagUS size={22}/>}
       </button>
       {open && (

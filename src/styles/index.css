@@ -332,7 +332,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 .month-nav-btn {
   background: none; border: none; cursor: pointer;
-  font-size: 20px; font-weight: 700; color: var(--text-muted);
+  font-size: 20px; font-weight: 700; color: var(--text-secondary);
   padding: 0 4px; line-height: 1; transition: color 0.15s;
 }
 .month-nav-btn:hover:not(:disabled) { color: var(--text); }

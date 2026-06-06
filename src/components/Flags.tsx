@@ -10,7 +10,7 @@ export function FlagIL({ size = 22 }: { size?: number }) {
   const h = Math.round(size * 2 / 3);
   return (
     <svg width={size} height={h} viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'block', borderRadius: 2, flexShrink: 0 }}>
+      aria-hidden="true" style={{ display: 'block', borderRadius: 2, flexShrink: 0 }}>
       <rect width="90" height="60" fill="#fff"/>
       <rect width="90" height="11" y="8"  fill="#0038B8"/>
       <rect width="90" height="11" y="41" fill="#0038B8"/>
@@ -29,7 +29,7 @@ export function FlagUS({ size = 22 }: { size?: number }) {
   const sx = cw / cols, sy = ch / rows;
   return (
     <svg width={size} height={h} viewBox="0 0 57 30" xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'block', borderRadius: 2, flexShrink: 0 }}>
+      aria-hidden="true" style={{ display: 'block', borderRadius: 2, flexShrink: 0 }}>
       <rect width="57" height="30" fill="#B22234"/>
       {[1,3,5,7,9,11].map(i => (
         <rect key={i} x="0" y={i * sh} width="57" height={sh} fill="#fff"/>

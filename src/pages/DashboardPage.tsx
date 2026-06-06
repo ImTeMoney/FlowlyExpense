@@ -862,7 +862,7 @@ export default function DashboardPage() {
         <div className="header-row">
           <div className="header-brand">Flowly</div>
           <div className="header-month-nav">
-            <button className="month-nav-btn" onClick={() => { track('month_navigated', { direction: 'prev' }); setViewMonth(prevMonthOf(viewMonth)); }}>‹</button>
+            <button className="month-nav-btn" aria-label={lang === 'he' ? 'חודש קודם' : 'Previous month'} onClick={() => { track('month_navigated', { direction: 'prev' }); setViewMonth(prevMonthOf(viewMonth)); }}>‹</button>
             <span
               className={`header-month${viewMonth !== currentMonthStr() ? ' header-month--past' : ''}`}
               onClick={() => { track('month_navigated', { direction: 'current' }); setViewMonth(currentMonthStr()); }}
@@ -870,7 +870,7 @@ export default function DashboardPage() {
             >
               {viewMonthLabel}
             </span>
-            <button className="month-nav-btn" onClick={() => { track('month_navigated', { direction: 'next' }); setViewMonth(nextMonthOf(viewMonth)); }} disabled={viewMonth >= currentMonthStr()}>›</button>
+            <button className="month-nav-btn" aria-label={lang === 'he' ? 'חודש הבא' : 'Next month'} onClick={() => { track('month_navigated', { direction: 'next' }); setViewMonth(nextMonthOf(viewMonth)); }} disabled={viewMonth >= currentMonthStr()}>›</button>
           </div>
           <div className="header-actions">
             <div className="header-io-wrap">
@@ -1025,12 +1025,13 @@ export default function DashboardPage() {
           <input
             className="txn-filter-search-input"
             type="text"
+            aria-label={lang === 'he' ? 'חיפוש עסקאות' : 'Search transactions'}
             placeholder={lang === 'he' ? 'חיפוש...' : 'Search...'}
             value={filterSearch}
             onChange={e => { if (!filterSearch && e.target.value) track('search_used', {}); setFilterSearch(e.target.value); }}
           />
           {filterSearch && (
-            <button className="txn-filter-clear" onClick={() => setFilterSearch('')}>
+            <button className="txn-filter-clear" aria-label={lang === 'he' ? 'נקה חיפוש' : 'Clear search'} onClick={() => setFilterSearch('')}>
               <X size={12} />
             </button>
           )}
@@ -1391,6 +1392,7 @@ export default function DashboardPage() {
                 <input
                   type="text"
                   className="voice-field-input"
+                  aria-label={lang === 'he' ? 'הזנת הוצאה בטקסט חופשי' : 'Enter expense by text'}
                   placeholder={lang === 'he' ? 'אמור: "שילמתי 50 שקל על קפה"' : 'Say: "I spent 50 on coffee"'}
                   value={pasteText}
                   onChange={e => setPasteText(e.target.value)}
@@ -1445,6 +1447,7 @@ export default function DashboardPage() {
               <input
                 type="number"
                 className="amount-input"
+                aria-label={lang === 'he' ? 'סכום' : 'Amount'}
                 placeholder="0"
                 value={amount}
                 min="0"
@@ -1564,6 +1567,7 @@ export default function DashboardPage() {
                         <input
                           type="number"
                           className="pm-split-amount"
+                          aria-label={lang === 'he' ? 'סכום תשלום' : 'Payment amount'}
                           placeholder="0"
                           min="0"
                           step="0.01"
@@ -1880,7 +1884,7 @@ export default function DashboardPage() {
             <div className="modal-handle" />
             <div className="modal-title">
               <span>{t.splitToInstallments}</span>
-              <button className="modal-close" onClick={() => setSplitTx(null)}><X size={14} /></button>
+              <button className="modal-close" aria-label={lang === 'he' ? 'סגור' : 'Close'} onClick={() => setSplitTx(null)}><X size={14} /></button>
             </div>
             <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{splitTx.description}</span>

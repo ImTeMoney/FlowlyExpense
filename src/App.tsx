@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { pageView } from './services/analytics';
 import { ExpenseProvider } from './context/ExpenseContext';
-import { LanguageProvider } from './context/LanguageContext';
+import { LanguageProvider, useLang } from './context/LanguageContext';
 import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -102,6 +102,15 @@ function PWAModalWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+function LangSync() {
+  const { lang } = useLang();
+  useEffect(() => {
+    document.documentElement.lang = lang === 'he' ? 'he' : 'en';
+    document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+  }, [lang]);
+  return null;
+}
+
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
 
@@ -119,6 +128,7 @@ function App() {
   return (
     <ErrorBoundary>
       <LanguageProvider>
+        <LangSync />
         <ExpenseProvider>
           <Router>
             <RouteTracker />
