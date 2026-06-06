@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { pageView } from './services/analytics';
 import { ExpenseProvider } from './context/ExpenseContext';
 import { LanguageProvider, useLang } from './context/LanguageContext';
 import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import SettingsPage from './pages/SettingsPage';
-import GrowPage from './pages/GrowPage';
 import Onboarding, { hasSeenOnboarding, markOnboardingDone } from './components/Onboarding';
 import PWAInstallModal from './components/PWAInstallModal';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
+
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const SettingsPage  = lazy(() => import('./pages/SettingsPage'));
+const GrowPage      = lazy(() => import('./pages/GrowPage'));
 
 // ── Full-app Error Boundary ───────────────────────────────────────────────────
 // Catches any render error anywhere in the tree and shows a recovery screen
@@ -135,13 +136,15 @@ function App() {
             <PWAModalWrapper>
               {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
               <AppLayout>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/analytics" element={<AnalyticsPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/grow" element={<GrowPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                <Suspense fallback={null}>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/grow" element={<GrowPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
               </AppLayout>
             </PWAModalWrapper>
           </Router>

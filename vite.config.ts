@@ -11,6 +11,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   build: {
+    target: 'es2020',
     rollupOptions: {
       output: {
         manualChunks(id: string) {
