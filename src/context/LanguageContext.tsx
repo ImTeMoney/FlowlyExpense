@@ -766,9 +766,24 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
+  const HEBREW_TO_EN: Record<string, string> = {
+    'תרומה': 'Donation',
+    'אירועים': 'Events',
+    'חינוך': 'Education',
+    'ספורט': 'Sport',
+    'בגדים': 'Clothing',
+    'רפואה': 'Healthcare',
+    'חיות מחמד': 'Pets',
+    'מתנות': 'Gifts',
+    'אוכל': 'Food',
+  };
+
   function catName(catId: string, storedName: string, isRenamed?: boolean): string {
-    // Custom categories: use stored name as-is (no translation available)
-    if (catId.includes('custom')) return storedName;
+    // Custom categories: try name-based translation in English mode, else stored name
+    if (catId.includes('custom')) {
+      if (lang !== 'he' && HEBREW_TO_EN[storedName]) return HEBREW_TO_EN[storedName];
+      return storedName;
+    }
     // Built-in: in non-Hebrew mode always use the live translation so switching
     // language shows the correct English name even if the user renamed in Hebrew
     const translated = (t as Record<string, unknown>)[catId];
