@@ -142,6 +142,7 @@ export default function DashboardPage() {
   // IO menu (export/import)
   const [showIoMenu,    setShowIoMenu]    = useState(false);
   const [swipedId,      setSwipedId]      = useState<string | null>(null);
+  const [showCurrencyRow, setShowCurrencyRow] = useState(false);
   const touchStartX  = useRef(0);
   const touchStartY  = useRef(0);
   const touchMoved   = useRef(false);
@@ -467,6 +468,7 @@ export default function DashboardPage() {
     setPmSplitEnabled(false);
     setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
     setTxCurrency(mainCurrency);
+    setShowCurrencyRow(false);
     setRatePreview('');
     setRateNum(null);
     setIsManualRate(false);
@@ -500,6 +502,7 @@ export default function DashboardPage() {
     setDate(tx.date);
     setCatId(tx.categoryId);
     setTxCurrency(tx.currency ?? mainCurrency);
+    setShowCurrencyRow((tx.currency !== undefined) && tx.currency !== mainCurrency);
     setRatePreview('');
     setRateNum(null);
     setIsManualRate(false);
@@ -1449,10 +1452,8 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Voice / dictation input — works on all platforms.
-                iOS users tap the field and use the keyboard mic.
-                Chrome/Android: mic button also triggers Web Speech API. */}
-            <div className="voice-field-row">
+            {/* Voice / dictation input — only for new transactions, not for editing */}
+            {!editingTx && <div className="voice-field-row">
               <div className={`voice-field-wrap${showPaste ? ' listening' : ''}`}>
                 <input
                   type="text"
@@ -1503,8 +1504,8 @@ export default function DashboardPage() {
                   {lang === 'he' ? 'מלא' : 'Fill'}
                 </button>
               )}
-            </div>
-            {voiceError && <p className="voice-error">{voiceError}</p>}
+            </div>}
+            {!editingTx && voiceError && <p className="voice-error">{voiceError}</p>}
 
             {/* Amount */}
             <div className="amount-row">
@@ -1523,19 +1524,32 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Currency selector */}
-            <div className="currency-row">
-              {CURRENCIES.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`currency-pill${txCurrency === c ? ' active' : ''}`}
-                  onClick={() => setTxCurrency(c)}
-                >
-                  {CURRENCY_SYMBOL[c]} {c}
-                </button>
-              ))}
-            </div>
+            {/* Currency selector — collapsed when using main currency */}
+            {(showCurrencyRow || txCurrency !== mainCurrency) ? (
+              <div className="currency-row">
+                {CURRENCIES.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`currency-pill${txCurrency === c ? ' active' : ''}`}
+                    onClick={() => {
+                      setTxCurrency(c);
+                      if (c === mainCurrency) setShowCurrencyRow(false);
+                    }}
+                  >
+                    {CURRENCY_SYMBOL[c]} {c}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="modal-currency-toggle"
+                onClick={() => setShowCurrencyRow(true)}
+              >
+                {lang === 'he' ? '+ מטבע אחר' : '+ Foreign currency'}
+              </button>
+            )}
             {txCurrency !== mainCurrency && (
               <div className="rate-preview">
                 {rateLoading ? '...' : rateFailed ? (
