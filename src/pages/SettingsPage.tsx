@@ -319,13 +319,6 @@ const SettingsPage: React.FC = () => {
       <div className="settings-section-header">{lang === 'he' ? 'קטגוריות' : 'Categories'}</div>
       {/* ── Category Manager ── */}
       <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Tag size={14} />
-            {t.categoriesTitle}
-          </span>
-        </div>
-
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCatDragEnd}>
           <SortableContext items={state.categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
             {state.categories.map(cat => (
@@ -486,7 +479,7 @@ const SettingsPage: React.FC = () => {
       <div className="settings-section-header">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</div>
       {/* ── Credit Cards ── */}
       <div className="a-sec">
-        <div className="a-sec-title">
+        <div className="a-sec-title" style={{ justifyContent: 'flex-start', gap: 6 }}>
           <CreditCardIcon size={14} />
           <span className="title-text">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
         </div>
