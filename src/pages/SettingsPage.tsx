@@ -436,7 +436,7 @@ const SettingsPage: React.FC = () => {
             value={newCatName}
             onChange={e => setNewCatName(e.target.value)}
             maxLength={30}
-            style={{ width: '100%', textAlign: 'right', direction: 'rtl' }}
+            style={{ width: '100%', textAlign: lang === 'he' ? 'right' : 'left', direction: lang === 'he' ? 'rtl' : 'ltr' }}
           />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {CATEGORY_COLORS.map(c => (
