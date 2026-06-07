@@ -295,6 +295,7 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
+      <div className="settings-section-header">{lang === 'he' ? 'מטבע' : 'Currency'}</div>
       {/* ── Currency ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -315,6 +316,7 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
+      <div className="settings-section-header">{lang === 'he' ? 'קטגוריות' : 'Categories'}</div>
       {/* ── Category Manager ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -461,6 +463,7 @@ const SettingsPage: React.FC = () => {
         </form>
       </div>
 
+      <div className="settings-section-header">{lang === 'he' ? 'מצב חוב' : 'Debt Mode'}</div>
       {/* ── Debt Mode ── */}
       <div className="a-sec">
         <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -480,6 +483,7 @@ const SettingsPage: React.FC = () => {
         </p>
       </div>
 
+      <div className="settings-section-header">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</div>
       {/* ── Credit Cards ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -597,6 +601,7 @@ const SettingsPage: React.FC = () => {
         document.body
       )}
 
+      <div className="settings-section-header">{lang === 'he' ? 'כלים' : 'Tools'}</div>
       {/* ── Tools ── */}
       <div className="a-sec">
         <div className="a-sec-title">

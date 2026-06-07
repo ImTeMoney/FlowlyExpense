@@ -1006,99 +1006,24 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Smart status card — shown standalone only when forecast is unavailable */}
-      {!(forecast.daysLeft > 0 && forecast.forecastTotal > 0) && (
-        <div className={`smart-status-card ${statusCard.urgency} shimmer-on-load holo-card`}
-          ref={tilt.ref} onPointerMove={tilt.onPointerMove} onPointerLeave={tilt.onPointerLeave}>
-          <div className="smart-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
-          <div className="smart-status-headline">{statusCard.headline}</div>
-          {statusCard.progress > 0 && (
-            <div className="smart-status-bar">
-              <div
-                className="smart-status-bar-fill"
-                style={{ width: `${Math.min(statusCard.progress * 100, 100)}%`, background: URGENCY_BAR[statusCard.urgency] }}
-              />
-            </div>
-          )}
+      {/* Compact summary row */}
+      <div className="dash-summary-row">
+        <div className="dash-summary-stat">
+          <span className="dash-summary-label">{lang === 'he' ? 'הוצאות' : 'Spent'}</span>
+          <span className="dash-summary-value">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</span>
         </div>
-      )}
-
-      {/* Spending forecast card — merged with status when available */}
-      {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
-        <div className="forecast-card">
-          {/* Status headline merged in */}
-          <div className="forecast-status-row">
-            <div className="forecast-status-dot" style={{ background: URGENCY_DOT[statusCard.urgency] }} />
-            <div className="forecast-status-text">
-              <span className="forecast-status-headline">{statusCard.headline}</span>
-            </div>
-            <span className={`forecast-confidence ${forecast.confidence}`}>
-              {lang === 'he'
-                ? forecast.confidence === 'high' ? 'תחזית מדויקת' : forecast.confidence === 'medium' ? 'תחזית בינונית' : 'תחזית משוערת'
-                : forecast.confidence === 'high' ? 'High accuracy' : forecast.confidence === 'medium' ? 'Medium accuracy' : 'Estimated'}
-            </span>
+        {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
+          <div className="dash-summary-stat dash-summary-stat--muted">
+            <span className="dash-summary-label">{lang === 'he' ? 'צפי לחודש' : 'Forecast'}</span>
+            <span className="dash-summary-value">{formatCurrencyDirect(Math.round(forecast.forecastTotal))}</span>
           </div>
-          <div className="forecast-status-sep" />
-          <div className="forecast-split-row">
-            <div className="forecast-spent-block">
-              <div className="forecast-block-label">{lang === 'he' ? 'הוצאת עד כה' : 'Spent so far'}</div>
-              <div className="forecast-spent-amount">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</div>
-            </div>
-            <div className="forecast-split-divider" />
-            <div className="forecast-proj-block">
-              <div className="forecast-block-label">{lang === 'he' ? 'תחזית לסוף חודש' : 'Month-end forecast'}</div>
-              <div className="forecast-proj-amount">{formatCurrency(Math.round(forecast.forecastTotal))}</div>
-              <div className="forecast-range">
-                ±{formatCurrency(Math.round((forecast.confidenceHigh - forecast.confidenceLow) / 2))}
-                {' · '}{lang === 'he' ? `${forecast.daysLeft} ימים נותרו` : `${forecast.daysLeft} days left`}
-              </div>
-            </div>
+        )}
+        {statusCard.progress > 0 && (
+          <div className="dash-summary-progress">
+            <div className="dash-summary-bar" style={{ width: `${Math.min(statusCard.progress * 100, 100)}%` }} />
           </div>
-          <div className="forecast-bar-wrap">
-            <div className="forecast-bar-track">
-              {forecast.forecastTotal > 0 && (() => {
-                const total = forecast.forecastTotal;
-                const spentPct = Math.min((forecast.spentSoFar / total) * 100, 100);
-                const recurPct = Math.min((forecast.knownRecurring / total) * 100, 100 - spentPct);
-                return (
-                  <>
-                    <div className="forecast-bar-spent" style={{ width: `${spentPct}%` }} />
-                    <div className="forecast-bar-recur" style={{ width: `${recurPct}%` }} />
-                    <div className="forecast-bar-var" style={{ width: `${Math.min(100 - spentPct - recurPct, 100)}%` }} />
-                  </>
-                );
-              })()}
-            </div>
-            <div className="forecast-bar-legend">
-              <span className="fbl-spent">{lang === 'he' ? 'שולם' : 'Spent'}</span>
-              <span className="fbl-recur">{lang === 'he' ? 'קבועות' : 'Recurring'}</span>
-              <span className="fbl-var">{lang === 'he' ? 'משתנה' : 'Variable'}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Insight cards */}
-      {insights.map(ins => {
-        const Icon = INSIGHT_ICON[ins.icon];
-        const col  = INSIGHT_COLOR[ins.icon];
-        return (
-          <div key={ins.id} className={`insight-card ${ins.type}`}>
-            <div className="insight-card-icon" style={{ background: `${col}18` }}>
-              <Icon size={16} color={col} />
-            </div>
-            <div className="insight-card-body">
-              <div className="insight-line1">{ins.line1}</div>
-              <div className="insight-line2">{ins.line2}</div>
-              {ins.ctaLabel && ins.ctaRoute && (
-                <button className="insight-cta" onClick={() => navigate(ins.ctaRoute!)}>
-                  {ins.ctaLabel}
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+        )}
+      </div>
 
       {/* Debt tracker — visible only when debt mode is enabled */}
       {debtModeEnabled && <DebtTracker />}

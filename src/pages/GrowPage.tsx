@@ -60,7 +60,7 @@ function timeAgoHe(ts: number | null): string {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function GrowPage() {
+export default function GrowPage({ embedded }: { embedded?: boolean }) {
   const { state, formatCurrencyDirect } = useExpense();
   const { t, lang } = useLang();
   const [theme, toggleTheme] = useTheme();
@@ -119,17 +119,19 @@ export default function GrowPage() {
     <div className="page" style={{ paddingBottom: 90 }}>
 
       {/* Header */}
-      <div className="aether-header">
-        <div className="header-row">
-          <div className="header-brand">{t.growTitle}</div>
-          <div className="header-actions">
-            <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <LangToggle variant="inline" />
+      {!embedded && (
+        <div className="aether-header">
+          <div className="header-row">
+            <div className="header-brand">{t.growTitle}</div>
+            <div className="header-actions">
+              <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <LangToggle variant="inline" />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Actual savings context row ── */}
       <div className="grow-context-row">

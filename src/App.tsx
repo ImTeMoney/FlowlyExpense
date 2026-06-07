@@ -141,7 +141,7 @@ function App() {
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/grow" element={<GrowPage />} />
+                    <Route path="/grow" element={<Navigate to="/analytics" replace />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>

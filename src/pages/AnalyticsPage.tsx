@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
+const GrowPage = lazy(() => import('./GrowPage'));
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, FileCheck, Landmark, Smartphone, ArrowLeftRight } from 'lucide-react';
@@ -168,6 +169,8 @@ export default function AnalyticsPage() {
   const maxWeek = Math.max(...weeklyTotals.map(w => w.total), 1);
 
   // UI state
+  const [activeTab, setActiveTab] = useState<'summary' | 'categories' | 'forecast'>('summary');
+  const [drillCat, setDrillCat] = useState<string | null>(null);
   const [showAllCats, setShowAllCats] = useState(false);
   const [selectedDay, setSelectedDay]   = useState<string | undefined>();
   const [budgetEditId, setBudgetEditId] = useState<string | null>(null);
@@ -305,8 +308,117 @@ export default function AnalyticsPage() {
         <button className="mnav-btn" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">›</button>
       </div>
 
-      {/* Single empty state */}
-      {!hasData ? (
+      {/* Tab bar */}
+      <div className="an-tabs">
+        {(['summary', 'categories', 'forecast'] as const).map(tab => (
+          <button
+            key={tab}
+            className={`an-tab${activeTab === tab ? ' an-tab--active' : ''}`}
+            onClick={() => { setActiveTab(tab); setDrillCat(null); }}
+          >
+            {lang === 'he'
+              ? { summary: 'סיכום', categories: 'קטגוריות', forecast: 'תחזית' }[tab]
+              : { summary: 'Summary', categories: 'Categories', forecast: 'Forecast' }[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Forecast tab — GrowPage embedded */}
+      {activeTab === 'forecast' && (
+        <Suspense fallback={null}>
+          <GrowPage embedded />
+        </Suspense>
+      )}
+
+      {/* Categories drill-down tab */}
+      {activeTab === 'categories' && (
+        <div>
+          {drillCat === null ? (
+            catTotals.length === 0 ? (
+              <div className="an-empty">
+                <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
+                <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
+              </div>
+            ) : (
+              <div className="an-cat-card">
+                <div className="an-cat-card-header">
+                  <span className="an-cat-card-title">{lang === 'he' ? 'קטגוריות' : 'Categories'}</span>
+                  <span className="an-cat-card-count">{catTotals.length}</span>
+                </div>
+                {catTotals.map(({ cat, total }) => {
+                  const Icon = resolveCatIcon(cat);
+                  const pct = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
+                  return (
+                    <button
+                      key={cat.id}
+                      className="an-cb-item an-cb-item--tappable"
+                      onClick={() => setDrillCat(cat.id)}
+                    >
+                      <div className="an-cb-row">
+                        <div className="an-cb-name-side">
+                          <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
+                            <Icon size={17} color={cat.color} />
+                          </div>
+                          <span className="an-cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
+                        </div>
+                        <div className="an-cb-amount-side">
+                          <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                          <span className="an-cb-pct">{pct}%</span>
+                        </div>
+                      </div>
+                      <div className="an-cb-bar-row">
+                        <div className="an-cb-bar-fill" style={{ width: `${(total / maxCat) * 100}%`, background: cat.color }} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )
+          ) : (() => {
+            const cat = categories.find(c => c.id === drillCat);
+            const catTxns = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === drillCat);
+            const Icon = cat ? resolveCatIcon(cat) : BarChart2;
+            return (
+              <div>
+                <button className="an-drill-back" onClick={() => setDrillCat(null)}>
+                  {lang === 'he' ? '← חזרה לקטגוריות' : '← Back to categories'}
+                </button>
+                <div className="an-cat-card">
+                  <div className="an-cat-card-header">
+                    <div className="an-cb-name-side">
+                      {cat && (
+                        <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
+                          <Icon size={17} color={cat.color} />
+                        </div>
+                      )}
+                      <span className="an-cat-card-title">{cat ? catName(cat.id, cat.name, cat.isRenamed) : drillCat}</span>
+                    </div>
+                    <span className="an-cat-card-count">{catTxns.length}</span>
+                  </div>
+                  {catTxns.length === 0 ? (
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '12px 0', margin: 0 }}>
+                      {lang === 'he' ? 'אין עסקאות בקטגוריה זו' : 'No transactions in this category'}
+                    </p>
+                  ) : (
+                    catTxns.sort((a, b) => b.date.localeCompare(a.date)).map(tx => (
+                      <div key={tx.id} className="an-drill-txn">
+                        <div className="an-drill-txn-left">
+                          <span className="an-drill-txn-desc">{tx.description || (lang === 'he' ? 'ללא תיאור' : 'No description')}</span>
+                          <span className="an-drill-txn-date">{tx.date}</span>
+                        </div>
+                        <span className="an-drill-txn-amt">{formatCurrencyDirect(toMainAmt(tx))}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Summary tab */}
+      {activeTab === 'summary' && (!hasData ? (
         <div className="an-empty">
           <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
           <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
@@ -731,7 +843,7 @@ export default function AnalyticsPage() {
           )}
           </div>
         </>
-      )}
+      ))}
 
       {/* ── Modals ── */}
       {confirm && (
