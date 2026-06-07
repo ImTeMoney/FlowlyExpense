@@ -15,6 +15,7 @@ export default function DebtTracker() {
   const { lang, formatCurrency } = useLang();
   const { debts } = state;
 
+  const [isCollapsed, setIsCollapsed]   = useState(false);
   const [showAdd, setShowAdd]           = useState(false);
   const [showSettled, setShowSettled]   = useState(false);
   const [form, setForm]                 = useState({ ...EMPTY_FORM });
@@ -69,10 +70,18 @@ export default function DebtTracker() {
   return (
     <div className="debt-tracker-card glass-card">
       <div className="debt-header">
-        <span className="debt-title">{he ? 'חובות' : 'Debts'}</span>
-        <button className="debt-add-btn" onClick={() => setShowAdd(v => !v)} aria-label="add debt">
-          <Plus size={16} />
-        </button>
+        <div className="debt-collapse-trigger" onClick={() => setIsCollapsed(v => !v)}>
+          <span className="debt-title">{he ? 'חובות' : 'Debts'}</span>
+          <ChevronDown
+            size={14}
+            style={{ transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', color: 'var(--text-muted)' }}
+          />
+        </div>
+        {!isCollapsed && (
+          <button className="debt-add-btn" onClick={() => setShowAdd(v => !v)} aria-label="add debt">
+            <Plus size={16} />
+          </button>
+        )}
       </div>
 
       {(owesMe > 0 || iOwe > 0) && (
@@ -92,7 +101,7 @@ export default function DebtTracker() {
         </div>
       )}
 
-      {showAdd && (
+      {!isCollapsed && showAdd && (
         <form className="debt-add-form" onSubmit={handleAdd}>
           <div className="debt-direction-toggle">
             <button type="button" className={`debt-dir-btn${form.direction === 'owes_me' ? ' active-owes' : ''}`}
@@ -112,7 +121,7 @@ export default function DebtTracker() {
         </form>
       )}
 
-      {active.length > 0 && (
+      {!isCollapsed && active.length > 0 && (
         <ul className="debt-list">
           {active.map(d => (
             <li key={d.id}>
@@ -168,18 +177,18 @@ export default function DebtTracker() {
         </ul>
       )}
 
-      {active.length === 0 && !showAdd && (
+      {!isCollapsed && active.length === 0 && !showAdd && (
         <p className="debt-empty">{he ? 'אין חובות פתוחים' : 'No open debts'}</p>
       )}
 
-      {settled.length > 0 && (
+      {!isCollapsed && settled.length > 0 && (
         <button className="debt-show-settled" onClick={() => setShowSettled(v => !v)}>
           <ChevronDown size={13} style={{ transform: showSettled ? 'rotate(180deg)' : undefined, transition: '0.2s' }} />
           {he ? `${settled.length} סגורים` : `${settled.length} settled`}
         </button>
       )}
 
-      {showSettled && (
+      {!isCollapsed && showSettled && (
         <ul className="debt-list settled">
           {settled.map(d => (
             <li key={d.id}>

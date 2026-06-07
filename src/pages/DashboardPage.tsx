@@ -141,6 +141,10 @@ export default function DashboardPage() {
   const [viewMonth,     setViewMonth]     = useState(currentMonthStr);
   // IO menu (export/import)
   const [showIoMenu,    setShowIoMenu]    = useState(false);
+  const [swipedId,      setSwipedId]      = useState<string | null>(null);
+  const touchStartX  = useRef(0);
+  const touchStartY  = useRef(0);
+  const touchMoved   = useRef(false);
 
   // Lock body scroll when any modal is open.
   // On iOS, overflow:hidden alone doesn't stop rubber-band bounce on fixed elements.
@@ -785,6 +789,42 @@ export default function DashboardPage() {
   // Reset collapsed days when switching months
   useEffect(() => { setCollapsedDays(new Set()); }, [viewMonth]);
 
+  // Reset swipe on scroll
+  useEffect(() => {
+    if (!swipedId) return;
+    const onScroll = () => setSwipedId(null);
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', onScroll, { capture: true });
+  }, [swipedId]);
+
+  const isRTL = lang === 'he';
+
+  function handleTouchStart(e: React.TouchEvent, id: string) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchMoved.current  = false;
+    if (swipedId && swipedId !== id) setSwipedId(null);
+  }
+  function handleTouchMove(e: React.TouchEvent) {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (dx > 6 || dy > 6) touchMoved.current = true;
+  }
+  function handleTouchEnd(e: React.TouchEvent, tx: Transaction) {
+    const dx    = e.changedTouches[0].clientX - touchStartX.current;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (absDx >= 55 && absDx > absDy * 1.5) {
+      const isReveal = isRTL ? dx > 0 : dx < 0;
+      setSwipedId(isReveal ? (swipedId === tx.id ? null : tx.id) : null);
+      return;
+    }
+    if (!touchMoved.current || (absDx < 8 && absDy < 8)) {
+      if (swipedId) { setSwipedId(null); return; }
+      openEditModal(tx);
+    }
+  }
+
   const PM_LABEL_HE: Record<string, string> = {
     cash: 'מזומן', credit: 'אשראי', check: "צ'ק", transfer: 'העברה', bit: 'ביט',
   };
@@ -1186,139 +1226,162 @@ export default function DashboardPage() {
                     r.description === tx.description && r.isIncome === !!tx.isIncome
                   );
                   return (
-                    <div key={tx.id} className="txn-item chromatic-edge" style={{ '--i': txIdx } as React.CSSProperties}>
+                    <div key={tx.id} className="txn-swipe-wrap" data-swipe-id={tx.id}>
+                      {/* Delete zone revealed by swipe */}
+                      <div className="txn-swipe-bg">
+                        <button
+                          className="txn-swipe-del-btn"
+                          onClick={() => {
+                            setSwipedId(null);
+                            setConfirm({
+                              title: t.confirmDeleteTitle,
+                              body: (
+                                <>
+                                  <strong>"{tx.description}"</strong>
+                                  {' '}
+                                  {lang === 'he'
+                                    ? `— ${formatCurrencyDirect(toMainAmt(tx))}`
+                                    : `· ${formatCurrencyDirect(toMainAmt(tx))}`}
+                                </>
+                              ),
+                              onConfirm: () => { handleDelete(tx.id); setConfirm(null); },
+                            });
+                          }}
+                          aria-label="Delete"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {/* Card — slides to reveal delete zone */}
                       <div
-                        className="txn-icon"
-                        style={{
-                          background: tx.isIncome ? 'rgba(34,197,94,0.1)' : `${cat?.color ?? '#8B5CF6'}18`,
-                          border: `1px solid ${tx.isIncome ? 'rgba(34,197,94,0.25)' : `${cat?.color ?? '#8B5CF6'}30`}`,
+                        className={`txn-item chromatic-edge${swipedId === tx.id ? ' swiped' : ''}`}
+                        style={{ '--i': txIdx } as React.CSSProperties}
+                        onTouchStart={e => handleTouchStart(e, tx.id)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={e => handleTouchEnd(e, tx)}
+                        onClick={() => {
+                          if (swipedId === tx.id) { setSwipedId(null); return; }
+                          openEditModal(tx);
                         }}
                       >
-                        <Icon size={18} color={tx.isIncome ? '#22C55E' : (cat?.color ?? '#8B5CF6')} />
-                      </div>
-                      <div className="txn-info">
-                        <div className="txn-name">{tx.description}</div>
-                        <div className="txn-meta">
-                          {(() => {
-                            const catLabel = tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed);
-                            return catLabel && catLabel !== tx.description
-                              ? <span className="txn-cat">{catLabel}</span>
-                              : null;
-                          })()}
-                          {isRecurringTx && (
-                            <span className="txn-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>
-                          )}
-                          {tx.installments && (
-                            <span className="inst-badge">
-                              <GitFork size={10} />
-                              {tx.installments.current}/{tx.installments.total}
+                        <div
+                          className="txn-icon"
+                          style={{
+                            background: tx.isIncome ? 'rgba(34,197,94,0.1)' : `${cat?.color ?? '#8B5CF6'}18`,
+                            border: `1px solid ${tx.isIncome ? 'rgba(34,197,94,0.25)' : `${cat?.color ?? '#8B5CF6'}30`}`,
+                          }}
+                        >
+                          <Icon size={18} color={tx.isIncome ? '#22C55E' : (cat?.color ?? '#8B5CF6')} />
+                        </div>
+                        <div className="txn-info">
+                          <div className="txn-name">{tx.description}</div>
+                          <div className="txn-meta">
+                            {(() => {
+                              const catLabel = tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed);
+                              return catLabel && catLabel !== tx.description
+                                ? <span className="txn-cat">{catLabel}</span>
+                                : null;
+                            })()}
+                            {isRecurringTx && (
+                              <span className="txn-recurring-badge">{lang === 'he' ? 'קבוע' : 'recurring'}</span>
+                            )}
+                            {tx.installments && (
+                              <span className="inst-badge">
+                                <GitFork size={10} />
+                                {tx.installments.current}/{tx.installments.total}
+                              </span>
+                            )}
+                            {hasSplits ? (
+                              <span className="txn-pm txn-pm-splits">
+                                {tx.paymentSplits!.map((s, i) => {
+                                  const SIcon = PM_ICON[s.paymentMethod] ?? ArrowLeftRight;
+                                  return (
+                                    <span key={i} className="txn-pm-split-chip">
+                                      <SIcon size={11} color={PM_COLOR[s.paymentMethod] ?? '#8B5CF6'} />
+                                      <span className="txn-pm-split-amt">{formatCurrency(s.amount)}</span>
+                                    </span>
+                                  );
+                                })}
+                              </span>
+                            ) : tx.paymentMethod && PmIcon && (
+                              <span className="txn-pm">
+                                <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
+                              </span>
+                            )}
+                            {tx.cardId && (() => {
+                              const txCard = cards.find(c => c.id === tx.cardId);
+                              return txCard ? (
+                                <span className="txn-card-hint">···· {txCard.last4}</span>
+                              ) : null;
+                            })()}
+                          </div>
+                        </div>
+                        <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
+                          {tx.isIncome ? '+' : '-'}
+                          {tx.currency && tx.currency === mainCurrency && tx.originalAmount !== undefined
+                            ? formatCurrencyDirect(tx.originalAmount)
+                            : formatCurrency(tx.amount)
+                          }
+                          {tx.currency && tx.currency !== mainCurrency && tx.originalAmount !== undefined && (
+                            <span className="txn-orig-currency">
+                              {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount.toLocaleString()}
                             </span>
                           )}
-                          {hasSplits ? (
-                            <span className="txn-pm txn-pm-splits">
-                              {tx.paymentSplits!.map((s, i) => {
-                                const SIcon = PM_ICON[s.paymentMethod] ?? ArrowLeftRight;
-                                return (
-                                  <span key={i} className="txn-pm-split-chip">
-                                    <SIcon size={11} color={PM_COLOR[s.paymentMethod] ?? '#8B5CF6'} />
-                                    {pmLabel(s.paymentMethod)}
-                                    <span className="txn-pm-split-amt">{formatCurrency(s.amount)}</span>
-                                  </span>
-                                );
-                              })}
-                            </span>
-                          ) : tx.paymentMethod && PmIcon && (
-                            <span className="txn-pm">
-                              <PmIcon size={11} color={PM_COLOR[tx.paymentMethod] ?? '#8B5CF6'} />
-                              {pmLabel(tx.paymentMethod)}
+                          {!tx.currency && mainCurrency !== 'ILS' && (
+                            <span className="txn-orig-currency">
+                              ₪{tx.amount.toLocaleString('he-IL')}
                             </span>
                           )}
                         </div>
-                        {tx.cardId && (() => {
-                          const txCard = cards.find(c => c.id === tx.cardId);
-                          return txCard ? (
-                            <span className="txn-card-chip" style={{ borderColor: txCard.color, color: txCard.color, background: `${txCard.color}18` }}>
-                              {txCard.name} •••• {txCard.last4}
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
-                      <div className={`txn-amt ${tx.isIncome ? 'income' : ''}`}>
-                        {tx.isIncome ? '+' : '-'}
-                        {tx.currency && tx.currency === mainCurrency && tx.originalAmount !== undefined
-                          ? formatCurrencyDirect(tx.originalAmount)
-                          : formatCurrency(tx.amount)
-                        }
-                        {tx.currency && tx.currency !== mainCurrency && tx.originalAmount !== undefined && (
-                          <span className="txn-orig-currency">
-                            {CURRENCY_SYMBOL[tx.currency] ?? tx.currency}{tx.originalAmount.toLocaleString()}
-                          </span>
+
+                        {/* Secondary actions — edit/split/delete-group, shown while swiped */}
+                        {swipedId === tx.id && (
+                          <div className="txn-secondary-actions">
+                            <button
+                              className="txn-del txn-edit-btn"
+                              onClick={e => { e.stopPropagation(); openEditModal(tx); setSwipedId(null); }}
+                              aria-label={tx.isIncome ? t.editIncome : t.editExpense}
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            {!tx.isIncome && !tx.installments && (
+                              <button
+                                className="txn-del txn-split-btn"
+                                onClick={e => { e.stopPropagation(); setSplitTx(tx); setSplitN(3); setSwipedId(null); }}
+                                aria-label="Split to installments"
+                              >
+                                <GitFork size={13} />
+                              </button>
+                            )}
+                            {tx.installments && (
+                              <button
+                                className="txn-del txn-del-group"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setSwipedId(null);
+                                  setConfirm({
+                                    title: t.deleteAllInstallments,
+                                    body: (
+                                      <>
+                                        <strong>"{tx.description}"</strong>
+                                        {' '}
+                                        {lang === 'he'
+                                          ? `(${tx.installments!.current}/${tx.installments!.total} תשלומים)`
+                                          : `(${tx.installments!.current}/${tx.installments!.total} installments)`}
+                                      </>
+                                    ),
+                                    onConfirm: () => { handleDeleteGroup(tx.installments!.groupId); setConfirm(null); },
+                                  });
+                                }}
+                                aria-label="Delete all installments"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
                         )}
-                        {!tx.currency && mainCurrency !== 'ILS' && (
-                          <span className="txn-orig-currency">
-                            ₪{tx.amount.toLocaleString('he-IL')}
-                          </span>
-                        )}
                       </div>
-                      <button
-                        className="txn-del txn-edit-btn"
-                        onClick={() => openEditModal(tx)}
-                        aria-label={tx.isIncome ? t.editIncome : t.editExpense}
-                        title={tx.isIncome ? t.editIncome : t.editExpense}
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      {!tx.isIncome && !tx.installments && (
-                        <button
-                          className="txn-del txn-split-btn"
-                          onClick={() => { setSplitTx(tx); setSplitN(3); }}
-                          aria-label="Split to installments"
-                          title={t.splitToInstallments}
-                        >
-                          <GitFork size={13} />
-                        </button>
-                      )}
-                      {tx.installments && (
-                        <button
-                          className="txn-del txn-del-group"
-                          onClick={() => setConfirm({
-                            title: t.deleteAllInstallments,
-                            body: (
-                              <>
-                                <strong>"{tx.description}"</strong>
-                                {' '}
-                                {lang === 'he'
-                                  ? `(${tx.installments!.current}/${tx.installments!.total} תשלומים)`
-                                  : `(${tx.installments!.current}/${tx.installments!.total} installments)`}
-                              </>
-                            ),
-                            onConfirm: () => { handleDeleteGroup(tx.installments!.groupId); setConfirm(null); },
-                          })}
-                          aria-label="Delete all installments"
-                          title={t.deleteAllInstallments}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                      <button
-                        className="txn-del"
-                        onClick={() => setConfirm({
-                          title: t.confirmDeleteTitle,
-                          body: (
-                            <>
-                              <strong>"{tx.description}"</strong>
-                              {' '}
-                              {lang === 'he'
-                                ? `— ${formatCurrencyDirect(toMainAmt(tx))}`
-                                : `· ${formatCurrencyDirect(toMainAmt(tx))}`}
-                            </>
-                          ),
-                          onConfirm: () => { handleDelete(tx.id); setConfirm(null); },
-                        })}
-                        aria-label="Delete"
-                      >
-                        <X size={14} />
-                      </button>
                     </div>
                   );
                 })}

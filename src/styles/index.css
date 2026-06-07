@@ -1289,6 +1289,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
+  cursor: pointer;
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
@@ -2984,6 +2985,24 @@ select.sm-in option { background: var(--modal-bg); }
 /* RTL: item slides right to reveal left-side delete zone */
 [dir="rtl"] .txn-swipe-wrap .txn-item.swiped {
   transform: translateX(80px);
+}
+
+/* Secondary actions — visible while card is swiped */
+.txn-secondary-actions {
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+.txn-secondary-actions .txn-del { opacity: 1; }
+
+/* Card last4 hint in meta row */
+.txn-card-hint {
+  font-size: 10px; color: var(--text-dim);
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+
+/* Debt tracker collapse trigger */
+.debt-collapse-trigger {
+  display: flex; align-items: center; gap: 5px;
+  cursor: pointer; user-select: none;
 }
 
 /* =====================================================
