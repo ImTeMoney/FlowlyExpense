@@ -1008,20 +1008,20 @@ export default function DashboardPage() {
 
       {/* Compact summary row */}
       <div className="dash-summary-row">
-        <div className="dash-summary-stat">
-          <span className="dash-summary-label">{lang === 'he' ? 'הוצאות' : 'Spent'}</span>
-          <span className="dash-summary-value">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</span>
-          {statusCard.subline && (
-            <span className="dash-summary-subline">{statusCard.subline}</span>
-          )}
+        <div className="dash-summary-main">
+          <span className="dash-summary-amount">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</span>
+          <span className="dash-summary-ctx">{lang === 'he' ? 'הוצאות החודש' : 'spent this month'}</span>
         </div>
         {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
-          <div className="dash-summary-stat dash-summary-stat--muted">
-            <span className="dash-summary-label">{lang === 'he' ? 'צפי לחודש' : 'Forecast'}</span>
-            <span className="dash-summary-value">{formatCurrencyDirect(Math.round(forecast.forecastTotal))}</span>
+          <div className="dash-summary-fc">
+            <span className="dash-summary-fc-amt">{formatCurrencyDirect(Math.round(forecast.forecastTotal))}</span>
+            <span className="dash-summary-fc-label">{lang === 'he' ? 'צפי' : 'est.'}</span>
           </div>
         )}
       </div>
+      {statusCard.subline && (
+        <p className="dash-summary-sub">{statusCard.subline}</p>
+      )}
 
       {/* Debt tracker — visible only when debt mode is enabled */}
       {debtModeEnabled && <DebtTracker />}
