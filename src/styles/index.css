@@ -1098,19 +1098,19 @@ input, select, textarea { font-family: inherit; color: inherit; }
    TRANSACTION FILTER BAR
    ===================================================== */
 .txn-filters {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 13px 12px 13px; flex-wrap: nowrap;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 13px 8px 13px; flex-wrap: nowrap;
 }
 .txn-filter-search {
   flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px;
   background: var(--bg-input); border: 1.5px solid var(--glass-border);
-  border-radius: 12px; padding: 8px 12px;
+  border-radius: 12px; padding: 6px 10px;
 }
 .txn-filter-search:focus-within { border-color: var(--purple); }
 .txn-filter-search-icon { color: var(--text-muted); flex-shrink: 0; }
 .txn-filter-search-input {
   flex: 1; background: none; border: none; outline: none;
-  font-size: 14px; color: var(--text); font-family: inherit;
+  font-size: 13px; color: var(--text); font-family: inherit;
 }
 .txn-filter-search-input::placeholder { color: var(--text-dim); }
 .txn-filter-clear {
@@ -1121,8 +1121,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .txn-filter-chip {
   display: flex; align-items: center; gap: 6px;
   background: var(--bg-input); border: 1.5px solid var(--glass-border);
-  border-radius: 20px; padding: 7px 14px;
-  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  border-radius: 20px; padding: 5px 11px;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
   cursor: pointer; white-space: nowrap; transition: border-color 0.15s;
 }
 .txn-filter-chip--active {
@@ -1176,7 +1176,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
    ===================================================== */
 .txn-section { padding: 4px 13px calc(155px + env(safe-area-inset-bottom)); }
 
-.date-group { margin-bottom: 22px; }
+.date-group { margin-bottom: 14px; }
 
 /* ── Collapse chevron ── */
 .dg-chevron {
@@ -1225,9 +1225,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 11px 2px;
+  padding: 8px 2px;
   border-bottom: 1px solid var(--glass-border);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -1287,8 +1287,8 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .txn-item {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 13px;
+  gap: 10px;
+  padding: 9px 12px;
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
@@ -1301,17 +1301,17 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .txn-item:hover { background: var(--bg-input); border-color: var(--glass-hi); }
 
 .txn-icon {
-  width: 40px; height: 40px;
+  width: 34px; height: 34px;
   border-radius: var(--r-sm);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   opacity: 0.85;
 }
-.txn-icon svg { width: 18px; height: 18px; }
+.txn-icon svg { width: 16px; height: 16px; }
 
 .txn-info { flex: 1; min-width: 0; }
 .txn-name {
-  font-size: 14px; font-weight: 500; color: var(--text);
+  font-size: 13px; font-weight: 600; color: var(--text);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1323,7 +1323,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 
 .txn-amt {
   font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums;
-  font-size: 16px; font-weight: 700;
+  font-size: 15px; font-weight: 700;
   color: var(--danger); flex-shrink: 0;
 }
 .txn-amt.income { color: var(--success); }
@@ -1899,7 +1899,7 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
-  padding: 18px;
+  padding: 15px;
   margin-bottom: 12px;
   backdrop-filter: blur(28px) saturate(200%) brightness(108%);
   -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
@@ -5263,15 +5263,15 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 /* Category rows */
 .an-cb-item {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .an-cb-item:last-of-type { margin-bottom: 4px; }
 .an-cb-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 5px;
+  gap: 6px;
+  margin-bottom: 3px;
 }
 .an-cb-name-side {
   display: flex;
@@ -5280,8 +5280,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   min-width: 0;
 }
 .an-cb-icon-wrap {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--r-sm);
   display: flex;
   align-items: center;
@@ -5295,8 +5295,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   min-width: 0;
 }
 .an-cb-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -5310,7 +5310,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 1px;
 }
 .an-cb-amt {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -6365,6 +6365,18 @@ body::before, body::after {
 .settings-section-header {
   font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--text-muted);
-  padding: 20px 0 6px;
+  padding: 14px 0 6px;
 }
-.settings-section-header:first-of-type { padding-top: 8px; }
+.settings-section-header:first-of-type { padding-top: 4px; }
+.settings-section-header__sub {
+  display: block;
+  font-size: 11px; font-weight: 400; letter-spacing: 0;
+  text-transform: none; color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Status subline in compact dashboard summary row */
+.dash-summary-subline {
+  font-size: 11px; color: var(--text-muted);
+  font-weight: 400; margin-top: 2px; line-height: 1.3;
+}

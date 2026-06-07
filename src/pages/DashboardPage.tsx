@@ -1011,6 +1011,9 @@ export default function DashboardPage() {
         <div className="dash-summary-stat">
           <span className="dash-summary-label">{lang === 'he' ? 'הוצאות' : 'Spent'}</span>
           <span className="dash-summary-value">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</span>
+          {statusCard.subline && (
+            <span className="dash-summary-subline">{statusCard.subline}</span>
+          )}
         </div>
         {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
           <div className="dash-summary-stat dash-summary-stat--muted">

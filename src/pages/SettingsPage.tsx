@@ -295,7 +295,12 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'מטבע' : 'Currency'}</div>
+      <div className="settings-section-header">
+        {lang === 'he' ? 'מטבע' : 'Currency'}
+        <span className="settings-section-header__sub">
+          {lang === 'he' ? 'בחר מטבע תצוגה לכל הסכומים' : 'Display currency for all amounts'}
+        </span>
+      </div>
       {/* ── Currency ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -316,7 +321,12 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'קטגוריות' : 'Categories'}</div>
+      <div className="settings-section-header">
+        {lang === 'he' ? 'קטגוריות' : 'Categories'}
+        <span className="settings-section-header__sub">
+          {lang === 'he' ? 'ערוך, הוסף ושנה סדר קטגוריות' : 'Edit, add and reorder categories'}
+        </span>
+      </div>
       {/* ── Category Manager ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -463,7 +473,12 @@ const SettingsPage: React.FC = () => {
         </form>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'מצב חוב' : 'Debt Mode'}</div>
+      <div className="settings-section-header">
+        {lang === 'he' ? 'מצב חוב' : 'Debt Mode'}
+        <span className="settings-section-header__sub">
+          {lang === 'he' ? 'מעקב אחרי חובות שנתת וקיבלת' : 'Track debts you gave or received'}
+        </span>
+      </div>
       {/* ── Debt Mode ── */}
       <div className="a-sec">
         <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -483,7 +498,12 @@ const SettingsPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</div>
+      <div className="settings-section-header">
+        {lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}
+        <span className="settings-section-header__sub">
+          {lang === 'he' ? 'הוסף כרטיסים לסינון ומעקב הוצאות' : 'Add cards to filter and track transactions'}
+        </span>
+      </div>
       {/* ── Credit Cards ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -601,7 +621,12 @@ const SettingsPage: React.FC = () => {
         document.body
       )}
 
-      <div className="settings-section-header">{lang === 'he' ? 'כלים' : 'Tools'}</div>
+      <div className="settings-section-header">
+        {lang === 'he' ? 'כלים' : 'Tools'}
+        <span className="settings-section-header__sub">
+          {lang === 'he' ? 'גיבוי, שחזור ועדכוני אפליקציה' : 'Backup, restore and app updates'}
+        </span>
+      </div>
       {/* ── Tools ── */}
       <div className="a-sec">
         <div className="a-sec-title">

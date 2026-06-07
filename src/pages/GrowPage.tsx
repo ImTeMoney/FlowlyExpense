@@ -116,7 +116,7 @@ export default function GrowPage({ embedded }: { embedded?: boolean }) {
   const maxValue = Math.max(...results.map(r => r.fv), 1);
 
   return (
-    <div className="page" style={{ paddingBottom: 90 }}>
+    <div className="page" style={{ paddingBottom: embedded ? 16 : 90 }}>
 
       {/* Header */}
       {!embedded && (
@@ -157,7 +157,7 @@ export default function GrowPage({ embedded }: { embedded?: boolean }) {
         <div className="a-sec-title">
           <span className="title-text">{t.simulatorTitle}</span>
         </div>
-        <p className="grow-explainer">{t.growExplainer}</p>
+        {!embedded && <p className="grow-explainer">{t.growExplainer}</p>}
 
         {/* Monthly contribution input */}
         <div className="grow-field">

@@ -357,7 +357,7 @@ export default function AnalyticsPage() {
                       <div className="an-cb-row">
                         <div className="an-cb-name-side">
                           <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
-                            <Icon size={17} color={cat.color} />
+                            <Icon size={13} color={cat.color} />
                           </div>
                           <span className="an-cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
                         </div>
@@ -388,7 +388,7 @@ export default function AnalyticsPage() {
                     <div className="an-cb-name-side">
                       {cat && (
                         <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
-                          <Icon size={17} color={cat.color} />
+                          <Icon size={13} color={cat.color} />
                         </div>
                       )}
                       <span className="an-cat-card-title">{cat ? catName(cat.id, cat.name, cat.isRenamed) : drillCat}</span>
@@ -498,7 +498,7 @@ export default function AnalyticsPage() {
                     <div className="an-cb-row">
                       <div className="an-cb-name-side">
                         <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
-                          <Icon size={17} color={cat.color} />
+                          <Icon size={13} color={cat.color} />
                         </div>
                         <div className="an-cb-name-group">
                           <span className="an-cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
@@ -607,7 +607,7 @@ export default function AnalyticsPage() {
                     <div className="an-cb-row">
                       <div className="an-cb-name-side">
                         <div className="an-cb-icon-wrap" style={{ background: `${color}18`, border: `1px solid ${color}28` }}>
-                          <PmIcon size={17} color={color} />
+                          <PmIcon size={13} color={color} />
                         </div>
                         <span className="an-cb-name">{label}</span>
                       </div>
@@ -639,7 +639,7 @@ export default function AnalyticsPage() {
                     <div className="an-cb-row">
                       <div className="an-cb-name-side">
                         <div className="an-cb-icon-wrap" style={{ background: `${card.color}18`, border: `1px solid ${card.color}28` }}>
-                          <CreditCard size={17} color={card.color} />
+                          <CreditCard size={13} color={card.color} />
                         </div>
                         <div className="an-cb-name-group">
                           <span className="an-cb-name">{card.name}</span>
