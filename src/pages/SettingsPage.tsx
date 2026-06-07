@@ -295,7 +295,6 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'מטבע' : 'Currency'}</div>
       {/* ── Currency ── */}
       <div className="a-sec">
         <div className="a-sec-title">
@@ -316,9 +315,15 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'קטגוריות' : 'Categories'}</div>
       {/* ── Category Manager ── */}
       <div className="a-sec">
+        <div className="a-sec-title">
+          <span className="title-text" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Tag size={14} />
+            {t.categoriesTitle}
+          </span>
+        </div>
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCatDragEnd}>
           <SortableContext items={state.categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
             {state.categories.map(cat => (
@@ -456,7 +461,6 @@ const SettingsPage: React.FC = () => {
         </form>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'מצב חוב' : 'Debt Mode'}</div>
       {/* ── Debt Mode ── */}
       <div className="a-sec">
         <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -476,7 +480,6 @@ const SettingsPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="settings-section-header">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</div>
       {/* ── Credit Cards ── */}
       <div className="a-sec">
         <div className="a-sec-title" style={{ justifyContent: 'flex-start', gap: 6 }}>
@@ -594,7 +597,6 @@ const SettingsPage: React.FC = () => {
         document.body
       )}
 
-      <div className="settings-section-header">{lang === 'he' ? 'כלים' : 'Tools'}</div>
       {/* ── Tools ── */}
       <div className="a-sec">
         <div className="a-sec-title">
