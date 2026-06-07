@@ -1012,12 +1012,6 @@ export default function DashboardPage() {
           <span className="dash-summary-amount">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</span>
           <span className="dash-summary-ctx">{lang === 'he' ? 'הוצאות החודש' : 'spent this month'}</span>
         </div>
-        {forecast.daysLeft > 0 && forecast.forecastTotal > 0 && (
-          <div className="dash-summary-fc">
-            <span className="dash-summary-fc-amt">{formatCurrencyDirect(Math.round(forecast.forecastTotal))}</span>
-            <span className="dash-summary-fc-label">{lang === 'he' ? 'צפי' : 'est.'}</span>
-          </div>
-        )}
       </div>
       {statusCard.subline && (
         <p className="dash-summary-sub">{statusCard.subline}</p>
