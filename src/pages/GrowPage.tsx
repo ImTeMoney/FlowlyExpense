@@ -157,7 +157,6 @@ export default function GrowPage({ embedded }: { embedded?: boolean }) {
         <div className="a-sec-title">
           <span className="title-text">{t.simulatorTitle}</span>
         </div>
-        {!embedded && <p className="grow-explainer">{t.growExplainer}</p>}
 
         {/* Monthly contribution input */}
         <div className="grow-field">

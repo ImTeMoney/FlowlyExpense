@@ -422,11 +422,6 @@ export default function AnalyticsPage() {
         <div className="an-empty">
           <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
           <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
-          <p className="an-empty-hint">
-            {lang === 'he'
-              ? 'הוסף הוצאה ראשונה כדי להתחיל לעקוב'
-              : 'Add your first expense to start tracking.'}
-          </p>
           <button className="an-empty-cta" onClick={() => navigate('/')}>
             {lang === 'he' ? 'הוסף הוצאה' : 'Add expense'}
           </button>
