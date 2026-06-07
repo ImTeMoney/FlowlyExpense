@@ -108,6 +108,10 @@ export default function DashboardPage() {
   const [rateLoading, setRateLoading]         = useState(false);
   const [rateFailed,  setRateFailed]          = useState(false);
   const [rateRetry,   setRateRetry]           = useState(0);
+  const [rateNum,      setRateNum]            = useState<number | null>(null);
+  const [isManualRate, setIsManualRate]       = useState(false);
+  const [editingRate,  setEditingRate]        = useState(false);
+  const [rateInput,    setRateInput]          = useState('');
   const [splitEnabled, setSplitEnabled]       = useState(false);
   const [numInstallments, setNumInstallments] = useState(3);
   const [isRecurring, setIsRecurring]         = useState(false);
@@ -244,8 +248,31 @@ export default function DashboardPage() {
   // Live exchange rate preview when currency differs from main
   useEffect(() => {
     if (txCurrency === mainCurrency || !amount || parseFloat(amount) <= 0) {
-      setRatePreview(''); return;
+      setRatePreview('');
+      setRateNum(null);
+      setIsManualRate(false);
+      setEditingRate(false);
+      return;
     }
+
+    // Prefer a stored manual rate for this currency+date
+    const stored = loadManualRate(txCurrency, date);
+    if (stored) {
+      const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
+      const converted = Math.round(parseFloat(amount) * stored * 100) / 100;
+      setRateNum(stored);
+      setRateInput(String(stored));
+      setIsManualRate(true);
+      setEditingRate(false);
+      setRatePreview(`≈ ${sym}${converted.toLocaleString()}`);
+      setRateLoading(false);
+      setRateFailed(false);
+      return;
+    }
+
+    // Fetch from API
+    setIsManualRate(false);
+    setRateNum(null);
     let cancelled = false;
     setRateLoading(true);
     setRatePreview('');
@@ -253,7 +280,9 @@ export default function DashboardPage() {
     convertAmount(parseFloat(amount), txCurrency, mainCurrency, date)
       .then(({ convertedAmount, rate }) => {
         if (!cancelled) {
-          setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString()}  (${t.rateLabel}: ${rate})`);
+          setRateNum(rate);
+          setRateInput(String(rate));
+          setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString()}`);
           setRateLoading(false);
           setRateFailed(false);
         }
@@ -435,6 +464,10 @@ export default function DashboardPage() {
     setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
     setTxCurrency(mainCurrency);
     setRatePreview('');
+    setRateNum(null);
+    setIsManualRate(false);
+    setEditingRate(false);
+    setRateInput('');
     setSplitEnabled(false);
     setNumInstallments(3);
     setIsRecurring(false);
@@ -464,6 +497,10 @@ export default function DashboardPage() {
     setCatId(tx.categoryId);
     setTxCurrency(tx.currency ?? mainCurrency);
     setRatePreview('');
+    setRateNum(null);
+    setIsManualRate(false);
+    setEditingRate(false);
+    setRateInput('');
     const splits = tx.paymentSplits;
     if (splits && splits.length > 0) {
       setPmSplitEnabled(true);
@@ -505,12 +542,18 @@ export default function DashboardPage() {
       let finalAmount = num;
       let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
       if (txCurrency !== 'ILS') {
-        try {
-          const { convertedAmount, rate } = await convertAmount(num, txCurrency, 'ILS', date);
-          finalAmount = convertedAmount;
-          txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
-        } catch {
-          txCurrencyMeta = { currency: txCurrency, originalAmount: num };
+        const manualRateVal = isManualRate && rateNum ? rateNum : loadManualRate(txCurrency, date);
+        if (manualRateVal) {
+          finalAmount = Math.round(num * manualRateVal * 100) / 100;
+          txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: manualRateVal };
+        } else {
+          try {
+            const { convertedAmount, rate } = await convertAmount(num, txCurrency, 'ILS', date);
+            finalAmount = convertedAmount;
+            txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
+          } catch {
+            txCurrencyMeta = { currency: txCurrency, originalAmount: num };
+          }
         }
       }
       let pmPayload: { paymentMethod?: PaymentMethod; paymentSplits?: PaymentSplit[] } =
@@ -586,13 +629,18 @@ export default function DashboardPage() {
     let finalAmount = num;
     let txCurrencyMeta: Pick<Transaction, 'currency' | 'originalAmount' | 'exchangeRate'> = {};
     if (txCurrency !== 'ILS') {
-      try {
-        const { convertedAmount, rate } = await convertAmount(num, txCurrency, 'ILS', date);
-        finalAmount = convertedAmount;
-        txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
-      } catch {
-        // fallback: store as-is with currency tag
-        txCurrencyMeta = { currency: txCurrency, originalAmount: num };
+      const manualRateVal = isManualRate && rateNum ? rateNum : loadManualRate(txCurrency, date);
+      if (manualRateVal) {
+        finalAmount = Math.round(num * manualRateVal * 100) / 100;
+        txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: manualRateVal };
+      } else {
+        try {
+          const { convertedAmount, rate } = await convertAmount(num, txCurrency, 'ILS', date);
+          finalAmount = convertedAmount;
+          txCurrencyMeta = { currency: txCurrency, originalAmount: num, exchangeRate: rate };
+        } catch {
+          txCurrencyMeta = { currency: txCurrency, originalAmount: num };
+        }
       }
     }
 
@@ -759,6 +807,43 @@ export default function DashboardPage() {
   // Prefix cells that start with formula characters so spreadsheets don't execute them
   function csvCell(value: string): string {
     return /^[=+\-@\t\r]/.test(value) ? `"'${value.replace(/"/g, '""')}"` : `"${value.replace(/"/g, '""')}"`;
+  }
+
+  // ── Manual exchange rate helpers ──────────────────────────────────────────────
+  function manualRateKey(from: string, forDate: string) {
+    return `mrate_${from}_${forDate}`;
+  }
+  function loadManualRate(from: string, forDate: string): number | null {
+    try {
+      const v = localStorage.getItem(manualRateKey(from, forDate));
+      const n = parseFloat(v ?? '');
+      return isNaN(n) || n <= 0 ? null : n;
+    } catch { return null; }
+  }
+  function commitManualRate() {
+    const newRate = parseFloat(rateInput);
+    if (isNaN(newRate) || newRate <= 0) {
+      setRateInput(String(rateNum ?? ''));
+      setEditingRate(false);
+      return;
+    }
+    setRateNum(newRate);
+    setIsManualRate(true);
+    setEditingRate(false);
+    try { localStorage.setItem(manualRateKey(txCurrency, date), String(newRate)); } catch {}
+    if (parseFloat(amount) > 0) {
+      const converted = Math.round(parseFloat(amount) * newRate * 100) / 100;
+      setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${converted.toLocaleString()}`);
+    }
+  }
+  function clearManualRate() {
+    try { localStorage.removeItem(manualRateKey(txCurrency, date)); } catch {}
+    setIsManualRate(false);
+    setRateNum(null);
+    setRatePreview('');
+    setRateInput('');
+    setEditingRate(false);
+    setRateRetry(r => r + 1);
   }
 
   function handleExport() {
@@ -1485,7 +1570,61 @@ export default function DashboardPage() {
                       {lang === 'he' ? 'נסה שוב' : 'Retry'}
                     </button>
                   </span>
-                ) : ratePreview}
+                ) : rateNum !== null ? (
+                  <span className="rate-preview-content">
+                    {ratePreview}
+                    {'  ('}
+                    {t.rateLabel}{': '}
+                    {editingRate ? (
+                      <input
+                        autoFocus
+                        type="number"
+                        className="rate-manual-input"
+                        value={rateInput}
+                        step="0.0001"
+                        min="0.0001"
+                        onChange={e => {
+                          setRateInput(e.target.value);
+                          const nr = parseFloat(e.target.value);
+                          if (!isNaN(nr) && nr > 0 && parseFloat(amount) > 0) {
+                            const conv = Math.round(parseFloat(amount) * nr * 100) / 100;
+                            setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${conv.toLocaleString()}`);
+                          }
+                        }}
+                        onBlur={commitManualRate}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); commitManualRate(); }
+                          if (e.key === 'Escape') { setEditingRate(false); setRateInput(String(rateNum)); }
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="rate-value-btn"
+                        onClick={() => setEditingRate(true)}
+                        title={lang === 'he' ? 'לחץ לעריכה ידנית' : 'Click to edit manually'}
+                      >
+                        {rateNum}
+                      </button>
+                    )}
+                    {')'}
+                    {isManualRate && !editingRate && (
+                      <button
+                        type="button"
+                        className="rate-clear-btn"
+                        onClick={clearManualRate}
+                        title={lang === 'he' ? 'אפס לשער אוטומטי' : 'Reset to automatic rate'}
+                      >
+                        ↺
+                      </button>
+                    )}
+                    {isManualRate && (
+                      <span className="rate-manual-badge">
+                        {lang === 'he' ? 'ידני' : 'manual'}
+                      </span>
+                    )}
+                  </span>
+                ) : null}
               </div>
             )}
 

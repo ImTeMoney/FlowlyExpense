@@ -2569,6 +2569,33 @@ select.sm-in option { background: var(--modal-bg); }
   padding: 3px 2px 6px;
   min-height: 20px;
 }
+.rate-preview-content { display: inline-flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.rate-value-btn {
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: var(--text-muted); font-size: 12px; font-family: inherit;
+  text-decoration: underline dotted; text-underline-offset: 2px;
+  transition: color 0.12s;
+}
+.rate-value-btn:hover { color: var(--purple); }
+.rate-manual-input {
+  width: 72px; font-size: 12px; font-family: inherit;
+  border: 1.5px solid var(--purple); border-radius: 6px;
+  padding: 1px 5px; background: var(--bg-input); color: var(--text);
+  outline: none; -moz-appearance: textfield;
+}
+.rate-manual-input::-webkit-outer-spin-button,
+.rate-manual-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.rate-manual-badge {
+  font-size: 10px; font-weight: 700; color: var(--purple);
+  background: rgba(139,92,246,0.12); border-radius: 6px;
+  padding: 1px 6px; margin-inline-start: 4px;
+}
+.rate-clear-btn {
+  background: none; border: none; cursor: pointer; padding: 0 3px;
+  color: var(--text-dim); font-size: 13px; line-height: 1;
+  transition: color 0.12s;
+}
+.rate-clear-btn:hover { color: var(--danger); }
 /* Original currency shown below converted amount in txn list */
 .txn-orig-currency {
   display: block;
