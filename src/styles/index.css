@@ -2570,6 +2570,7 @@ select.sm-in option { background: var(--modal-bg); }
   min-height: 20px;
 }
 .rate-preview-content { display: inline-flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.rate-info { color: var(--text-dim); font-size: 11px; }
 .rate-value-btn {
   background: none; border: none; cursor: pointer; padding: 0;
   color: var(--text-muted); font-size: 12px; font-family: inherit;
@@ -2578,7 +2579,7 @@ select.sm-in option { background: var(--modal-bg); }
 }
 .rate-value-btn:hover { color: var(--purple); }
 .rate-manual-input {
-  width: 72px; font-size: 12px; font-family: inherit;
+  width: 80px; font-size: 12px; font-family: inherit;
   border: 1.5px solid var(--purple); border-radius: 6px;
   padding: 1px 5px; background: var(--bg-input); color: var(--text);
   outline: none; -moz-appearance: textfield;

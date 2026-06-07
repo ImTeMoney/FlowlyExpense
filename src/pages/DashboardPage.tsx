@@ -261,7 +261,7 @@ export default function DashboardPage() {
       const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
       const converted = Math.round(parseFloat(amount) * stored * 100) / 100;
       setRateNum(stored);
-      setRateInput(String(stored));
+      setRateInput(String(converted));   // ILS amount for editing
       setIsManualRate(true);
       setEditingRate(false);
       setRatePreview(`≈ ${sym}${converted.toLocaleString()}`);
@@ -281,7 +281,7 @@ export default function DashboardPage() {
       .then(({ convertedAmount, rate }) => {
         if (!cancelled) {
           setRateNum(rate);
-          setRateInput(String(rate));
+          setRateInput(String(convertedAmount));   // ILS amount for editing
           setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${convertedAmount.toLocaleString()}`);
           setRateLoading(false);
           setRateFailed(false);
@@ -821,20 +821,20 @@ export default function DashboardPage() {
     } catch { return null; }
   }
   function commitManualRate() {
-    const newRate = parseFloat(rateInput);
-    if (isNaN(newRate) || newRate <= 0) {
-      setRateInput(String(rateNum ?? ''));
+    const newConverted = parseFloat(rateInput);
+    const origAmount = parseFloat(amount);
+    if (isNaN(newConverted) || newConverted <= 0 || !origAmount) {
+      // Restore input to the current converted amount
+      if (rateNum) setRateInput(String(Math.round(origAmount * rateNum * 100) / 100));
       setEditingRate(false);
       return;
     }
-    setRateNum(newRate);
+    const derivedRate = Math.round((newConverted / origAmount) * 10000) / 10000;
+    setRateNum(derivedRate);
     setIsManualRate(true);
     setEditingRate(false);
-    try { localStorage.setItem(manualRateKey(txCurrency, date), String(newRate)); } catch {}
-    if (parseFloat(amount) > 0) {
-      const converted = Math.round(parseFloat(amount) * newRate * 100) / 100;
-      setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${converted.toLocaleString()}`);
-    }
+    try { localStorage.setItem(manualRateKey(txCurrency, date), String(derivedRate)); } catch {}
+    setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${newConverted.toLocaleString()}`);
   }
   function clearManualRate() {
     try { localStorage.removeItem(manualRateKey(txCurrency, date)); } catch {}
@@ -1572,42 +1572,53 @@ export default function DashboardPage() {
                   </span>
                 ) : rateNum !== null ? (
                   <span className="rate-preview-content">
-                    {ratePreview}
-                    {'  ('}
-                    {t.rateLabel}{': '}
+                    {/* Converted amount — click to edit */}
                     {editingRate ? (
                       <input
                         autoFocus
                         type="number"
                         className="rate-manual-input"
                         value={rateInput}
-                        step="0.0001"
-                        min="0.0001"
+                        step="0.01"
+                        min="0.01"
                         onChange={e => {
                           setRateInput(e.target.value);
-                          const nr = parseFloat(e.target.value);
-                          if (!isNaN(nr) && nr > 0 && parseFloat(amount) > 0) {
-                            const conv = Math.round(parseFloat(amount) * nr * 100) / 100;
-                            setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${conv.toLocaleString()}`);
+                          const nc = parseFloat(e.target.value);
+                          if (!isNaN(nc) && nc > 0) {
+                            setRatePreview(`≈ ${CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency}${nc.toLocaleString()}`);
                           }
                         }}
                         onBlur={commitManualRate}
                         onKeyDown={e => {
                           if (e.key === 'Enter') { e.preventDefault(); commitManualRate(); }
-                          if (e.key === 'Escape') { setEditingRate(false); setRateInput(String(rateNum)); }
+                          if (e.key === 'Escape') {
+                            setEditingRate(false);
+                            if (rateNum) setRateInput(String(Math.round(parseFloat(amount) * rateNum * 100) / 100));
+                          }
                         }}
                       />
                     ) : (
                       <button
                         type="button"
                         className="rate-value-btn"
-                        onClick={() => setEditingRate(true)}
-                        title={lang === 'he' ? 'לחץ לעריכה ידנית' : 'Click to edit manually'}
+                        onClick={() => {
+                          const conv = rateNum ? Math.round(parseFloat(amount) * rateNum * 100) / 100 : 0;
+                          setRateInput(String(conv));
+                          setEditingRate(true);
+                        }}
+                        title={lang === 'he' ? 'לחץ לעריכת הסכום בפועל' : 'Click to enter actual amount'}
                       >
-                        {rateNum}
+                        {ratePreview}
                       </button>
                     )}
-                    {')'}
+                    {/* Rate — informational */}
+                    {rateNum && !editingRate && (
+                      <span className="rate-info">
+                        {'  ('}
+                        {t.rateLabel}{': '}{rateNum}
+                        {')'}
+                      </span>
+                    )}
                     {isManualRate && !editingRate && (
                       <button
                         type="button"
@@ -1618,7 +1629,7 @@ export default function DashboardPage() {
                         ↺
                       </button>
                     )}
-                    {isManualRate && (
+                    {isManualRate && !editingRate && (
                       <span className="rate-manual-badge">
                         {lang === 'he' ? 'ידני' : 'manual'}
                       </span>
