@@ -6300,11 +6300,11 @@ body::before, body::after {
    ===================================================== */
 .dash-summary-row {
   display: flex; gap: 20px; align-items: center;
-  padding: 12px 0 8px;
+  padding: 12px 13px 8px;
 }
 .dash-summary-stat { display: flex; flex-direction: column; gap: 2px; }
 .dash-summary-stat--muted .dash-summary-value { color: var(--text-muted); }
-.dash-summary-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.dash-summary-label { font-size: 11px; color: var(--text-muted); font-weight: 700; }
 .dash-summary-value { font-size: 20px; font-weight: 700; color: var(--text); }
 .dash-summary-progress {
   flex: 1; height: 3px; background: var(--bg-input);

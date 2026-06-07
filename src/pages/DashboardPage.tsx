@@ -1021,11 +1021,6 @@ export default function DashboardPage() {
             <span className="dash-summary-value">{formatCurrencyDirect(Math.round(forecast.forecastTotal))}</span>
           </div>
         )}
-        {statusCard.progress > 0 && (
-          <div className="dash-summary-progress">
-            <div className="dash-summary-bar" style={{ width: `${Math.min(statusCard.progress * 100, 100)}%` }} />
-          </div>
-        )}
       </div>
 
       {/* Debt tracker — visible only when debt mode is enabled */}
