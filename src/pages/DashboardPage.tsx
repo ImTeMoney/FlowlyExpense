@@ -1225,9 +1225,12 @@ export default function DashboardPage() {
                   const Icon   = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const hasSplits = tx.paymentSplits && tx.paymentSplits.length > 0;
                   const PmIcon = tx.paymentMethod ? PM_ICON[tx.paymentMethod] : null;
-                  const isRecurringTx = recurringExpenses.some(r =>
-                    r.description === tx.description && r.isIncome === !!tx.isIncome
-                  );
+                  const txDisplayDesc = tx.description.startsWith('(קבועה) ')
+                    ? tx.description.slice('(קבועה) '.length)
+                    : tx.description;
+                  const isRecurringTx =
+                    !!tx.recurringId ||
+                    recurringExpenses.some(r => r.description === txDisplayDesc && r.isIncome === !!tx.isIncome);
                   return (
                     <div key={tx.id} className="txn-swipe-wrap" data-swipe-id={tx.id}>
                       {/* Delete zone revealed by swipe */}
@@ -1240,7 +1243,7 @@ export default function DashboardPage() {
                               title: t.confirmDeleteTitle,
                               body: (
                                 <>
-                                  <strong>"{tx.description}"</strong>
+                                  <strong>"{txDisplayDesc}"</strong>
                                   {' '}
                                   {lang === 'he'
                                     ? `— ${formatCurrencyDirect(toMainAmt(tx))}`
@@ -1278,7 +1281,7 @@ export default function DashboardPage() {
                           <Icon size={18} color={tx.isIncome ? '#22C55E' : (cat?.color ?? '#8B5CF6')} />
                         </div>
                         <div className="txn-info">
-                          <div className="txn-name">{tx.description}</div>
+                          <div className="txn-name">{txDisplayDesc}</div>
                           <div className="txn-meta">
                             {(() => {
                               const catLabel = tx.isIncome ? t.income : catName(cat?.id ?? '', cat?.name ?? '', cat?.isRenamed);
