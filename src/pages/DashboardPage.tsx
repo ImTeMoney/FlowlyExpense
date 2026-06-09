@@ -1418,6 +1418,11 @@ export default function DashboardPage() {
           <div className="modal-sheet">
             <div className="modal-handle" />
             <div className="modal-title">
+              <button className="modal-header-save" onClick={handleAdd}>
+                {editingTx
+                  ? (lang === 'he' ? 'שמור' : 'Save')
+                  : (lang === 'he' ? 'הוסף' : 'Add')}
+              </button>
               <span>{editingTx
                 ? (isIncome ? t.editIncome : t.editExpense)
                 : (isIncome ? t.addIncome : t.addExpense)

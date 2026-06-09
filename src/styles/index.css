@@ -738,6 +738,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .modal-overlay {
   position: fixed;
   inset: 0;
+  height: 100dvh;
   background: rgba(5,0,20,0.55);
   backdrop-filter: blur(14px) saturate(200%);
   -webkit-backdrop-filter: blur(14px) saturate(200%);
@@ -772,7 +773,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   border: none;
   padding-top: calc(env(safe-area-inset-top) + 16px);
   animation: overlayIn 0.18s ease;
-  overflow: hidden; /* nothing scrolls — content must fit viewport */
+  overflow-y: auto;
 }
 /* field-group scrolls internally; sheet stays fixed (no drag) */
 .modal-overlay--full .field-group {
@@ -837,6 +838,23 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 .modal-close:hover { background: var(--danger-dim); color: var(--danger); }
 .modal-close svg { width: 14px; height: 14px; }
+
+.modal-header-save {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--purple);
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--r-lg);
+  font-family: inherit;
+  min-width: 44px;
+  text-align: center;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.modal-header-save:active { opacity: 0.6; }
 
 /* Amount */
 .amount-row {
