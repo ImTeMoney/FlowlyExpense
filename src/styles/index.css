@@ -1342,6 +1342,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   color: var(--danger); flex-shrink: 0;
 }
 .txn-amt.income { color: var(--success); }
+[data-theme="dark"] .txn-amt:not(.income) { color: rgba(255, 110, 105, 0.80); }
 
 .txn-del {
   width: 26px; height: 26px;
