@@ -1428,7 +1428,7 @@ export default function DashboardPage() {
       {showModal && createPortal(
         <div
           className="modal-overlay modal-overlay--full"
-          style={vvHeight != null ? { height: `${vvHeight}px` } : undefined}
+          style={vvHeight != null && vvHeight < window.innerHeight - 150 ? { height: `${vvHeight}px` } : undefined}
         >
           <div className="modal-sheet">
             <div className="modal-handle" />
