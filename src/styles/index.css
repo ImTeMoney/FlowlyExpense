@@ -6349,42 +6349,55 @@ body::before, body::after {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 20px 16px 16px;
+  padding: 24px 16px 18px;
   position: relative;
   overflow: hidden;
 }
 .dash-hero::before {
   content: '';
   position: absolute;
-  top: -10px; left: 50%;
+  top: -20px; left: 50%;
   transform: translateX(-50%);
-  width: 280px; height: 130px;
-  background: radial-gradient(ellipse at center, var(--purple-dim) 0%, transparent 68%);
+  width: 300px; height: 180px;
+  background: radial-gradient(ellipse at center top, rgba(0,113,227,0.18) 0%, transparent 65%);
   pointer-events: none;
 }
+[data-theme="dark"] .dash-hero::before {
+  background: radial-gradient(ellipse at center top, rgba(10,132,255,0.20) 0%, transparent 65%);
+}
 .dash-hero-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  margin: 0 0 6px;
-  letter-spacing: 0.02em;
+  margin: 0 0 10px;
   position: relative;
 }
 .dash-hero-amount {
-  font-size: 52px;
+  font-size: 42px;
   font-weight: 800;
-  color: var(--text);
+  background: linear-gradient(135deg, #0071E3 0%, #5856D6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   line-height: 1;
   margin: 0;
   position: relative;
 }
+[data-theme="dark"] .dash-hero-amount {
+  background: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .dash-hero-sub {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   position: relative;
 }
 
