@@ -143,6 +143,7 @@ export default function DashboardPage() {
   const [showIoMenu,    setShowIoMenu]    = useState(false);
   const [swipedId,      setSwipedId]      = useState<string | null>(null);
   const [showCurrencyRow, setShowCurrencyRow] = useState(false);
+  const [vvHeight, setVvHeight] = useState<number | null>(null);
   const touchStartX  = useRef(0);
   const touchStartY  = useRef(0);
   const touchMoved   = useRef(false);
@@ -160,6 +161,19 @@ export default function DashboardPage() {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
+  }, [showModal, splitTx, confirm]);
+
+  // Track visual viewport height so modal never goes behind the iOS keyboard.
+  // window.visualViewport.height is the only reliable API that reflects the
+  // keyboard-reduced visible area on iOS Safari/PWA.
+  useEffect(() => {
+    const anyOpen = showModal || !!splitTx || !!confirm;
+    const vv = window.visualViewport;
+    if (!anyOpen || !vv) { setVvHeight(null); return; }
+    const update = () => setVvHeight(vv.height);
+    update();
+    vv.addEventListener('resize', update);
+    return () => { vv.removeEventListener('resize', update); setVvHeight(null); };
   }, [showModal, splitTx, confirm]);
 
   // Escape key closes the active modal
@@ -1414,6 +1428,7 @@ export default function DashboardPage() {
       {showModal && createPortal(
         <div
           className="modal-overlay modal-overlay--full"
+          style={vvHeight != null ? { height: `${vvHeight}px` } : undefined}
         >
           <div className="modal-sheet">
             <div className="modal-handle" />

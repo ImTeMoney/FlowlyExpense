@@ -773,7 +773,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   border: none;
   padding-top: calc(env(safe-area-inset-top) + 16px);
   animation: overlayIn 0.18s ease;
-  overflow-y: auto;
+  overflow: hidden;
 }
 /* field-group scrolls internally; sheet stays fixed (no drag) */
 .modal-overlay--full .field-group {
