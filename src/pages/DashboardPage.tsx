@@ -150,17 +150,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const anyOpen = showModal || !!splitTx || !!confirm;
+    // Only lock body, NOT html — setting overflow:hidden on <html> breaks
+    // position:fixed coverage on iOS Safari/PWA.
     if (anyOpen) {
       document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [showModal, splitTx, confirm]);
 
   // Track visual viewport height so modal never goes behind the iOS keyboard.
