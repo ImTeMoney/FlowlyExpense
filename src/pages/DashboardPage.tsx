@@ -1205,7 +1205,7 @@ export default function DashboardPage() {
                   return (
                     <div key={tx.id} className="txn-swipe-wrap" data-swipe-id={tx.id}>
                       {/* Delete zone revealed by swipe */}
-                      <div className="txn-swipe-bg">
+                      <div className="txn-swipe-bg" style={{ background: swipedId === tx.id ? 'rgba(239,68,68,0.15)' : 'transparent' }}>
                         <button
                           className="txn-swipe-del-btn"
                           onClick={() => {
