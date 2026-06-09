@@ -1658,7 +1658,6 @@ export default function DashboardPage() {
                     placeholder={t.descOptional}
                     value={desc}
                     maxLength={200}
-                    autoFocus
                     onChange={e => setDesc(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleAdd()}
                   />
