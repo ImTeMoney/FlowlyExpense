@@ -747,6 +747,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   align-items: flex-end;
   animation: overlayIn 0.2s ease;
   touch-action: none;
+  overscroll-behavior: none;
 }
 .modal-overlay .modal-sheet {
   touch-action: pan-y;

@@ -148,18 +148,6 @@ export default function DashboardPage() {
   const touchStartY  = useRef(0);
   const touchMoved   = useRef(false);
 
-  useEffect(() => {
-    const anyOpen = showModal || !!splitTx || !!confirm;
-    // Only lock body, NOT html — setting overflow:hidden on <html> breaks
-    // position:fixed coverage on iOS Safari/PWA.
-    if (anyOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [showModal, splitTx, confirm]);
-
   // Track visual viewport height so modal never goes behind the iOS keyboard.
   // window.visualViewport.height is the only reliable API that reflects the
   // keyboard-reduced visible area on iOS Safari/PWA.
