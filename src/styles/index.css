@@ -6344,21 +6344,48 @@ body::before, body::after {
 /* =====================================================
    V1.5.5 — COMPACT DASHBOARD SUMMARY ROW
    ===================================================== */
-.dash-summary-row {
-  display: flex; align-items: baseline;
-  padding: 14px 13px 4px;
+.dash-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 16px 16px;
+  position: relative;
+  overflow: hidden;
 }
-.dash-summary-main { display: flex; align-items: baseline; gap: 8px; }
-.dash-summary-amount {
-  font-size: 28px; font-weight: 700; color: var(--text);
-  font-variant-numeric: tabular-nums; letter-spacing: -0.025em; line-height: 1;
+.dash-hero::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%);
+  width: 280px; height: 130px;
+  background: radial-gradient(ellipse at center, var(--purple-dim) 0%, transparent 68%);
+  pointer-events: none;
 }
-.dash-summary-ctx {
-  font-size: 13px; font-weight: 400; color: var(--text-muted); line-height: 1;
+.dash-hero-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  letter-spacing: 0.02em;
+  position: relative;
 }
-.dash-summary-sub {
-  font-size: 12px; font-weight: 500; color: var(--text-muted);
-  padding: 3px 13px 10px; margin: 0; line-height: 1.4;
+.dash-hero-amount {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 0;
+  position: relative;
+}
+.dash-hero-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 10px 0 0;
+  position: relative;
 }
 
 /* =====================================================

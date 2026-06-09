@@ -1022,16 +1022,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Compact summary row */}
-      <div className="dash-summary-row">
-        <div className="dash-summary-main">
-          <span className="dash-summary-amount">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</span>
-          <span className="dash-summary-ctx">{lang === 'he' ? 'הוצאות החודש' : 'spent this month'}</span>
-        </div>
+      {/* Hero summary */}
+      <div className="dash-hero">
+        <p className="dash-hero-label">{lang === 'he' ? 'הוצאות החודש' : 'Spent this month'}</p>
+        <p className="dash-hero-amount">{formatCurrencyDirect(Math.round(spentSoFarDisplay))}</p>
+        {statusCard.subline && (
+          <p className="dash-hero-sub">{statusCard.subline}</p>
+        )}
       </div>
-      {statusCard.subline && (
-        <p className="dash-summary-sub">{statusCard.subline}</p>
-      )}
 
       {/* Debt tracker — visible only when debt mode is enabled */}
       {debtModeEnabled && <DebtTracker />}
