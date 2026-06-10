@@ -224,13 +224,31 @@ export default function AnalyticsPage() {
     setEditRec(null);
   }
 
-  function endRecurringFromViewed() {
-    if (!editRec) return;
-    dispatch({ type: 'END_RECURRING', payload: { id: editRec.id, endedMonth: ms } });
-    setEditRec(null);
-  }
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
+
+  // End-recurring month picker
+  const [showEndRecPicker, setShowEndRecPicker] = useState(false);
+  const [endRecPickerYear, setEndRecPickerYear] = useState(now.getFullYear());
+
+  function openEndRecPicker() {
+    if (!editRec) return;
+    // Default to next month after the viewed month
+    const nextM = month === 12 ? 1 : month + 1;
+    const nextY = month === 12 ? year + 1 : year;
+    setEndRecPickerYear(nextY);
+    setShowEndRecPicker(true);
+    // Pre-select next month visually handled in picker
+    void nextM;
+  }
+
+  function confirmEndRec(endYear: number, endMonth: number) {
+    if (!editRec) return;
+    const endedMonth = `${endYear}-${String(endMonth).padStart(2, '0')}`;
+    dispatch({ type: 'END_RECURRING', payload: { id: editRec.id, endedMonth } });
+    setShowEndRecPicker(false);
+    setEditRec(null);
+  }
 
 
   const hasData = monthTxns.length > 0;
@@ -288,6 +306,22 @@ export default function AnalyticsPage() {
     () => recurringExpenses.filter(r => !r.endedMonth || r.endedMonth > currentMonthStr),
     [recurringExpenses, currentMonthStr] // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  // Recurring transactions in this month whose template was deleted (for recovery display)
+  const orphanedRecTxns = useMemo(() => {
+    const viewedRecIds = new Set(viewedRec.map(r => r.id));
+    const seen = new Set<string>();
+    return monthTxns.filter(tx => {
+      const isRec = tx.recurringId
+        ? !viewedRecIds.has(tx.recurringId)
+        : tx.description.startsWith('(קבועה) ');
+      if (!isRec) return false;
+      const key = tx.recurringId ?? tx.description;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [monthTxns, viewedRec]);
 
   // Smart bill predictor: days until next occurrence for each active recurring item
   const recurringWithDue = useMemo(() => {
@@ -745,7 +779,7 @@ export default function AnalyticsPage() {
           {/* ── Recurring / Subscription health ── */}
           <div className="an-section">
             <div className="an-section-title">{t.recurringExpenses}</div>
-          {viewedRec.length === 0 ? (
+          {viewedRec.length === 0 && orphanedRecTxns.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0', margin: 0 }}>
               {lang === 'he' ? 'אין הוצאות קבועות — הוסף אחת מטופס ההוצאה' : 'No recurring expenses yet — add one from the expense form'}
             </p>
@@ -851,6 +885,32 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
+              {/* Orphaned recurring transactions — template deleted but transaction still exists */}
+              {orphanedRecTxns.length > 0 && (
+                <div className="rec-list" style={{ marginTop: viewedRec.length > 0 ? 8 : 0 }}>
+                  {orphanedRecTxns.map(tx => {
+                    const cleanDesc = tx.description.startsWith('(קבועה) ')
+                      ? tx.description.slice('(קבועה) '.length)
+                      : tx.description;
+                    const cat = categories.find(c => c.id === tx.categoryId);
+                    const Icon = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
+                    return (
+                      <div key={tx.id} className="rec-item" style={{ opacity: 0.6 }}>
+                        <div className="rec-icon" style={{ color: tx.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)') }}>
+                          <Icon size={15} color={tx.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} />
+                        </div>
+                        <div className="rec-info">
+                          <div className="rec-name">{cleanDesc}</div>
+                          <div className="rec-meta">{lang === 'he' ? 'היסטוריה בלבד' : 'History only'}</div>
+                        </div>
+                        <div className={`rec-amt${tx.isIncome ? ' income' : ''}`}>
+                          {formatCurrencyDirect(toMainAmt(tx))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
           </div>
@@ -993,8 +1053,8 @@ export default function AnalyticsPage() {
                 <Check size={15} />
                 {lang === 'he' ? 'שמור שינויים' : 'Save changes'}
               </button>
-              <button className="rec-end-btn" onClick={endRecurringFromViewed}>
-                {lang === 'he' ? `הפסק מ-${monthLabel(year, month)}` : `End from ${monthLabel(year, month)}`}
+              <button className="rec-end-btn" onClick={openEndRecPicker}>
+                {lang === 'he' ? 'הפסק קבוע...' : 'End recurring...'}
               </button>
             </div>
           </div>
@@ -1028,6 +1088,42 @@ export default function AnalyticsPage() {
                     className={`mpicker-month-btn${isSelected ? ' active' : ''}`}
                     disabled={isFuture}
                     onClick={() => { setYear(pickerYear); setMonth(m); setShowMonthPicker(false); }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showEndRecPicker && createPortal(
+        <div className="mpicker-overlay" onClick={() => setShowEndRecPicker(false)}>
+          <div className="mpicker-card" onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center', padding: '0 0 10px', direction: 'rtl' }}>
+              {lang === 'he' ? 'הפסק קבוע החל מ...' : 'End recurring from...'}
+            </div>
+            <div className="mpicker-year-nav">
+              <button className="mpicker-yr-btn" onClick={() => setEndRecPickerYear(y => y - 1)}>‹</button>
+              <span className="mpicker-yr-label">{endRecPickerYear}</span>
+              <button
+                className="mpicker-yr-btn"
+                onClick={() => setEndRecPickerYear(y => y + 1)}
+                disabled={endRecPickerYear >= now.getFullYear() + 1}
+              >›</button>
+            </div>
+            <div className="mpicker-grid">
+              {Array.from({ length: 12 }, (_, i) => {
+                const m = i + 1;
+                const label = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-US', { month: 'short' })
+                  .format(new Date(2000, i, 1));
+                return (
+                  <button
+                    key={m}
+                    className="mpicker-month-btn"
+                    onClick={() => confirmEndRec(endRecPickerYear, m)}
                   >
                     {label}
                   </button>
