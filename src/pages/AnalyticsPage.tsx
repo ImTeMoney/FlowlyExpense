@@ -309,13 +309,27 @@ export default function AnalyticsPage() {
 
   // Recurring transactions in this month whose template was deleted (for recovery display)
   const orphanedRecTxns = useMemo(() => {
-    const viewedRecIds = new Set(viewedRec.map(r => r.id));
+    const viewedRecIds     = new Set(viewedRec.map(r => r.id));
+    const viewedRecDescs   = new Set(viewedRec.map(r => r.description.toLowerCase().trim()));
+    const viewedRecAmtKeys = new Set(viewedRec.map(r => `${r.isIncome ? 1 : 0}_${r.amount}`));
+
     const seen = new Set<string>();
     return monthTxns.filter(tx => {
       const isRec = tx.recurringId
         ? !viewedRecIds.has(tx.recurringId)
         : tx.description.startsWith('(קבועה) ');
       if (!isRec) return false;
+
+      const cleanDesc = tx.description.startsWith('(קבועה) ')
+        ? tx.description.slice('(קבועה) '.length).toLowerCase().trim()
+        : tx.description.toLowerCase().trim();
+
+      // Already covered by an active template with same description
+      if (viewedRecDescs.has(cleanDesc)) return false;
+      // Already covered by an active template with same amount+type
+      // (handles renamed templates like "ביטוח רכב ותשלומים" → "ביטוח רכב")
+      if (viewedRecAmtKeys.has(`${tx.isIncome ? 1 : 0}_${tx.amount}`)) return false;
+
       const key = tx.recurringId ?? tx.description;
       if (seen.has(key)) return false;
       seen.add(key);
