@@ -223,6 +223,12 @@ export default function AnalyticsPage() {
     });
     setEditRec(null);
   }
+
+  function endRecurringFromViewed() {
+    if (!editRec) return;
+    dispatch({ type: 'END_RECURRING', payload: { id: editRec.id, endedMonth: ms } });
+    setEditRec(null);
+  }
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
 
@@ -272,25 +278,36 @@ export default function AnalyticsPage() {
   const fmtRec = (r: { amount: number; currency?: string; originalAmount?: number }) =>
     formatCurrencyDirect(recToMain(r));
 
-  // Smart bill predictor: days until next occurrence for each recurring item
+  // Recurring items filtered by viewed month (for historical display)
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const viewedRec = useMemo(
+    () => recurringExpenses.filter(r => !r.endedMonth || r.endedMonth > ms),
+    [recurringExpenses, ms]
+  );
+  const activeRec = useMemo(
+    () => recurringExpenses.filter(r => !r.endedMonth || r.endedMonth > currentMonthStr),
+    [recurringExpenses, currentMonthStr] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Smart bill predictor: days until next occurrence for each active recurring item
   const recurringWithDue = useMemo(() => {
     const todayDay = now.getDate();
-    return recurringExpenses.map(r => {
+    return activeRec.map(r => {
       let daysUntil = r.dayOfMonth - todayDay;
       if (daysUntil < 0) daysUntil += daysInMonth; // next month occurrence
       return { ...r, daysUntil, annualCost: recToMain(r) * 12 };
     }).sort((a, b) => a.daysUntil - b.daysUntil);
-  }, [recurringExpenses, now, daysInMonth, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeRec, now, daysInMonth, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Subscription health totals
+  // Subscription health totals (active items only)
   const subHealth = useMemo(() => {
-    const expenses = recurringExpenses.filter(r => !r.isIncome);
+    const expenses = activeRec.filter(r => !r.isIncome);
     const total = expenses.reduce((s, r) => s + recToMain(r), 0);
     const streaming = expenses.filter(r => r.categoryId === 'cat_entertainment').reduce((s, r) => s + recToMain(r), 0);
     const utilities = expenses.filter(r => ['cat_utilities', 'cat_rent'].includes(r.categoryId)).reduce((s, r) => s + recToMain(r), 0);
     const other = total - streaming - utilities;
     return { total, annualCost: total * 12, streaming, utilities, other };
-  }, [recurringExpenses, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeRec, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="page analytics-page">
@@ -483,7 +500,7 @@ export default function AnalyticsPage() {
               {visibleCats.map(({ cat, total }) => {
                 const Icon = resolveCatIcon(cat);
                 const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
-                const isRecurringCat = recurringExpenses.some(r => r.categoryId === cat.id && !r.isIncome);
+                const isRecurringCat = viewedRec.some(r => r.categoryId === cat.id && !r.isIncome);
                 const isSingleTx = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).length === 1;
                 const budgetInfo = getCategoryBudgetPct(cat.id, total, categoryBudgets);
                 const budgetMarkerPct = budgetInfo.budget > 0 ? Math.min((budgetInfo.budget / maxCat) * 100, 100) : null;
@@ -728,7 +745,7 @@ export default function AnalyticsPage() {
           {/* ── Recurring / Subscription health ── */}
           <div className="an-section">
             <div className="an-section-title">{t.recurringExpenses}</div>
-          {recurringExpenses.length === 0 ? (
+          {viewedRec.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0', margin: 0 }}>
               {lang === 'he' ? 'אין הוצאות קבועות — הוסף אחת מטופס ההוצאה' : 'No recurring expenses yet — add one from the expense form'}
             </p>
@@ -975,6 +992,9 @@ export default function AnalyticsPage() {
               <button className="submit-btn" onClick={saveEditRec} style={{ marginTop: 4 }}>
                 <Check size={15} />
                 {lang === 'he' ? 'שמור שינויים' : 'Save changes'}
+              </button>
+              <button className="rec-end-btn" onClick={endRecurringFromViewed}>
+                {lang === 'he' ? `הפסק מ-${monthLabel(year, month)}` : `End from ${monthLabel(year, month)}`}
               </button>
             </div>
           </div>

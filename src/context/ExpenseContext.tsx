@@ -94,6 +94,7 @@ export interface RecurringExpense {
   currency?: string;           // original currency when entered (if not ILS)
   originalAmount?: number;     // amount in original currency for lossless display
   cardId?: string;             // credit card to charge each month
+  endedMonth?: string;         // 'YYYY-MM' — if set, don't auto-post from this month onward
 }
 
 /**
@@ -135,6 +136,7 @@ type Action =
   | { type: 'ADD_RECURRING';             payload: RecurringExpense }
   | { type: 'UPDATE_RECURRING';          payload: RecurringExpense; oldDescription?: string }
   | { type: 'DELETE_RECURRING';          payload: string }
+  | { type: 'END_RECURRING';            payload: { id: string; endedMonth: string } }
   | { type: 'SET_BUDGET';                payload: number }
   | { type: 'SET_SAVINGS_GOAL';          payload: number }
   | { type: 'ADD_CATEGORY';              payload: Category }
@@ -473,6 +475,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     const toPost = recurringExpenses.filter(r => {
       if (r.lastPostedMonth === currentMonthStr) return false;
       if (r.totalInstallments && (r.postedCount ?? 0) >= r.totalInstallments) return false;
+      if (r.endedMonth && r.endedMonth <= currentMonthStr) return false;
       return true;
     });
     if (toPost.length === 0) return;
@@ -544,6 +547,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'DELETE_RECURRING':
         setRecurringExpenses(prev => prev.filter(r => r.id !== action.payload));
+        break;
+
+      case 'END_RECURRING':
+        setRecurringExpenses(prev => prev.map(r =>
+          r.id === action.payload.id ? { ...r, endedMonth: action.payload.endedMonth } : r
+        ));
         break;
 
       case 'SET_RECURRING_INSTALLMENTS':

@@ -1974,6 +1974,13 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
 .rec-item:hover .rec-del { opacity: 0.65; }
 .rec-del:hover { color: var(--danger); background: var(--danger-dim); opacity: 1 !important; }
 .rec-del svg { width: 14px; height: 14px; display: block; }
+.rec-end-btn {
+  background: none; border: none; color: var(--danger);
+  font-size: 13px; font-weight: 600; opacity: 0.72;
+  padding: 8px 0; cursor: pointer; align-self: center;
+  font-family: inherit; width: 100%; text-align: center;
+}
+.rec-end-btn:active { opacity: 0.35; }
 .rec-split-btn { color: var(--purple) !important; opacity: 0.6; }
 .rec-item:hover .rec-split-btn { opacity: 0.85; }
 .rec-split-btn:hover { opacity: 1 !important; background: rgba(10,132,255,0.12) !important; }

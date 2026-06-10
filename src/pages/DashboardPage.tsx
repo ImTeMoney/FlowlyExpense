@@ -187,9 +187,13 @@ export default function DashboardPage() {
       .reduce((s, t) => s + toMainAmt(t), 0);
   }, [transactions, toMainAmt, viewMonth]);
 
-  // Planned recurring totals for the current month
-  const plannedExpense = useMemo(() => recurringExpenses.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
-  const plannedIncome  = useMemo(() => recurringExpenses.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [recurringExpenses]);
+  // Planned recurring totals — only active items (not ended)
+  const activeRec = useMemo(
+    () => recurringExpenses.filter(r => !r.endedMonth || r.endedMonth > currentMonthStr),
+    [recurringExpenses]
+  );
+  const plannedExpense = useMemo(() => activeRec.filter(r => !r.isIncome).reduce((s,r) => s + r.amount, 0), [activeRec]);
+  const plannedIncome  = useMemo(() => activeRec.filter(r =>  r.isIncome).reduce((s,r) => s + r.amount, 0), [activeRec]);
   const displayTxns = useMemo(() => {
     let txns = monthTxns;
     if (filterSearch.trim()) {
@@ -593,7 +597,7 @@ export default function DashboardPage() {
         }});
       } else if (!isRecurring) {
         const existing = recurringExpenses.find(r => r.description === baseDesc && r.isIncome === isIncome);
-        if (existing) dispatch({ type: 'DELETE_RECURRING', payload: existing.id });
+        if (existing) dispatch({ type: 'END_RECURRING', payload: { id: existing.id, endedMonth: date.substring(0, 7) } });
       }
       track('expense_edited', { category: catId, is_income: isIncome });
       setEditingTx(null);
