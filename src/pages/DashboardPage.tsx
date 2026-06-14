@@ -145,9 +145,8 @@ export default function DashboardPage() {
   const [showIoMenu,    setShowIoMenu]    = useState(false);
   const [swipedId,      setSwipedId]      = useState<string | null>(null);
   const [showCurrencyRow, setShowCurrencyRow] = useState(false);
-  const touchStartX  = useRef(0);
-  const touchStartY  = useRef(0);
-  const touchMoved   = useRef(false);
+  const swipedIdRef = useRef<string | null>(null);
+  swipedIdRef.current = swipedId;
 
   // Escape key closes the active modal
   useEffect(() => {
@@ -779,59 +778,74 @@ export default function DashboardPage() {
     return () => window.removeEventListener('scroll', onScroll, { capture: true });
   }, [swipedId]);
 
-  // Non-passive touchmove on the transaction list so preventDefault() works on iOS.
-  // iOS Safari ignores e.preventDefault() in passive (React synthetic) handlers,
-  // which causes the scroll container to steal horizontal swipe gestures.
+  // Native touch handling for swipe-to-delete.
+  // React synthetic events are passive — iOS Safari steals horizontal gestures
+  // before they reach React, so we bypass React entirely for swipe detection.
   useEffect(() => {
-    const el = txnSectionRef.current;
-    if (!el) return;
-    const onMove = (e: TouchEvent) => {
-      const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
-      const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-      if (dx > dy && dx > 5) e.preventDefault();
+    const section = txnSectionRef.current;
+    if (!section) return;
+
+    let startX = 0, startY = 0;
+    let activeWrapId: string | null = null;
+    let activeItem: HTMLElement | null = null;
+    let direction: 'unknown' | 'h' | 'v' = 'unknown';
+
+    function onStart(e: TouchEvent) {
+      const wrap = (e.target as Element).closest<HTMLElement>('.txn-swipe-wrap');
+      activeWrapId = wrap?.dataset.swipeId ?? null;
+      activeItem   = wrap?.querySelector<HTMLElement>('.txn-item') ?? null;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      direction = 'unknown';
+    }
+
+    function onMove(e: TouchEvent) {
+      if (!activeItem) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      const ax = Math.abs(dx), ay = Math.abs(dy);
+      if (direction === 'unknown' && (ax > 3 || ay > 3))
+        direction = ax > ay ? 'h' : 'v';
+      if (direction !== 'h') return;
+      e.preventDefault();
+      const clamp = Math.max(Math.min(dx, 0), -80);
+      activeItem.style.transition = 'none';
+      activeItem.style.transform = `translateX(${clamp}px)`;
+    }
+
+    function onEnd(e: TouchEvent) {
+      if (!activeItem || !activeWrapId) return;
+      activeItem.style.transition = '';
+      activeItem.style.transform  = '';
+      const dx = e.changedTouches[0].clientX - startX;
+      if (direction === 'h' && Math.abs(dx) >= 40) {
+        if (dx < 0) {
+          setSwipedId(prev => prev === activeWrapId ? null : activeWrapId);
+        } else {
+          if (swipedIdRef.current === activeWrapId) setSwipedId(null);
+        }
+      }
+      activeItem = null; activeWrapId = null; direction = 'unknown';
+    }
+
+    function onCancel() {
+      if (activeItem) { activeItem.style.transition = ''; activeItem.style.transform = ''; }
+      activeItem = null; activeWrapId = null; direction = 'unknown';
+    }
+
+    section.addEventListener('touchstart', onStart, { passive: true });
+    section.addEventListener('touchmove',  onMove,  { passive: false });
+    section.addEventListener('touchend',   onEnd,   { passive: true });
+    section.addEventListener('touchcancel',onCancel,{ passive: true });
+    return () => {
+      section.removeEventListener('touchstart', onStart);
+      section.removeEventListener('touchmove',  onMove);
+      section.removeEventListener('touchend',   onEnd);
+      section.removeEventListener('touchcancel',onCancel);
     };
-    el.addEventListener('touchmove', onMove, { passive: false });
-    return () => el.removeEventListener('touchmove', onMove);
-  }, []);
+  }, [setSwipedId]);
 
   const isRTL = lang === 'he';
-
-  function handleTouchStart(e: React.TouchEvent, id: string) {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    touchMoved.current  = false;
-    if (swipedId && swipedId !== id) setSwipedId(null);
-  }
-  function handleTouchMove(e: React.TouchEvent) {
-    const dx = e.touches[0].clientX - touchStartX.current;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) touchMoved.current = true;
-    // Real-time visual feedback: slide card left as finger moves
-    if (dx < -6 && Math.abs(dx) > Math.abs(dy)) {
-      const el = e.currentTarget as HTMLElement;
-      el.style.transition = 'none';
-      el.style.transform = `translateX(${Math.max(dx, -80)}px)`;
-    }
-  }
-  function handleTouchEnd(e: React.TouchEvent, tx: Transaction) {
-    // Clear live inline style — CSS class handles final resting position
-    const el = e.currentTarget as HTMLElement;
-    el.style.transform = '';
-    el.style.transition = '';
-
-    const dx    = e.changedTouches[0].clientX - touchStartX.current;
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-    if (absDx >= 40 && absDx > absDy * 1.5) {
-      const isReveal = dx < 0;  // swipe left always (iOS standard)
-      setSwipedId(isReveal ? (swipedId === tx.id ? null : tx.id) : null);
-      return;
-    }
-    if (!touchMoved.current || (absDx < 8 && absDy < 8)) {
-      if (swipedId) { setSwipedId(null); return; }
-      openEditModal(tx);
-    }
-  }
 
   const PM_LABEL_HE: Record<string, string> = {
     cash: 'מזומן', credit: 'אשראי', check: "צ'ק", transfer: 'העברה', bit: 'ביט',
@@ -1269,9 +1283,6 @@ export default function DashboardPage() {
                       <div
                         className={`txn-item chromatic-edge${swipedId === tx.id ? ' swiped' : ''}`}
                         style={{ '--i': txIdx } as React.CSSProperties}
-                        onTouchStart={e => handleTouchStart(e, tx.id)}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={e => handleTouchEnd(e, tx)}
                         onClick={() => {
                           if (swipedId === tx.id) { setSwipedId(null); return; }
                           openEditModal(tx);
