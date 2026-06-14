@@ -1280,12 +1280,27 @@ export default function DashboardPage() {
                     recurringExpenses.some(r => r.description === txDisplayDesc && r.isIncome === !!tx.isIncome);
                   return (
                     <div key={tx.id} className="txn-swipe-wrap" data-swipe-id={tx.id}>
-                      {/* Delete zone revealed by swipe */}
-                      <div className="txn-swipe-bg" style={{ background: swipedId === tx.id ? 'rgba(239,68,68,0.15)' : 'transparent' }}>
-                        <button
-                          className="txn-swipe-del-btn"
-                          onClick={() => {
-                            setSwipedId(null);
+                      {/* Delete zone revealed by swipe — full red panel */}
+                      <div
+                        className={`txn-swipe-bg${swipedId === tx.id ? ' txn-swipe-bg--visible' : ''}`}
+                        onClick={() => {
+                          if (swipedId !== tx.id) return;
+                          setSwipedId(null);
+                          if (tx.installments) {
+                            setConfirm({
+                              title: t.deleteAllInstallments,
+                              body: (
+                                <>
+                                  <strong>"{txDisplayDesc}"</strong>
+                                  {' '}
+                                  {lang === 'he'
+                                    ? `(${tx.installments.current}/${tx.installments.total} תשלומים)`
+                                    : `(${tx.installments.current}/${tx.installments.total} installments)`}
+                                </>
+                              ),
+                              onConfirm: () => { handleDeleteGroup(tx.installments!.groupId); setConfirm(null); },
+                            });
+                          } else {
                             setConfirm({
                               title: t.confirmDeleteTitle,
                               body: (
@@ -1299,14 +1314,15 @@ export default function DashboardPage() {
                               ),
                               onConfirm: () => { handleDelete(tx.id); setConfirm(null); },
                             });
-                          }}
-                          aria-label="Delete"
-                        >
-                          <X size={16} />
-                        </button>
+                          }
+                        }}
+                        aria-label={lang === 'he' ? 'מחק' : 'Delete'}
+                      >
+                        <Trash2 size={22} color="#fff" />
+                        <span className="txn-swipe-del-label">{lang === 'he' ? 'מחק' : 'Delete'}</span>
                       </div>
 
-                      {/* Card — slides to reveal delete zone */}
+                      {/* Card — slides right to reveal delete zone */}
                       <div
                         className={`txn-item chromatic-edge${swipedId === tx.id ? ' swiped' : ''}`}
                         style={{ '--i': txIdx } as React.CSSProperties}
@@ -1385,53 +1401,6 @@ export default function DashboardPage() {
                             </span>
                           )}
                         </div>
-
-                        {/* Secondary actions — edit/split/delete-group, shown while swiped */}
-                        {swipedId === tx.id && (
-                          <div className="txn-secondary-actions">
-                            <button
-                              className="txn-del txn-edit-btn"
-                              onClick={e => { e.stopPropagation(); openEditModal(tx); setSwipedId(null); }}
-                              aria-label={tx.isIncome ? t.editIncome : t.editExpense}
-                            >
-                              <Pencil size={13} />
-                            </button>
-                            {!tx.isIncome && !tx.installments && (
-                              <button
-                                className="txn-del txn-split-btn"
-                                onClick={e => { e.stopPropagation(); setSplitTx(tx); setSplitN(3); setSwipedId(null); }}
-                                aria-label="Split to installments"
-                              >
-                                <GitFork size={13} />
-                              </button>
-                            )}
-                            {tx.installments && (
-                              <button
-                                className="txn-del txn-del-group"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  setSwipedId(null);
-                                  setConfirm({
-                                    title: t.deleteAllInstallments,
-                                    body: (
-                                      <>
-                                        <strong>"{tx.description}"</strong>
-                                        {' '}
-                                        {lang === 'he'
-                                          ? `(${tx.installments!.current}/${tx.installments!.total} תשלומים)`
-                                          : `(${tx.installments!.current}/${tx.installments!.total} installments)`}
-                                      </>
-                                    ),
-                                    onConfirm: () => { handleDeleteGroup(tx.installments!.groupId); setConfirm(null); },
-                                  });
-                                }}
-                                aria-label="Delete all installments"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   );

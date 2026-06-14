@@ -2996,29 +2996,26 @@ select.sm-in option { background: var(--modal-bg); }
   bottom: 0;
   width: 80px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(239,68,68,0.15);
+  gap: 4px;
+  background: transparent;
   border-radius: var(--r-md) 0 0 var(--r-md);
-}
-
-.txn-swipe-del-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--danger);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
-  border: none;
-  transition: transform 0.15s, background 0.15s;
-  flex-shrink: 0;
+  transition: background 0.18s;
 }
-.txn-swipe-del-btn:hover { transform: scale(1.08); background: #DC2626; }
-.txn-swipe-del-btn:active { transform: scale(0.92); }
-.txn-swipe-del-btn svg { width: 16px; height: 16px; }
+.txn-swipe-bg--visible {
+  background: #EF4444;
+}
+.txn-swipe-bg--visible:active { background: #DC2626; }
+
+.txn-swipe-del-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.03em;
+}
 
 /* Item inside wrap — no outer margin (wrap handles it) */
 .txn-swipe-wrap .txn-item {
@@ -3033,12 +3030,6 @@ select.sm-in option { background: var(--modal-bg); }
 .txn-swipe-wrap .txn-item.swiped {
   transform: translateX(80px);
 }
-
-/* Secondary actions — visible while card is swiped */
-.txn-secondary-actions {
-  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
-}
-.txn-secondary-actions .txn-del { opacity: 1; }
 
 /* Card last4 hint in meta row */
 .txn-card-hint {
