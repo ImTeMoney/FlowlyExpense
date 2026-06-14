@@ -3028,8 +3028,12 @@ select.sm-in option { background: var(--modal-bg); }
   will-change: transform;
 }
 
-/* Swipe right to reveal left-side delete zone */
+/* Swipe right to reveal left-side delete zone.
+   animation:none is critical — the txn-enter entrance animation uses
+   fill-mode:both, so its final transform:translateX(0) stays applied and
+   overrides this transform unless we cancel the animation. */
 .txn-swipe-wrap .txn-item.swiped {
+  animation: none !important;
   transform: translateX(80px);
 }
 

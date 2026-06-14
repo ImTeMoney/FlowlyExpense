@@ -794,7 +794,12 @@ export default function DashboardPage() {
     let snapped = false;
 
     function clearActive(didSnap: boolean) {
-      if (activeItem) { activeItem.style.transition = ''; activeItem.style.transform = ''; }
+      if (activeItem) {
+        activeItem.style.transition = '';
+        activeItem.style.transform = '';
+        // When snapped, the .swiped class holds the offset; otherwise restore default animation
+        if (!didSnap) activeItem.style.animation = '';
+      }
       if (didSnap) {
         // Block the synthetic click iOS fires ~300ms after touchend
         suppressNextClick.current = true;
@@ -837,6 +842,9 @@ export default function DashboardPage() {
       }
 
       const clamp = Math.min(Math.max(dx, 0), 80);
+      // Cancel the entrance animation (fill-mode:both keeps its transform,
+      // which would otherwise override this inline transform)
+      activeItem.style.animation = 'none';
       activeItem.style.transition = 'none';
       activeItem.style.transform = `translateX(${clamp}px)`;
     }
@@ -1209,7 +1217,7 @@ export default function DashboardPage() {
 
       {/* DEBUG — remove after testing */}
       <div style={{ background: '#1a1a2e', color: '#0ff', fontFamily: 'monospace', fontSize: 12, padding: '6px 12px', margin: '0 16px 8px', borderRadius: 8, border: '1px solid #0ff4' }}>
-        🐛 {dbgTouch} | sid:{swipedId ? swipedId.slice(-4) : 'null'}
+        🐛 v1.8.6 | {dbgTouch} | sid:{swipedId ? swipedId.slice(-4) : 'null'}
       </div>
 
       {/* Transaction feed */}
