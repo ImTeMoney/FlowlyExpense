@@ -147,6 +147,7 @@ export default function DashboardPage() {
   const [showCurrencyRow, setShowCurrencyRow] = useState(false);
   const swipedIdRef = useRef<string | null>(null);
   swipedIdRef.current = swipedId;
+  const suppressNextClick = useRef(false);
   const [dbgTouch, setDbgTouch] = useState<string>('tap row to test');
 
   // Escape key closes the active modal
@@ -792,8 +793,13 @@ export default function DashboardPage() {
     let direction: 'unknown' | 'h' | 'v' = 'unknown';
     let snapped = false;
 
-    function clearActive() {
+    function clearActive(didSnap: boolean) {
       if (activeItem) { activeItem.style.transition = ''; activeItem.style.transform = ''; }
+      if (didSnap) {
+        // Block the synthetic click iOS fires ~300ms after touchend
+        suppressNextClick.current = true;
+        setTimeout(() => { suppressNextClick.current = false; }, 500);
+      }
       activeItem = null; activeWrapId = null; direction = 'unknown'; snapped = false;
     }
 
@@ -837,17 +843,17 @@ export default function DashboardPage() {
 
     function onEnd(e: TouchEvent) {
       const dx = e.changedTouches[0].clientX - startX;
-      setDbgTouch(`END dx=${Math.round(dx)} dir=${direction} snap=${snapped}`);
       if (activeItem && activeWrapId && direction === 'h') {
         // Fallback: if not yet snapped but crossed 30px, snap now
-        if (!snapped && dx >= 30) setSwipedId(activeWrapId);
+        if (!snapped && dx >= 30) { snapped = true; setSwipedId(activeWrapId); }
         // If snapped but ended very short, close
-        if (snapped && dx < 5) setSwipedId(null);
+        if (snapped && dx < 5) { snapped = false; setSwipedId(null); }
       }
-      clearActive();
+      setDbgTouch(`END dx=${Math.round(dx)} dir=${direction} snap=${snapped}`);
+      clearActive(snapped);
     }
 
-    function onCancel() { clearActive(); }
+    function onCancel() { clearActive(false); }
 
     section.addEventListener('touchstart', onStart, { passive: true });
     section.addEventListener('touchmove',  onMove,  { passive: false });
@@ -1203,7 +1209,7 @@ export default function DashboardPage() {
 
       {/* DEBUG — remove after testing */}
       <div style={{ background: '#1a1a2e', color: '#0ff', fontFamily: 'monospace', fontSize: 12, padding: '6px 12px', margin: '0 16px 8px', borderRadius: 8, border: '1px solid #0ff4' }}>
-        🐛 {dbgTouch}
+        🐛 {dbgTouch} | sid:{swipedId ? swipedId.slice(-4) : 'null'}
       </div>
 
       {/* Transaction feed */}
@@ -1305,6 +1311,7 @@ export default function DashboardPage() {
                         className={`txn-item chromatic-edge${swipedId === tx.id ? ' swiped' : ''}`}
                         style={{ '--i': txIdx } as React.CSSProperties}
                         onClick={() => {
+                          if (suppressNextClick.current) { suppressNextClick.current = false; return; }
                           if (swipedId === tx.id) { setSwipedId(null); return; }
                           openEditModal(tx);
                         }}
