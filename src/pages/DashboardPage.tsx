@@ -808,7 +808,7 @@ export default function DashboardPage() {
         direction = ax > ay ? 'h' : 'v';
       if (direction !== 'h') return;
       e.preventDefault();
-      const clamp = Math.max(Math.min(dx, 0), -80);
+      const clamp = Math.min(Math.max(dx, 0), 80);
       activeItem.style.transition = 'none';
       activeItem.style.transform = `translateX(${clamp}px)`;
     }
@@ -819,7 +819,7 @@ export default function DashboardPage() {
       activeItem.style.transform  = '';
       const dx = e.changedTouches[0].clientX - startX;
       if (direction === 'h' && Math.abs(dx) >= 40) {
-        if (dx < 0) {
+        if (dx > 0) {
           setSwipedId(prev => prev === activeWrapId ? null : activeWrapId);
         } else {
           if (swipedIdRef.current === activeWrapId) setSwipedId(null);

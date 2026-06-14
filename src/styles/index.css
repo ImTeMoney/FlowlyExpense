@@ -2991,7 +2991,7 @@ select.sm-in option { background: var(--modal-bg); }
 
 .txn-swipe-bg {
   position: absolute;
-  right: 0;
+  left: 0;
   top: 0;
   bottom: 0;
   width: 80px;
@@ -2999,7 +2999,7 @@ select.sm-in option { background: var(--modal-bg); }
   align-items: center;
   justify-content: center;
   background: rgba(239,68,68,0.15);
-  border-radius: 0 var(--r-md) var(--r-md) 0;
+  border-radius: var(--r-md) 0 0 var(--r-md);
 }
 
 .txn-swipe-del-btn {
@@ -3029,9 +3029,9 @@ select.sm-in option { background: var(--modal-bg); }
   will-change: transform;
 }
 
-/* Swipe left (both LTR and RTL) to reveal right-side delete zone */
+/* Swipe right to reveal left-side delete zone */
 .txn-swipe-wrap .txn-item.swiped {
-  transform: translateX(-80px);
+  transform: translateX(80px);
 }
 
 /* Secondary actions — visible while card is swiped */
