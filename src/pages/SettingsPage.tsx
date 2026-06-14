@@ -55,7 +55,7 @@ const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
-  const { transactions, categories, mainCurrency, debtModeEnabled } = state;
+  const { transactions, categories, mainCurrency, debtModeEnabled, travelModeEnabled } = state;
 
   // DnD sensors (pointer for desktop, touch for mobile)
   const sensors = useSensors(
@@ -477,6 +477,25 @@ const SettingsPage: React.FC = () => {
           {lang === 'he'
             ? 'כשפעיל, חוב נרשם גם כהוצאה/הכנסה'
             : 'When on, each debt also records as an expense/income'}
+        </p>
+      </div>
+
+      {/* ── Travel Mode ── */}
+      <div className="a-sec">
+        <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="title-text">{lang === 'he' ? 'מצב טיול' : 'Travel Mode'}</span>
+          <button
+            className={`debt-mode-toggle${travelModeEnabled ? ' on' : ''}`}
+            onClick={() => dispatch({ type: 'SET_TRAVEL_MODE', payload: !travelModeEnabled })}
+            aria-label={lang === 'he' ? 'הפעל/כבה מצב טיול' : 'Toggle travel mode'}
+          >
+            <span className="debt-mode-thumb" />
+          </button>
+        </div>
+        <p className="mode-seg-desc" style={{ marginTop: 6 }}>
+          {lang === 'he'
+            ? 'עקוב אחרי תקציב הטיול שלך לפי מטבע'
+            : 'Track your trip budget by currency'}
         </p>
       </div>
 

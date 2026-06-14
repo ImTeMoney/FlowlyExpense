@@ -22,6 +22,7 @@ import { useTilt } from '../hooks/useTilt';
 import CategoryPicker, { resolveCatIcon } from '../components/CategoryPicker';
 import DatePicker from '../components/DatePicker';
 import DebtTracker from '../components/DebtTracker';
+import TravelBudgetTracker from '../components/TravelBudgetTracker';
 import { parseExpenseText, suggestCategory, todayStr, currentMonthStr, readDraft, writeDraft, clearDraft } from '../services/expenseHelpers';
 import { track } from '../services/analytics';
 
@@ -82,7 +83,7 @@ function groupByDate(txns: Transaction[]) {
 export default function DashboardPage() {
   const { state, dispatch, formatCurrency, formatCurrencyDirect, displayRate } = useExpense();
   const { t, toggleLang, lang, formatDateGroup, currentMonthLabel, monthLabel, todayFullLabel, catName } = useLang();
-  const { categories, recurringExpenses, transactions, mainCurrency, streakData, debtModeEnabled, cards } = state;
+  const { categories, recurringExpenses, transactions, mainCurrency, streakData, debtModeEnabled, travelModeEnabled, cards } = state;
   const [theme, toggleTheme] = useTheme();
   const { statusCard, insights } = useInsights();
   const forecast = useSpendingForecast(transactions, recurringExpenses);
@@ -1037,6 +1038,9 @@ export default function DashboardPage() {
 
       {/* Debt tracker — visible only when debt mode is enabled */}
       {debtModeEnabled && <DebtTracker />}
+
+      {/* Travel budget tracker — visible only when travel mode is enabled */}
+      {travelModeEnabled && <TravelBudgetTracker />}
 
       {/* Filter bar */}
       <div className="txn-filters">

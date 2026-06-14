@@ -29,6 +29,16 @@ export interface CreditCard {
   color: string;
 }
 
+export interface TravelBudget {
+  id: string;
+  name: string;
+  currency: string;
+  totalBudget: number;
+  startDate: string;
+  endDate?: string;
+  returnedWith?: number;
+}
+
 export interface StreakData {
   currentStreak: number;
   longestStreak: number;
@@ -127,6 +137,8 @@ export interface AppState {
   streakData: StreakData;
   debtModeEnabled: boolean;
   cards: CreditCard[];
+  travelBudgets: TravelBudget[];
+  travelModeEnabled: boolean;
 }
 
 type Action =
@@ -160,7 +172,11 @@ type Action =
   | { type: 'UPDATE_STREAK';             payload: StreakData }
   | { type: 'ADD_CARD';                  payload: CreditCard }
   | { type: 'UPDATE_CARD';              payload: CreditCard }
-  | { type: 'DELETE_CARD';              payload: string };
+  | { type: 'DELETE_CARD';              payload: string }
+  | { type: 'ADD_TRAVEL_BUDGET';        payload: TravelBudget }
+  | { type: 'UPDATE_TRAVEL_BUDGET';     payload: TravelBudget }
+  | { type: 'DELETE_TRAVEL_BUDGET';     payload: string }
+  | { type: 'SET_TRAVEL_MODE';          payload: boolean };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -202,6 +218,8 @@ export const STORAGE_KEYS = {
   STREAKS:           'expense_streaks',
   DEBT_MODE:         'expense_debt_mode',
   CARDS:             'expense_cards',
+  TRAVEL_BUDGETS:    'expense_travel_budgets',
+  TRAVEL_MODE:       'expense_travel_mode',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -329,6 +347,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [cards, setCards] = useState<CreditCard[]>(() =>
     loadFromStorage<CreditCard[]>(STORAGE_KEYS.CARDS, [])
   );
+  const [travelBudgets, setTravelBudgets] = useState<TravelBudget[]>(() =>
+    loadFromStorage<TravelBudget[]>(STORAGE_KEYS.TRAVEL_BUDGETS, [])
+  );
+  const [travelModeEnabled, setTravelModeEnabled] = useState<boolean>(() =>
+    localStorage.getItem(STORAGE_KEYS.TRAVEL_MODE) === 'true'
+  );
 
   const deviceId = useMemo(() => getDeviceId(), []);
 
@@ -365,6 +389,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DEBT_MODE, String(debtModeEnabled)); }, [debtModeEnabled]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.STREAKS, streakData); }, [streakData]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.CARDS, cards); }, [cards]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.TRAVEL_BUDGETS, travelBudgets); }, [travelBudgets]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.TRAVEL_MODE, String(travelModeEnabled)); }, [travelModeEnabled]);
 
   // Cross-tab sync: when another tab writes to localStorage, mirror the change here
   useEffect(() => {
@@ -712,6 +738,22 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         ));
         break;
 
+      case 'ADD_TRAVEL_BUDGET':
+        setTravelBudgets(prev => [...prev, { ...action.payload, id: generateId() }]);
+        break;
+
+      case 'UPDATE_TRAVEL_BUDGET':
+        setTravelBudgets(prev => prev.map(b => b.id === action.payload.id ? action.payload : b));
+        break;
+
+      case 'DELETE_TRAVEL_BUDGET':
+        setTravelBudgets(prev => prev.filter(b => b.id !== action.payload));
+        break;
+
+      case 'SET_TRAVEL_MODE':
+        setTravelModeEnabled(action.payload);
+        break;
+
     }
   }, []);
 
@@ -729,7 +771,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     debtModeEnabled,
     streakData,
     cards,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, debtModeEnabled, streakData, cards]);
+    travelBudgets,
+    travelModeEnabled,
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, debtModeEnabled, streakData, cards, travelBudgets, travelModeEnabled]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;

@@ -236,6 +236,19 @@ export interface Translations {
   backupImportNote: string;
   backupImportSuccess: string;
   backupImportError: string;
+  // Travel budget
+  trips: string;
+  addTrip: string;
+  tripName: string;
+  tripCurrency: string;
+  tripBudget: string;
+  departedWith: string;
+  tripSpent: string;
+  tripRemaining: string;
+  endTrip: string;
+  returnedWith: string;
+  tripSummary: string;
+  travelMode: string;
 }
 
 const he: Translations = {
@@ -459,6 +472,19 @@ const he: Translations = {
   backupImportNote:    'משחזר את כל הנתונים — עסקאות, קטגוריות והגדרות',
   backupImportSuccess: 'הנתונים שוחזרו בהצלחה',
   backupImportError:   'קובץ גיבוי לא תקין',
+  // Travel budget
+  trips:         'טיולים',
+  addTrip:       'הוסף טיול',
+  tripName:      'שם הטיול',
+  tripCurrency:  'מטבע',
+  tripBudget:    'סכום שלוקח',
+  departedWith:  'יצאתי עם',
+  tripSpent:     'הוצאתי',
+  tripRemaining: 'נשאר',
+  endTrip:       'סיים טיול',
+  returnedWith:  'חזרתי עם',
+  tripSummary:   'סיכום טיול',
+  travelMode:    'מצב טיול',
 };
 
 const en: Translations = {
@@ -682,6 +708,19 @@ const en: Translations = {
   backupImportNote:    'Restores all data — transactions, categories and settings',
   backupImportSuccess: 'Data restored successfully',
   backupImportError:   'Invalid backup file',
+  // Travel budget
+  trips:         'Trips',
+  addTrip:       'Add trip',
+  tripName:      'Trip name',
+  tripCurrency:  'Currency',
+  tripBudget:    'Taking with me',
+  departedWith:  'Departed with',
+  tripSpent:     'Spent',
+  tripRemaining: 'Remaining',
+  endTrip:       'End trip',
+  returnedWith:  'Returned with',
+  tripSummary:   'Trip summary',
+  travelMode:    'Travel mode',
 };
 
 interface LanguageContextProps {

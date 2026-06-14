@@ -1985,6 +1985,14 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
 .rec-item:hover .rec-split-btn { opacity: 0.85; }
 .rec-split-btn:hover { opacity: 1 !important; background: rgba(10,132,255,0.12) !important; }
 
+/* ── Travel Budget Tracker ───────────────────────────────────────────────── */
+.trip-ended-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--glass-border); font-size: 12px; color: var(--text-muted); }
+.trip-ended-name { flex: 1; font-weight: 600; color: var(--text); }
+.trip-ended-summary { display: flex; gap: 10px; font-variant-numeric: tabular-nums; }
+.trip-bar-ok   { background: var(--success) !important; }
+.trip-bar-warn { background: var(--gold) !important; }
+.trip-bar-over { background: var(--danger) !important; }
+
 /* Add recurring form */
 .add-rec-form {
   display: flex; flex-direction: column; gap: 8px;
