@@ -790,6 +790,12 @@ export default function DashboardPage() {
     let activeWrapId: string | null = null;
     let activeItem: HTMLElement | null = null;
     let direction: 'unknown' | 'h' | 'v' = 'unknown';
+    let snapped = false;
+
+    function clearActive() {
+      if (activeItem) { activeItem.style.transition = ''; activeItem.style.transform = ''; }
+      activeItem = null; activeWrapId = null; direction = 'unknown'; snapped = false;
+    }
 
     function onStart(e: TouchEvent) {
       const wrap = (e.target as Element).closest<HTMLElement>('.txn-swipe-wrap');
@@ -798,44 +804,50 @@ export default function DashboardPage() {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       direction = 'unknown';
+      snapped = swipedIdRef.current === activeWrapId;
       setDbgTouch(`START wrap=${activeWrapId ? 'yes' : 'NO'}`);
     }
 
     function onMove(e: TouchEvent) {
-      if (!activeItem) return;
+      if (!activeItem || !activeWrapId) return;
       const dx = e.touches[0].clientX - startX;
       const dy = e.touches[0].clientY - startY;
       const ax = Math.abs(dx), ay = Math.abs(dy);
-      if (direction === 'unknown' && (ax > 3 || ay > 3))
+      if (direction === 'unknown' && (ax > 5 || ay > 5))
         direction = ax > ay ? 'h' : 'v';
-      setDbgTouch(`MOVE dx=${Math.round(dx)} dir=${direction}`);
+      setDbgTouch(`MOVE dx=${Math.round(dx)} dir=${direction} snap=${snapped}`);
       if (direction !== 'h') return;
       e.preventDefault();
+
+      // Snap OPEN in-flight at 50px — no need to wait for touchend
+      if (!snapped && dx >= 50) {
+        snapped = true;
+        setSwipedId(activeWrapId);
+      }
+      // Snap CLOSED if user pulls back past 10px
+      if (snapped && dx < 10) {
+        snapped = false;
+        setSwipedId(null);
+      }
+
       const clamp = Math.min(Math.max(dx, 0), 80);
       activeItem.style.transition = 'none';
       activeItem.style.transform = `translateX(${clamp}px)`;
     }
 
     function onEnd(e: TouchEvent) {
-      if (!activeItem || !activeWrapId) return;
-      activeItem.style.transition = '';
-      activeItem.style.transform  = '';
       const dx = e.changedTouches[0].clientX - startX;
-      setDbgTouch(`END dx=${Math.round(dx)} dir=${direction}`);
-      if (direction === 'h' && Math.abs(dx) >= 40) {
-        if (dx > 0) {
-          setSwipedId(prev => prev === activeWrapId ? null : activeWrapId);
-        } else {
-          if (swipedIdRef.current === activeWrapId) setSwipedId(null);
-        }
+      setDbgTouch(`END dx=${Math.round(dx)} dir=${direction} snap=${snapped}`);
+      if (activeItem && activeWrapId && direction === 'h') {
+        // Fallback: if not yet snapped but crossed 30px, snap now
+        if (!snapped && dx >= 30) setSwipedId(activeWrapId);
+        // If snapped but ended very short, close
+        if (snapped && dx < 5) setSwipedId(null);
       }
-      activeItem = null; activeWrapId = null; direction = 'unknown';
+      clearActive();
     }
 
-    function onCancel() {
-      if (activeItem) { activeItem.style.transition = ''; activeItem.style.transform = ''; }
-      activeItem = null; activeWrapId = null; direction = 'unknown';
-    }
+    function onCancel() { clearActive(); }
 
     section.addEventListener('touchstart', onStart, { passive: true });
     section.addEventListener('touchmove',  onMove,  { passive: false });
