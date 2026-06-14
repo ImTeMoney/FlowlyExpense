@@ -447,7 +447,7 @@ export default function DashboardPage() {
     setPmSplitEnabled(false);
     setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
     setTxCurrency(mainCurrency);
-    setShowCurrencyRow(false);
+    setShowCurrencyRow(true);
     setRatePreview('');
     setRateNum(null);
     setIsManualRate(false);
@@ -481,7 +481,7 @@ export default function DashboardPage() {
     setDate(tx.date);
     setCatId(tx.categoryId);
     setTxCurrency(tx.currency ?? mainCurrency);
-    setShowCurrencyRow((tx.currency !== undefined) && tx.currency !== mainCurrency);
+    setShowCurrencyRow(true);
     setRatePreview('');
     setRateNum(null);
     setIsManualRate(false);
@@ -1546,31 +1546,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Currency selector — collapsed when using main currency */}
-            {(showCurrencyRow || txCurrency !== mainCurrency) ? (
-              <div className="currency-row">
-                {CURRENCIES.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    className={`currency-pill${txCurrency === c ? ' active' : ''}`}
-                    onClick={() => {
-                      setTxCurrency(c);
-                      if (c === mainCurrency) setShowCurrencyRow(false);
-                    }}
-                  >
-                    {CURRENCY_SYMBOL[c]} {c}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="modal-currency-toggle"
-                onClick={() => setShowCurrencyRow(true)}
-              >
-                {lang === 'he' ? '+ מטבע אחר' : '+ Foreign currency'}
-              </button>
-            )}
+            <div className="currency-row">
+              {CURRENCIES.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`currency-pill${txCurrency === c ? ' active' : ''}`}
+                  onClick={() => setTxCurrency(c)}
+                >
+                  {CURRENCY_SYMBOL[c]} {c}
+                </button>
+              ))}
+            </div>
             {txCurrency !== mainCurrency && (
               <div className="rate-preview">
                 {rateLoading ? '...' : rateFailed ? (
