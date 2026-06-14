@@ -2971,8 +2971,7 @@ select.sm-in option { background: var(--modal-bg); }
 
 .txn-swipe-bg {
   position: absolute;
-  /* logical property: right in LTR, left in RTL — always on the end/amount side, never on the icon */
-  inset-inline-end: 0;
+  right: 0;
   top: 0;
   bottom: 0;
   width: 80px;
@@ -2980,17 +2979,7 @@ select.sm-in option { background: var(--modal-bg); }
   align-items: center;
   justify-content: center;
   background: rgba(239,68,68,0.15);
-  border-start-start-radius: 0;
-  border-start-end-radius: var(--r-md);
-  border-end-end-radius: var(--r-md);
-  border-end-start-radius: 0;
-}
-/* In RTL the zone is on the left; flip corner radii */
-[dir="rtl"] .txn-swipe-bg {
-  border-start-start-radius: var(--r-md);
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
-  border-end-start-radius: var(--r-md);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
 }
 
 .txn-swipe-del-btn {
@@ -3020,13 +3009,9 @@ select.sm-in option { background: var(--modal-bg); }
   will-change: transform;
 }
 
-/* LTR: item slides left to reveal right-side delete zone */
-[dir="ltr"] .txn-swipe-wrap .txn-item.swiped {
+/* Swipe left (both LTR and RTL) to reveal right-side delete zone */
+.txn-swipe-wrap .txn-item.swiped {
   transform: translateX(-80px);
-}
-/* RTL: item slides right to reveal left-side delete zone */
-[dir="rtl"] .txn-swipe-wrap .txn-item.swiped {
-  transform: translateX(80px);
 }
 
 /* Secondary actions — visible while card is swiped */

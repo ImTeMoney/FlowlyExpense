@@ -795,8 +795,8 @@ export default function DashboardPage() {
     const dx    = e.changedTouches[0].clientX - touchStartX.current;
     const absDx = Math.abs(dx);
     const absDy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-    if (absDx >= 55 && absDx > absDy * 1.5) {
-      const isReveal = isRTL ? dx > 0 : dx < 0;
+    if (absDx >= 40 && absDx > absDy * 1.5) {
+      const isReveal = dx < 0;  // swipe left always (iOS standard)
       setSwipedId(isReveal ? (swipedId === tx.id ? null : tx.id) : null);
       return;
     }
