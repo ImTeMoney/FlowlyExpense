@@ -3022,6 +3022,8 @@ select.sm-in option { background: var(--modal-bg); }
   margin-bottom: 0;
   position: relative;
   z-index: 1;
+  /* Opaque background so the red delete zone doesn't bleed through the glass card */
+  background: var(--bg-raised) !important;
   transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
