@@ -5,7 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import {
   Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
   Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone,
-  GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, Pencil, ChevronDown, ChevronRight, Mic,
+  GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, ChevronDown, ChevronRight, Mic,
   Search, ArrowDownToLine, Upload,
 } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit } from '../context/ExpenseContext';
@@ -148,7 +148,6 @@ export default function DashboardPage() {
   const swipedIdRef = useRef<string | null>(null);
   swipedIdRef.current = swipedId;
   const suppressNextClick = useRef(false);
-  const [dbgTouch, setDbgTouch] = useState<string>('tap row to test');
 
   // Escape key closes the active modal
   useEffect(() => {
@@ -816,7 +815,6 @@ export default function DashboardPage() {
       startY = e.touches[0].clientY;
       direction = 'unknown';
       snapped = swipedIdRef.current === activeWrapId;
-      setDbgTouch(`START wrap=${activeWrapId ? 'yes' : 'NO'}`);
     }
 
     function onMove(e: TouchEvent) {
@@ -826,7 +824,6 @@ export default function DashboardPage() {
       const ax = Math.abs(dx), ay = Math.abs(dy);
       if (direction === 'unknown' && (ax > 5 || ay > 5))
         direction = ax > ay ? 'h' : 'v';
-      setDbgTouch(`MOVE dx=${Math.round(dx)} dir=${direction} snap=${snapped}`);
       if (direction !== 'h') return;
       e.preventDefault();
 
@@ -857,7 +854,6 @@ export default function DashboardPage() {
         // If snapped but ended very short, close
         if (snapped && dx < 5) { snapped = false; setSwipedId(null); }
       }
-      setDbgTouch(`END dx=${Math.round(dx)} dir=${direction} snap=${snapped}`);
       clearActive(snapped);
     }
 
@@ -1214,11 +1210,6 @@ export default function DashboardPage() {
             : `Showing ${displayTxns.length} of ${monthTxns.length} transactions`}
         </div>
       )}
-
-      {/* DEBUG — remove after testing */}
-      <div style={{ background: '#1a1a2e', color: '#0ff', fontFamily: 'monospace', fontSize: 12, padding: '6px 12px', margin: '0 16px 8px', borderRadius: 8, border: '1px solid #0ff4' }}>
-        🐛 v1.8.6 | {dbgTouch} | sid:{swipedId ? swipedId.slice(-4) : 'null'}
-      </div>
 
       {/* Transaction feed */}
       <div className="txn-section" ref={txnSectionRef}>
