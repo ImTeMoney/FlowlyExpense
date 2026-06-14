@@ -147,6 +147,7 @@ export default function DashboardPage() {
   const [showCurrencyRow, setShowCurrencyRow] = useState(false);
   const swipedIdRef = useRef<string | null>(null);
   swipedIdRef.current = swipedId;
+  const [dbgTouch, setDbgTouch] = useState<string>('tap row to test');
 
   // Escape key closes the active modal
   useEffect(() => {
@@ -797,6 +798,7 @@ export default function DashboardPage() {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       direction = 'unknown';
+      setDbgTouch(`START wrap=${activeWrapId ? 'yes' : 'NO'}`);
     }
 
     function onMove(e: TouchEvent) {
@@ -806,6 +808,7 @@ export default function DashboardPage() {
       const ax = Math.abs(dx), ay = Math.abs(dy);
       if (direction === 'unknown' && (ax > 3 || ay > 3))
         direction = ax > ay ? 'h' : 'v';
+      setDbgTouch(`MOVE dx=${Math.round(dx)} dir=${direction}`);
       if (direction !== 'h') return;
       e.preventDefault();
       const clamp = Math.min(Math.max(dx, 0), 80);
@@ -818,6 +821,7 @@ export default function DashboardPage() {
       activeItem.style.transition = '';
       activeItem.style.transform  = '';
       const dx = e.changedTouches[0].clientX - startX;
+      setDbgTouch(`END dx=${Math.round(dx)} dir=${direction}`);
       if (direction === 'h' && Math.abs(dx) >= 40) {
         if (dx > 0) {
           setSwipedId(prev => prev === activeWrapId ? null : activeWrapId);
@@ -1184,6 +1188,11 @@ export default function DashboardPage() {
             : `Showing ${displayTxns.length} of ${monthTxns.length} transactions`}
         </div>
       )}
+
+      {/* DEBUG — remove after testing */}
+      <div style={{ background: '#1a1a2e', color: '#0ff', fontFamily: 'monospace', fontSize: 12, padding: '6px 12px', margin: '0 16px 8px', borderRadius: 8, border: '1px solid #0ff4' }}>
+        🐛 {dbgTouch}
+      </div>
 
       {/* Transaction feed */}
       <div className="txn-section" ref={txnSectionRef}>
