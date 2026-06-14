@@ -15,6 +15,7 @@ export interface DebtEntry {
   date: string;
   note?: string;
   direction: 'owes_me' | 'i_owe';
+  currency?: string;
   settled: boolean;
   settledDate?: string;
   transactionId?: string;

@@ -140,12 +140,17 @@ export default function TravelBudgetTracker() {
               style={{ flex: 2 }}
             />
           </div>
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>
+              {he ? 'תאריך יציאה' : 'Departure date'}
+            </label>
           <input
             className="aether-input"
             type="date"
             value={form.startDate}
             onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
           />
+          </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
             <button type="submit" className="submit-btn" style={{ flex: 1 }}>{he ? 'הוסף' : 'Add'}</button>
             <button type="button" className="submit-btn" style={{ flex: 1, background: 'var(--glass-bg)', color: 'var(--text-muted)' }}
