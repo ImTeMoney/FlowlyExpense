@@ -119,6 +119,7 @@ export default function DashboardPage() {
   const [showNote, setShowNote]               = useState(false);
   const [showAdvanced, setShowAdvanced]       = useState(false);
   const advancedRef                           = useRef<HTMLDivElement>(null);
+  const txnSectionRef                         = useRef<HTMLDivElement>(null);
   const [collapsedDays, setCollapsedDays]     = useState<Set<string>>(new Set());
   const [splitTx, setSplitTx]                 = useState<Transaction | null>(null);
   const [editingTx, setEditingTx]             = useState<Transaction | null>(null);
@@ -778,6 +779,21 @@ export default function DashboardPage() {
     return () => window.removeEventListener('scroll', onScroll, { capture: true });
   }, [swipedId]);
 
+  // Non-passive touchmove on the transaction list so preventDefault() works on iOS.
+  // iOS Safari ignores e.preventDefault() in passive (React synthetic) handlers,
+  // which causes the scroll container to steal horizontal swipe gestures.
+  useEffect(() => {
+    const el = txnSectionRef.current;
+    if (!el) return;
+    const onMove = (e: TouchEvent) => {
+      const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (dx > dy && dx > 5) e.preventDefault();
+    };
+    el.addEventListener('touchmove', onMove, { passive: false });
+    return () => el.removeEventListener('touchmove', onMove);
+  }, []);
+
   const isRTL = lang === 'he';
 
   function handleTouchStart(e: React.TouchEvent, id: string) {
@@ -1156,7 +1172,7 @@ export default function DashboardPage() {
       )}
 
       {/* Transaction feed */}
-      <div className="txn-section">
+      <div className="txn-section" ref={txnSectionRef}>
         {grouped.size > 0 && (
           <div className="dg-global-toggle">
             <button className="dg-collapse-all-btn" onClick={toggleAll}>
