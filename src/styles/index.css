@@ -920,6 +920,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 
 .aether-input::placeholder { color: var(--text-muted); }
+.aether-input[type="number"]::-webkit-inner-spin-button,
+.aether-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.aether-input[type="number"] { -moz-appearance: textfield; }
 
 .aether-input[type="date"] {
   direction: ltr;
