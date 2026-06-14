@@ -787,11 +787,22 @@ export default function DashboardPage() {
     if (swipedId && swipedId !== id) setSwipedId(null);
   }
   function handleTouchMove(e: React.TouchEvent) {
-    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
-    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-    if (dx > 6 || dy > 6) touchMoved.current = true;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) touchMoved.current = true;
+    // Real-time visual feedback: slide card left as finger moves
+    if (dx < -6 && Math.abs(dx) > Math.abs(dy)) {
+      const el = e.currentTarget as HTMLElement;
+      el.style.transition = 'none';
+      el.style.transform = `translateX(${Math.max(dx, -80)}px)`;
+    }
   }
   function handleTouchEnd(e: React.TouchEvent, tx: Transaction) {
+    // Clear live inline style — CSS class handles final resting position
+    const el = e.currentTarget as HTMLElement;
+    el.style.transform = '';
+    el.style.transition = '';
+
     const dx    = e.changedTouches[0].clientX - touchStartX.current;
     const absDx = Math.abs(dx);
     const absDy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);

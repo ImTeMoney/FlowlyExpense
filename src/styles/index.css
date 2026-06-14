@@ -1312,6 +1312,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   box-shadow: var(--glass-inset-sm), var(--glass-shadow);
   backdrop-filter: blur(28px) saturate(200%) brightness(108%);
   -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(108%);
+  touch-action: pan-y;
 }
 .txn-item:hover { background: var(--bg-input); border-color: var(--glass-hi); }
 
