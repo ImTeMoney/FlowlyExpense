@@ -2022,6 +2022,31 @@ export default function DashboardPage() {
             >
               {editingTx ? t.save : t.add}
             </button>
+
+            {/* Delete button — only in edit mode */}
+            {editingTx && (
+              <button
+                type="button"
+                className="modal-delete-btn"
+                onClick={() => {
+                  const cleanDesc = editingTx.description.startsWith('(קבועה) ')
+                    ? editingTx.description.slice('(קבועה) '.length)
+                    : editingTx.description;
+                  setConfirm({
+                    title: t.confirmDeleteTitle,
+                    body: <strong>"{cleanDesc}"</strong>,
+                    onConfirm: () => {
+                      handleDelete(editingTx.id);
+                      setConfirm(null);
+                      closeModal();
+                    },
+                  });
+                }}
+              >
+                <Trash2 size={14} />
+                {lang === 'he' ? 'מחק' : 'Delete'}
+              </button>
+            )}
           </div>
         </div>,
         document.body
