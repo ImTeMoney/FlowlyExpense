@@ -49,11 +49,12 @@ async function fetchRates(base: string, date: string): Promise<RatesMap> {
   if (!VALID_DATE.test(date)) throw new Error(`Invalid date: ${date}`);
 
   const key = storageKey(base, date);
+
+  // 1. Fresh cache (respects TTL for 'latest', historical dates never expire)
   try {
     const cached = localStorage.getItem(key);
     if (cached) {
       const parsed = JSON.parse(cached);
-      // Wrap with timestamp for 'latest' (historical dates never expire)
       if (date !== 'latest') {
         if (isRatesMap(parsed) && Object.keys(parsed).length > 0) return parsed;
       } else if (parsed?._ts && Date.now() - parsed._ts < RATE_TTL_MS) {
@@ -63,23 +64,41 @@ async function fetchRates(base: string, date: string): Promise<RatesMap> {
     }
   } catch {}
 
-  const baseLower = base.toLowerCase();
-  const url = `${CDN}@${date}/v1/currencies/${baseLower}.json`;
-  const res = await fetch(url, { credentials: 'omit', mode: 'cors' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  const rates = data[baseLower] as RatesMap;
-
-  if (!isRatesMap(rates) || Object.keys(rates).length === 0) {
-    throw new Error(`Invalid rates response for ${base}`);
-  }
-
+  // 2. Fetch from network
   try {
-    const toStore = date === 'latest' ? { ...rates, _ts: Date.now() } : rates;
-    localStorage.setItem(key, JSON.stringify(toStore));
-  } catch {}
+    const baseLower = base.toLowerCase();
+    const url = `${CDN}@${date}/v1/currencies/${baseLower}.json`;
+    const res = await fetch(url, { credentials: 'omit', mode: 'cors' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const rates = data[baseLower] as RatesMap;
 
-  return rates;
+    if (!isRatesMap(rates) || Object.keys(rates).length === 0) {
+      throw new Error(`Invalid rates response for ${base}`);
+    }
+
+    try {
+      const toStore = date === 'latest' ? { ...rates, _ts: Date.now() } : rates;
+      localStorage.setItem(key, JSON.stringify(toStore));
+    } catch {}
+
+    return rates;
+  } catch (fetchErr) {
+    // 3. Offline fallback: accept any stale cache — try requested date first, then 'latest'
+    const fallbackKeys = date !== 'latest' ? [key, storageKey(base, 'latest')] : [key];
+    for (const fk of fallbackKeys) {
+      try {
+        const cached = localStorage.getItem(fk);
+        if (!cached) continue;
+        const parsed = JSON.parse(cached);
+        // Strip timestamp metadata and accept regardless of age
+        const { _ts: _, ...rates } = parsed as Record<string, unknown>;
+        if (isRatesMap(rates) && Object.keys(rates).length > 0) return rates;
+        if (isRatesMap(parsed) && Object.keys(parsed).length > 0) return parsed;
+      } catch {}
+    }
+    throw fetchErr;
+  }
 }
 
 /** Returns { convertedAmount, rate } — rate is how many `to` per 1 `from` */
