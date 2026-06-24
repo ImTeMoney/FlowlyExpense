@@ -35,6 +35,8 @@ export interface TravelBudget {
   name: string;
   currency: string;
   totalBudget: number;
+  cashBudget?: number;
+  creditBudget?: number;
   startDate: string;
   endDate?: string;
   returnedWith?: number;

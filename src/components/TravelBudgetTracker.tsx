@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, ChevronDown, X, Check, Plane } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Check, Plane, Pencil } from 'lucide-react';
 import { useExpense, TravelBudget } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { CURRENCIES, CURRENCY_SYMBOL } from '../services/exchangeRate';
@@ -22,13 +22,29 @@ function getTripSpent(budget: TravelBudget, transactions: ReturnType<typeof useE
     .reduce((sum, tx) => sum + (tx.originalAmount ?? 0), 0);
 }
 
+function getTripSpentByCashCredit(
+  budget: TravelBudget,
+  transactions: ReturnType<typeof useExpense>['state']['transactions']
+): { cash: number; credit: number } {
+  const end = budget.endDate ?? todayStr();
+  let cash = 0, credit = 0;
+  transactions
+    .filter(tx => !tx.isIncome && tx.date >= budget.startDate && tx.date <= end && tx.currency === budget.currency)
+    .forEach(tx => {
+      const amt = tx.originalAmount ?? 0;
+      if (tx.paymentMethod === 'cash') cash += amt;
+      else credit += amt;
+    });
+  return { cash, credit };
+}
+
 function fmtAmt(n: number, currency: string): string {
   const sym = CURRENCY_SYMBOL[currency] ?? currency;
   return `${sym}${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-type AddForm = { name: string; currency: string; budget: string; startDate: string };
-const EMPTY_FORM: AddForm = { name: '', currency: 'USD', budget: '', startDate: todayStr() };
+type AddForm = { name: string; currency: string; budget: string; cashBudget: string; startDate: string };
+const EMPTY_FORM: AddForm = { name: '', currency: 'USD', budget: '', cashBudget: '', startDate: todayStr() };
 
 export default function TravelBudgetTracker() {
   const { state, dispatch } = useExpense();
@@ -39,6 +55,10 @@ export default function TravelBudgetTracker() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddForm>({ ...EMPTY_FORM });
+
+  // Inline edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState({ total: '', cash: '', credit: '' });
 
   // End-trip modal state
   const [endingBudget, setEndingBudget] = useState<TravelBudget | null>(null);
@@ -59,6 +79,7 @@ export default function TravelBudgetTracker() {
       name: form.name.trim(),
       currency: form.currency,
       totalBudget: budget,
+      cashBudget: form.cashBudget ? parseFloat(form.cashBudget) : undefined,
       startDate: form.startDate,
     };
     dispatch({ type: 'ADD_TRAVEL_BUDGET', payload: entry });
@@ -83,6 +104,30 @@ export default function TravelBudgetTracker() {
   function openEndModal(b: TravelBudget) {
     setEndingBudget(b);
     setReturnedAmt('');
+  }
+
+  function openEdit(b: TravelBudget) {
+    setEditingId(b.id);
+    setEditFields({
+      total: String(b.totalBudget),
+      cash: b.cashBudget != null ? String(b.cashBudget) : '',
+      credit: b.creditBudget != null ? String(b.creditBudget) : '',
+    });
+  }
+
+  function saveEdit(b: TravelBudget) {
+    const total = parseFloat(editFields.total);
+    if (isNaN(total) || total <= 0) return;
+    dispatch({
+      type: 'UPDATE_TRAVEL_BUDGET',
+      payload: {
+        ...b,
+        totalBudget: total,
+        cashBudget: editFields.cash ? parseFloat(editFields.cash) : undefined,
+        creditBudget: editFields.credit ? parseFloat(editFields.credit) : undefined,
+      },
+    });
+    setEditingId(null);
   }
 
   return (
@@ -131,7 +176,7 @@ export default function TravelBudgetTracker() {
             <input
               className="aether-input"
               type="number"
-              placeholder={he ? 'סכום' : 'Budget'}
+              placeholder={he ? 'סה"כ' : 'Total budget'}
               value={form.budget}
               onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
               min="0"
@@ -140,16 +185,25 @@ export default function TravelBudgetTracker() {
               style={{ flex: 2 }}
             />
           </div>
+          <input
+            className="aether-input"
+            type="number"
+            placeholder={he ? 'מתוכם מזומן (אופציונלי)' : 'Of which cash (optional)'}
+            value={form.cashBudget}
+            onChange={e => setForm(f => ({ ...f, cashBudget: e.target.value }))}
+            min="0"
+            step="0.01"
+          />
           <div>
             <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>
               {he ? 'תאריך יציאה' : 'Departure date'}
             </label>
-          <input
-            className="aether-input"
-            type="date"
-            value={form.startDate}
-            onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-          />
+            <input
+              className="aether-input"
+              type="date"
+              value={form.startDate}
+              onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+            />
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
             <button type="submit" className="submit-btn" style={{ flex: 1 }}>{he ? 'הוסף' : 'Add'}</button>
@@ -167,33 +221,104 @@ export default function TravelBudgetTracker() {
       )}
 
       {!isCollapsed && activeTrips.map(b => {
-        const spent   = getTripSpent(b, transactions);
-        const total   = b.totalBudget;
-        const left    = total - spent;
-        const pct     = total > 0 ? Math.min(spent / total, 1) : 0;
-        const barClass = pct >= 1 ? 'trip-bar-over' : pct >= 0.8 ? 'trip-bar-warn' : 'trip-bar-ok';
+        const spent           = getTripSpent(b, transactions);
+        const spentByMethod   = getTripSpentByCashCredit(b, transactions);
+        const total           = b.totalBudget;
+        const left            = total - spent;
+        const pct             = total > 0 ? Math.min(spent / total, 1) : 0;
+        const barClass        = pct >= 1 ? 'trip-bar-over' : pct >= 0.8 ? 'trip-bar-warn' : 'trip-bar-ok';
+        const isEditing       = editingId === b.id;
+
         return (
           <div key={b.id} style={{ padding: '8px 0', borderTop: '1px solid var(--glass-border)' }}>
+            {/* Header row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{b.name}</span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.currency} · {b.startDate}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.currency} · {b.startDate}</span>
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex', alignItems: 'center' }}
+                  onClick={() => isEditing ? setEditingId(null) : openEdit(b)}
+                  aria-label="edit budget"
+                >
+                  <Pencil size={13} />
+                </button>
+              </div>
             </div>
 
-            {/* Stat chips */}
-            <div className="debt-totals" style={{ marginBottom: 8 }}>
-              <div className="debt-total-pill" style={{ background: 'rgba(59,130,246,0.13)', borderColor: 'rgba(59,130,246,0.3)' }}>
-                <div className="debt-total-lbl">{he ? 'יצאתי עם' : 'Departed with'}</div>
-                <div className="debt-total-val">{fmtAmt(total, b.currency)}</div>
+            {isEditing ? (
+              /* ── Inline edit form ── */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {he ? 'יצאתי עם' : 'Departed with'}
+                </label>
+                <input
+                  className="aether-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editFields.total}
+                  onChange={e => setEditFields(f => ({ ...f, total: e.target.value }))}
+                  autoFocus
+                />
+                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {he ? 'מתוכם מזומן (אופציונלי)' : 'Of which cash (optional)'}
+                </label>
+                <input
+                  className="aether-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  value={editFields.cash}
+                  onChange={e => setEditFields(f => ({ ...f, cash: e.target.value }))}
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="submit-btn" style={{ flex: 1 }} onClick={() => saveEdit(b)}>
+                    {he ? 'שמור' : 'Save'}
+                  </button>
+                  <button className="submit-btn" style={{ flex: 1, background: 'var(--glass-bg)', color: 'var(--text-muted)' }}
+                    onClick={() => setEditingId(null)}>
+                    {he ? 'ביטול' : 'Cancel'}
+                  </button>
+                </div>
               </div>
-              <div className="debt-total-pill" style={{ background: 'rgba(239,68,68,0.13)', borderColor: 'rgba(239,68,68,0.3)' }}>
-                <div className="debt-total-lbl">{he ? 'הוצאתי' : 'Spent'}</div>
-                <div className="debt-total-val">{fmtAmt(spent, b.currency)}</div>
-              </div>
-              <div className="debt-total-pill" style={{ background: left < 0 ? 'rgba(239,68,68,0.13)' : 'rgba(16,185,129,0.13)', borderColor: left < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)' }}>
-                <div className="debt-total-lbl">{he ? 'נשאר' : 'Left'}</div>
-                <div className="debt-total-val">{fmtAmt(Math.abs(left), b.currency)}{left < 0 ? (he ? ' חריגה' : ' over') : ''}</div>
-              </div>
-            </div>
+            ) : (
+              <>
+                {/* Stat chips */}
+                <div className="debt-totals" style={{ marginBottom: 8 }}>
+                  <div className="debt-total-pill" style={{ background: 'rgba(59,130,246,0.13)', borderColor: 'rgba(59,130,246,0.3)' }}>
+                    <div className="debt-total-lbl">{he ? 'יצאתי עם' : 'Departed with'}</div>
+                    <div className="debt-total-val">{fmtAmt(total, b.currency)}</div>
+                  </div>
+                  <div className="debt-total-pill" style={{ background: 'rgba(239,68,68,0.13)', borderColor: 'rgba(239,68,68,0.3)' }}>
+                    <div className="debt-total-lbl">{he ? 'הוצאתי' : 'Spent'}</div>
+                    <div className="debt-total-val">{fmtAmt(spent, b.currency)}</div>
+                  </div>
+                  <div className="debt-total-pill" style={{ background: left < 0 ? 'rgba(239,68,68,0.13)' : 'rgba(16,185,129,0.13)', borderColor: left < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)' }}>
+                    <div className="debt-total-lbl">{he ? 'נשאר' : 'Left'}</div>
+                    <div className="debt-total-val">{fmtAmt(Math.abs(left), b.currency)}{left < 0 ? (he ? ' חריגה' : ' over') : ''}</div>
+                  </div>
+                </div>
+
+                {/* Cash / Credit breakdown */}
+                {(spentByMethod.cash > 0 || spentByMethod.credit > 0) && (
+                  <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, flexWrap: 'wrap' }}>
+                    <span>
+                      💵 {he ? 'מזומן:' : 'Cash:'}{' '}
+                      <strong style={{ color: 'var(--text-primary)' }}>{fmtAmt(spentByMethod.cash, b.currency)}</strong>
+                      {b.cashBudget != null && spentByMethod.cash >= 0 && (
+                        <span> ({he ? 'נשאר' : 'left'} {fmtAmt(Math.max(0, b.cashBudget - spentByMethod.cash), b.currency)})</span>
+                      )}
+                    </span>
+                    <span>
+                      💳 {he ? 'אשראי:' : 'Credit:'}{' '}
+                      <strong style={{ color: 'var(--text-primary)' }}>{fmtAmt(spentByMethod.credit, b.currency)}</strong>
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Progress bar */}
             <div className="grow-sc-bar-track" style={{ marginBottom: 10 }}>
