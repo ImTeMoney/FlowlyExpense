@@ -1052,11 +1052,17 @@ export default function DashboardPage() {
     );
     if (exactTx) return { status: 'exact', matchedTx: exactTx };
     const fuzzyTx = txns.find(tx => {
-      if (tx.date !== r.date) return false;
+      const daysDiff = Math.abs(
+        new Date(tx.date).getTime() - new Date(r.date).getTime()
+      ) / 86400000;
+      if (daysDiff > 3) return false;
+      // Same foreign currency + exact original amount → definite duplicate
       if (r.originalAmount && r.currency && tx.originalAmount && tx.currency === r.currency
           && Math.abs(tx.originalAmount - r.originalAmount) <= 0.02) return true;
+      // ILS amount: ±1₪ always; same-day ±0.5%, adjacent-day ±2% (rate drift)
       const diff = Math.abs(tx.amount - r.amount);
-      return diff <= 1 || diff / Math.max(tx.amount, r.amount) <= 0.005;
+      const pct = diff / Math.max(tx.amount, r.amount);
+      return diff <= 1 || pct <= (daysDiff < 0.5 ? 0.005 : 0.02);
     });
     if (fuzzyTx) return { status: 'fuzzy', matchedTx: fuzzyTx };
     return { status: 'new' };
