@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, ChevronRight, ChevronLeft, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown, Tag, CreditCard, Users } from 'lucide-react';
+import { Plus, ChevronRight, ChevronLeft, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown, Tag, CreditCard, Users, Plane } from 'lucide-react';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import LangToggle from './LangToggle';
 
@@ -647,6 +647,17 @@ export default function Onboarding({ onDone }: Props) {
               <span className="ob-settings-feature-title">{he ? 'מצב חובות' : 'Debt Mode'}</span>
               <span className="ob-settings-feature-desc">
                 {he ? 'עקוב אחרי חובות והלוואות בינך לבין אנשים' : 'Track debts and loans between you and others'}
+              </span>
+            </div>
+          </div>
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#10B98120', border: '1px solid #10B98140' }}>
+              <Plane size={22} color="#10B981" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'מצב טיול' : 'Travel Mode'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'עקוב אחרי תקציב הטיול שלך בכל מטבע' : 'Track your travel budget in any currency'}
               </span>
             </div>
           </div>

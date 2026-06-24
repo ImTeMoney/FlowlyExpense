@@ -342,7 +342,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     loadFromStorage<DebtEntry[]>(STORAGE_KEYS.DEBTS, [])
   );
   const [debtModeEnabled, setDebtModeEnabled] = useState<boolean>(() =>
-    localStorage.getItem(STORAGE_KEYS.DEBT_MODE) !== 'false'
+    localStorage.getItem(STORAGE_KEYS.DEBT_MODE) === 'true'
   );
   const [streakData, setStreakData] = useState<StreakData>(() =>
     loadFromStorage<StreakData>(STORAGE_KEYS.STREAKS, { currentStreak: 0, longestStreak: 0, lastCheckedDate: '' })
