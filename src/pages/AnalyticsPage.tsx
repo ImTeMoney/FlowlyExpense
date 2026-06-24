@@ -465,6 +465,18 @@ export default function AnalyticsPage() {
             })();
             const maxCatPm = catPmTotals[0]?.total || 1;
             const catTotal = catTxns.reduce((s, tx) => s + toMainAmt(tx), 0);
+            const catCardTotals = (() => {
+              const map = new Map<string, number>();
+              catTxns.filter(tx => tx.cardId).forEach(tx => {
+                map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + toMainAmt(tx));
+              });
+              return Array.from(map)
+                .map(([id, total]) => ({ card: cards.find(c => c.id === id), total }))
+                .filter((x): x is { card: CreditCardType; total: number } => !!x.card)
+                .sort((a, b) => b.total - a.total);
+            })();
+            const maxCatCard   = catCardTotals[0]?.total || 1;
+            const totalCatCard = catCardTotals.reduce((s, x) => s + x.total, 0);
             return (
               <div>
                 <button className="an-drill-back" onClick={() => setDrillCat(null)}>
@@ -504,6 +516,38 @@ export default function AnalyticsPage() {
                             </div>
                             <div className="an-cb-bar-row">
                               <div className="an-cb-bar-fill" style={{ width: `${(total / maxCatPm) * 100}%`, background: PM_COLOR[pm] }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {catCardTotals.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                        {lang === 'he' ? 'לפי כרטיס אשראי' : 'By credit card'}
+                      </div>
+                      {catCardTotals.map(({ card, total }) => {
+                        const pct = totalCatCard > 0 ? Math.round((total / totalCatCard) * 100) : 0;
+                        return (
+                          <div key={card.id} className="an-cb-item">
+                            <div className="an-cb-row">
+                              <div className="an-cb-name-side">
+                                <div className="an-cb-icon-wrap" style={{ background: `${card.color}18`, border: `1px solid ${card.color}28` }}>
+                                  <CreditCard size={13} color={card.color} />
+                                </div>
+                                <div className="an-cb-name-group">
+                                  <span className="an-cb-name">{card.name}</span>
+                                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>•••• {card.last4}</span>
+                                </div>
+                              </div>
+                              <div className="an-cb-amount-side">
+                                <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                                <span className="an-cb-pct">{pct}%</span>
+                              </div>
+                            </div>
+                            <div className="an-cb-bar-row">
+                              <div className="an-cb-bar-fill" style={{ width: `${(total / maxCatCard) * 100}%`, background: card.color }} />
                             </div>
                           </div>
                         );
