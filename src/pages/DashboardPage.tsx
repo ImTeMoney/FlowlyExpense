@@ -12,6 +12,7 @@ import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMeth
 import LangToggle from '../components/LangToggle';
 
 import { CURRENCIES, CURRENCY_SYMBOL, convertAmount } from '../services/exchangeRate';
+import { parseBankFile, ImportedRow } from '../services/bankImport';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
@@ -143,6 +144,8 @@ export default function DashboardPage() {
   const [viewMonth,     setViewMonth]     = useState(currentMonthStr);
   // IO menu (export/import)
   const [showIoMenu,    setShowIoMenu]    = useState(false);
+  const [bankPreview,   setBankPreview]   = useState<{ rows: ImportedRow[]; filename: string } | null>(null);
+  const [bankImportErr, setBankImportErr] = useState<string>('');
   const [swipedId,      setSwipedId]      = useState<string | null>(null);
   const [showCurrencyRow, setShowCurrencyRow] = useState(false);
   const swipedIdRef = useRef<string | null>(null);
@@ -1027,6 +1030,55 @@ export default function DashboardPage() {
     reader.readAsText(file, 'utf-8');
   }
 
+  async function handleBankImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setShowIoMenu(false);
+    e.target.value = '';
+    setBankImportErr('');
+    try {
+      const rows = await parseBankFile(file);
+      if (rows.length === 0) {
+        setBankImportErr(lang === 'he' ? 'לא נמצאו עסקאות בקובץ' : 'No transactions found in file');
+        return;
+      }
+      setBankPreview({ rows, filename: file.name });
+    } catch (err) {
+      setBankImportErr(err instanceof Error ? err.message : (lang === 'he' ? 'שגיאה בקריאת הקובץ' : 'Error reading file'));
+    }
+  }
+
+  function confirmBankImport(rows: ImportedRow[]) {
+    const existingKeys = new Set(
+      transactions.map(tx => `${tx.date}|${tx.description.trim()}|${Math.round(tx.amount)}`)
+    );
+    const toImport = rows.filter(r => !existingKeys.has(`${r.date}|${r.description.trim()}|${Math.round(r.amount)}`));
+    if (toImport.length === 0) {
+      setBankPreview(null);
+      showToast(lang === 'he' ? 'כל העסקאות כבר קיימות' : 'All transactions already exist');
+      return;
+    }
+    const payload: Transaction[] = toImport.map(r => {
+      const matchedCard = r.last4 ? cards.find(c => c.last4 === r.last4) : undefined;
+      return {
+        id: `_bk_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`,
+        date: r.date,
+        description: r.description,
+        amount: r.amount,
+        categoryId: categories[0]?.id ?? '',
+        paymentMethod: (matchedCard || r.last4) ? 'credit' : 'transfer',
+        cardId: matchedCard?.id,
+        isIncome: r.isIncome ?? false,
+        currency: r.currency,
+        originalAmount: r.originalAmount,
+      };
+    });
+    dispatch({ type: 'MERGE_TRANSACTIONS', payload });
+    track('bank_imported', { imported_count: payload.length });
+    setBankPreview(null);
+    showToast(lang === 'he' ? `יובאו ${payload.length} עסקאות` : `Imported ${payload.length} transactions`);
+  }
+
   return (
     <div className="page">
 
@@ -1060,6 +1112,11 @@ export default function DashboardPage() {
                     <Upload size={14} />
                     {lang === 'he' ? 'יבוא CSV' : 'Import CSV'}
                     <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
+                  </label>
+                  <label className="header-io-item">
+                    <CreditCard size={14} />
+                    {lang === 'he' ? 'ייבוא מבנק' : 'Bank import'}
+                    <input type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleBankImport} />
                   </label>
                 </div>
               )}
@@ -2089,6 +2146,99 @@ export default function DashboardPage() {
             <button className="submit-btn" onClick={handleSplitExisting}>
               {t.splitToInstallments}
             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Bank import error toast */}
+      {bankImportErr && createPortal(
+        <div className="modal-overlay" onClick={() => setBankImportErr('')}>
+          <div className="modal-sheet" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-title">
+              <span>{lang === 'he' ? 'שגיאת ייבוא' : 'Import error'}</span>
+              <button className="modal-close" onClick={() => setBankImportErr('')} aria-label="Close"><X size={14} /></button>
+            </div>
+            <p style={{ padding: '12px 16px', margin: 0, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+              {bankImportErr}
+            </p>
+            <div style={{ padding: '0 16px 16px' }}>
+              <button className="submit-btn" onClick={() => setBankImportErr('')}>
+                {lang === 'he' ? 'סגור' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Bank import preview modal */}
+      {bankPreview && createPortal(
+        <div className="modal-overlay" onClick={() => setBankPreview(null)}>
+          <div className="modal-sheet" style={{ maxHeight: '90dvh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-title" style={{ flexShrink: 0 }}>
+              <span>{lang === 'he' ? 'ייבוא מבנק' : 'Bank import'}</span>
+              <button className="modal-close" onClick={() => setBankPreview(null)} aria-label="Close"><X size={14} /></button>
+            </div>
+            {(() => {
+              const existingKeys = new Set(
+                transactions.map(tx => `${tx.date}|${tx.description.trim()}|${Math.round(tx.amount)}`)
+              );
+              const rows = bankPreview.rows.map(r => ({
+                ...r,
+                isDup: existingKeys.has(`${r.date}|${r.description.trim()}|${Math.round(r.amount)}`),
+                matchedCard: r.last4 ? cards.find(c => c.last4 === r.last4) : undefined,
+              }));
+              const newCount = rows.filter(r => !r.isDup).length;
+              return (
+                <>
+                  <div style={{ padding: '4px 16px 10px', flexShrink: 0, fontSize: 12, color: 'var(--text-muted)' }}>
+                    {bankPreview.filename} · {lang === 'he' ? `${rows.length} שורות, ${newCount} חדשות` : `${rows.length} rows, ${newCount} new`}
+                  </div>
+                  <div style={{ overflowY: 'auto', flex: 1, padding: '0 16px' }}>
+                    {rows.map((r, i) => (
+                      <div key={i} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '8px 0', borderBottom: '1px solid var(--border-subtle)',
+                        opacity: r.isDup ? 0.4 : 1,
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0, marginInlineEnd: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {r.description}
+                            {r.isDup && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', marginInlineStart: 6 }}>{lang === 'he' ? 'קיים' : 'dup'}</span>}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <span>{r.date}</span>
+                            {r.matchedCard && (
+                              <span style={{ background: `${r.matchedCard.color}22`, color: r.matchedCard.color, borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 700 }}>
+                                {r.matchedCard.name} ·· {r.matchedCard.last4}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'end', flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: r.isIncome ? '#30D158' : 'var(--text-primary)' }}>
+                            {r.isIncome ? '+' : ''}{r.currency && r.originalAmount ? `${r.currency} ${r.originalAmount.toLocaleString()}` : `₪${r.amount.toLocaleString()}`}
+                          </div>
+                          {r.currency && r.originalAmount && (
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>≈ ₪{r.amount.toLocaleString()}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ padding: '12px 16px', flexShrink: 0 }}>
+                    <button
+                      className="submit-btn"
+                      disabled={newCount === 0}
+                      onClick={() => confirmBankImport(bankPreview.rows)}
+                    >
+                      {lang === 'he' ? `ייבוא ${newCount} עסקאות` : `Import ${newCount} transactions`}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>,
         document.body
