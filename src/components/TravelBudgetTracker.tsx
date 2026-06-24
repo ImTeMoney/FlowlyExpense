@@ -33,7 +33,7 @@ function getTripSpentByCashCredit(
     .forEach(tx => {
       const amt = tx.originalAmount ?? 0;
       if (tx.paymentMethod === 'cash') cash += amt;
-      else credit += amt;
+      else if (tx.paymentMethod === 'credit') credit += amt;
     });
   return { cash, credit };
 }

@@ -1131,7 +1131,7 @@ export default function DashboardPage() {
       description: r.editDesc.trim() || r.raw.description,
       amount: r.raw.amount,
       categoryId: r.editCatId || (categories[0]?.id ?? ''),
-      paymentMethod: r.matchedCard ? 'credit' : 'transfer',
+      paymentMethod: r.matchedCard ? 'credit' : (r.raw.last4 ? 'credit' : 'transfer'),
       cardId: r.matchedCard?.id,
       isIncome: r.raw.isIncome ?? false,
       currency: r.raw.currency,
