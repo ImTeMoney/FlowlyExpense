@@ -14,6 +14,7 @@ interface BankPreviewRow {
   raw: ImportedRow;
   dupStatus: 'exact' | 'fuzzy' | 'new';
   matchedCard?: CreditCardType;
+  matchedTx?: Transaction;
   excluded: boolean;
   editDesc: string;
   editCatId: string;
@@ -1041,20 +1042,24 @@ export default function DashboardPage() {
     reader.readAsText(file, 'utf-8');
   }
 
-  function fuzzyDupStatus(r: ImportedRow, txns: Transaction[]): 'exact' | 'fuzzy' | 'new' {
+  function fuzzyDupStatus(
+    r: ImportedRow,
+    txns: Transaction[]
+  ): { status: 'exact' | 'fuzzy' | 'new'; matchedTx?: Transaction } {
     const exactKey = `${r.date}|${r.description.trim()}|${Math.round(r.amount)}`;
-    if (txns.some(tx => `${tx.date}|${tx.description.trim()}|${Math.round(tx.amount)}` === exactKey))
-      return 'exact';
-    if (txns.some(tx => {
+    const exactTx = txns.find(tx =>
+      `${tx.date}|${tx.description.trim()}|${Math.round(tx.amount)}` === exactKey
+    );
+    if (exactTx) return { status: 'exact', matchedTx: exactTx };
+    const fuzzyTx = txns.find(tx => {
       if (tx.date !== r.date) return false;
-      // Same foreign currency + same original amount → definite duplicate regardless of ILS rate drift
       if (r.originalAmount && r.currency && tx.originalAmount && tx.currency === r.currency
           && Math.abs(tx.originalAmount - r.originalAmount) <= 0.02) return true;
-      // ILS amount within ±1₪ or ±0.5%
       const diff = Math.abs(tx.amount - r.amount);
       return diff <= 1 || diff / Math.max(tx.amount, r.amount) <= 0.005;
-    })) return 'fuzzy';
-    return 'new';
+    });
+    if (fuzzyTx) return { status: 'fuzzy', matchedTx: fuzzyTx };
+    return { status: 'new' };
   }
 
   function setBankRow(i: number, patch: Partial<BankPreviewRow>) {
@@ -1087,15 +1092,19 @@ export default function DashboardPage() {
           return r; // keep foreign amount if offline
         }
       }));
-      const rows: BankPreviewRow[] = withILS.map(r => ({
-        raw: r,
-        dupStatus: fuzzyDupStatus(r, transactions),
-        matchedCard: r.last4 ? cards.find(c => c.last4 === r.last4) : undefined,
-        excluded: false,
-        editDesc: r.description,
-        editCatId: categories[0]?.id ?? '',
-        editing: false,
-      }));
+      const rows: BankPreviewRow[] = withILS.map(r => {
+        const { status, matchedTx } = fuzzyDupStatus(r, transactions);
+        return {
+          raw: r,
+          dupStatus: status,
+          matchedCard: r.last4 ? cards.find(c => c.last4 === r.last4) : undefined,
+          matchedTx,
+          excluded: false,
+          editDesc: r.description,
+          editCatId: categories[0]?.id ?? '',
+          editing: false,
+        };
+      });
       setBankPreview({ rows, filename: file.name });
     } catch (err) {
       setBankImportErr(err instanceof Error ? err.message : (lang === 'he' ? 'שגיאה בקריאת הקובץ' : 'Error reading file'));
@@ -2244,6 +2253,36 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#30D158', marginBottom: 8 }}>
                       {lang === 'he' ? `עסקאות חדשות (${newRows.length})` : `New transactions (${newRows.length})`}
                     </div>
+                    {newRows.length > 1 && (() => {
+                      const bulkVal = newRows.every(r => r.editCatId === newRows[0].editCatId)
+                        ? newRows[0].editCatId
+                        : '';
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+                            {lang === 'he' ? 'קטגוריה לכולן:' : 'Category for all:'}
+                          </span>
+                          <select
+                            className="aether-input"
+                            style={{ flex: 1, fontSize: 12 }}
+                            value={bulkVal}
+                            onChange={e => {
+                              const catId = e.target.value;
+                              if (!catId) return;
+                              setBankPreview(prev => prev ? {
+                                ...prev,
+                                rows: prev.rows.map(r => r.dupStatus === 'new' ? { ...r, editCatId: catId } : r),
+                              } : prev);
+                            }}
+                          >
+                            {bulkVal === '' && <option value="">{lang === 'he' ? '— מעורב —' : '— mixed —'}</option>}
+                            {categories.map(c => (
+                              <option key={c.id} value={c.id}>{catName(c.id, c.name, c.isRenamed)}</option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })()}
                     {newRows.length === 0 && (
                       <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 12px' }}>
                         {lang === 'he' ? 'לא נמצאו עסקאות חדשות' : 'No new transactions found'}
@@ -2353,27 +2392,34 @@ export default function DashboardPage() {
                           if (r.dupStatus === 'new') return null;
                           return (
                             <div key={i} style={{
-                              display: 'flex', justifyContent: 'space-between',
-                              padding: '6px 0', borderBottom: '1px solid var(--border-subtle)',
-                              opacity: 0.45,
+                              display: 'flex', alignItems: 'center', gap: 8,
+                              padding: '8px 0', borderBottom: '1px solid var(--border-subtle)',
                             }}>
-                              <div style={{ flex: 1, minWidth: 0, marginInlineEnd: 8 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {r.raw.description}
-                                  <span style={{
-                                    fontSize: 10, fontWeight: 700, marginInlineStart: 6,
-                                    color: r.dupStatus === 'fuzzy' ? '#F59E0B' : 'var(--text-muted)',
-                                  }}>
-                                    {r.dupStatus === 'fuzzy'
-                                      ? (lang === 'he' ? 'כנראה כפול' : 'likely dup')
-                                      : (lang === 'he' ? 'קיים' : 'dup')}
-                                  </span>
                                 </div>
-                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.raw.date}</div>
+                                {r.matchedTx && (
+                                  <div style={{ fontSize: 10, color: '#F59E0B', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                                    <span>{r.dupStatus === 'fuzzy' ? (lang === 'he' ? 'כנראה כפול של:' : 'likely dup of:') : (lang === 'he' ? 'קיים:' : 'exists:')}</span>
+                                    <span style={{ fontWeight: 600 }}>{r.matchedTx.description}</span>
+                                    <span>₪{r.matchedTx.amount.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{r.raw.date}</div>
                               </div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>
-                                ₪{r.raw.amount.toLocaleString()}
+                              <div style={{ textAlign: 'end', flexShrink: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+                                  ₪{r.raw.amount.toLocaleString()}
+                                </div>
                               </div>
+                              <button
+                                style={{ background: 'none', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-muted)', padding: '3px 7px', fontSize: 11, flexShrink: 0, whiteSpace: 'nowrap' }}
+                                onClick={() => setBankRow(i, { dupStatus: 'new' })}
+                                title={lang === 'he' ? 'הוסף בכל זאת לייבוא' : 'Include anyway'}
+                              >
+                                {lang === 'he' ? 'הוסף' : 'Add'}
+                              </button>
                             </div>
                           );
                         })}
