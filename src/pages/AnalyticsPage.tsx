@@ -443,6 +443,28 @@ export default function AnalyticsPage() {
             const cat = categories.find(c => c.id === drillCat);
             const catTxns = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === drillCat);
             const Icon = cat ? resolveCatIcon(cat) : BarChart2;
+            const catPmTotals = (() => {
+              const map = new Map<PaymentMethod, number>();
+              catTxns.forEach(tx => {
+                const mainAmt = toMainAmt(tx);
+                const splits = resolvePaymentSplits(tx);
+                if (splits.length === 1) {
+                  map.set(splits[0].paymentMethod, (map.get(splits[0].paymentMethod) ?? 0) + mainAmt);
+                } else {
+                  const ilsTotal = splits.reduce((s, sp) => s + sp.amount, 0);
+                  splits.forEach(sp => {
+                    const portion = ilsTotal > 0 ? mainAmt * (sp.amount / ilsTotal) : mainAmt / splits.length;
+                    map.set(sp.paymentMethod, (map.get(sp.paymentMethod) ?? 0) + portion);
+                  });
+                }
+              });
+              return Array.from(map)
+                .map(([pm, total]) => ({ pm, total }))
+                .filter(x => x.total > 0)
+                .sort((a, b) => b.total - a.total);
+            })();
+            const maxCatPm = catPmTotals[0]?.total || 1;
+            const catTotal = catTxns.reduce((s, tx) => s + toMainAmt(tx), 0);
             return (
               <div>
                 <button className="an-drill-back" onClick={() => setDrillCat(null)}>
@@ -460,6 +482,34 @@ export default function AnalyticsPage() {
                     </div>
                     <span className="an-cat-card-count">{catTxns.length}</span>
                   </div>
+                  {catTxns.length > 0 && catPmTotals.length > 1 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                        {lang === 'he' ? 'לפי אמצעי תשלום' : 'By payment method'}
+                      </div>
+                      {catPmTotals.map(({ pm, total }) => {
+                        const PmIcon = PM_ICON[pm];
+                        const pct = catTotal > 0 ? Math.round((total / catTotal) * 100) : 0;
+                        return (
+                          <div key={pm} className="an-cb-item">
+                            <div className="an-cb-row">
+                              <div className="an-cb-name-side">
+                                {PmIcon && <PmIcon size={13} color={PM_COLOR[pm]} />}
+                                <span className="an-cb-name">{pmLabel(pm)}</span>
+                              </div>
+                              <div className="an-cb-amount-side">
+                                <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                                <span className="an-cb-pct">{pct}%</span>
+                              </div>
+                            </div>
+                            <div className="an-cb-bar-row">
+                              <div className="an-cb-bar-fill" style={{ width: `${(total / maxCatPm) * 100}%`, background: PM_COLOR[pm] }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   {catTxns.length === 0 ? (
                     <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '12px 0', margin: 0 }}>
                       {lang === 'he' ? 'אין עסקאות בקטגוריה זו' : 'No transactions in this category'}
