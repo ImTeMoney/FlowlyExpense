@@ -1047,6 +1047,10 @@ export default function DashboardPage() {
       return 'exact';
     if (txns.some(tx => {
       if (tx.date !== r.date) return false;
+      // Same foreign currency + same original amount → definite duplicate regardless of ILS rate drift
+      if (r.originalAmount && r.currency && tx.originalAmount && tx.currency === r.currency
+          && Math.abs(tx.originalAmount - r.originalAmount) <= 0.02) return true;
+      // ILS amount within ±1₪ or ±0.5%
       const diff = Math.abs(tx.amount - r.amount);
       return diff <= 1 || diff / Math.max(tx.amount, r.amount) <= 0.005;
     })) return 'fuzzy';
@@ -1073,7 +1077,17 @@ export default function DashboardPage() {
         setBankImportErr(lang === 'he' ? 'לא נמצאו עסקאות בקובץ' : 'No transactions found in file');
         return;
       }
-      const rows: BankPreviewRow[] = parsed.map(r => ({
+      // Convert foreign-currency amounts to ILS so duplicate detection and display are correct
+      const withILS = await Promise.all(parsed.map(async r => {
+        if (!r.currency || r.currency === 'ILS' || r.currency === 'NIS') return r;
+        try {
+          const { convertedAmount } = await convertAmount(r.amount, r.currency, 'ILS', 'latest');
+          return { ...r, amount: convertedAmount };
+        } catch {
+          return r; // keep foreign amount if offline
+        }
+      }));
+      const rows: BankPreviewRow[] = withILS.map(r => ({
         raw: r,
         dupStatus: fuzzyDupStatus(r, transactions),
         matchedCard: r.last4 ? cards.find(c => c.last4 === r.last4) : undefined,
