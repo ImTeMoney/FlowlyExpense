@@ -2317,7 +2317,7 @@ export default function DashboardPage() {
                                 <div style={{ fontSize: 13, fontWeight: 700, color: r.raw.isIncome ? '#30D158' : 'var(--text-primary)' }}>
                                   {r.raw.isIncome ? '+' : ''}
                                   {r.raw.currency && r.raw.originalAmount
-                                    ? `${r.raw.currency} ${r.raw.originalAmount.toLocaleString()}`
+                                    ? `${CURRENCY_SYMBOL[r.raw.currency] ?? r.raw.currency} ${r.raw.originalAmount.toLocaleString()}`
                                     : `₪${r.raw.amount.toLocaleString()}`}
                                 </div>
                                 {r.raw.currency && r.raw.originalAmount && (

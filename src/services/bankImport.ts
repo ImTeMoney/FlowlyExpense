@@ -36,6 +36,12 @@ function colIdx(headers: string[], ...terms: string[]): number {
   return headers.findIndex(h => terms.some(t => h.includes(t)));
 }
 
+function normalizeCurrency(cur: string): string {
+  const sym: Record<string, string> = { '$': 'USD', '€': 'EUR', '£': 'GBP', '₪': 'ILS' };
+  const t = cur.trim();
+  return sym[t] ?? t.toUpperCase();
+}
+
 // Extract card last-4 from header block e.g. "מסטרקארד - 8460"
 // Looks for "- XXXX" pattern to avoid matching years like 2026
 function extractLast4FromBlock(allRows: string[][]): string | undefined {
@@ -103,9 +109,9 @@ export async function parseBankFile(file: File): Promise<ImportedRow[]> {
 
       // Prefer ILS billing amount; fall back to original amount
       const billingAmt = cAmt >= 0 ? parseAmt(row[cAmt]) : 0;
-      const billingCur = cAmtCur >= 0 ? norm(row[cAmtCur]) : '';
+      const billingCur = cAmtCur >= 0 ? normalizeCurrency(norm(row[cAmtCur])) : '';
       const origAmt    = cOrig >= 0 ? parseAmt(row[cOrig]) : 0;
-      const origCur    = cOrigCur >= 0 ? norm(row[cOrigCur]) : '';
+      const origCur    = cOrigCur >= 0 ? normalizeCurrency(norm(row[cOrigCur])) : '';
 
       if (billingAmt === 0 && origAmt === 0) continue;
 
