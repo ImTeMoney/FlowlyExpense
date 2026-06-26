@@ -101,6 +101,16 @@ export default function AnalyticsPage() {
   const maxCat        = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
 
+  const descTotals = useMemo(() => {
+    const map = new Map<string, { display: string; total: number; count: number }>();
+    monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
+      const key = tx.description.trim().toLowerCase();
+      const cur = map.get(key) ?? { display: tx.description.trim(), total: 0, count: 0 };
+      map.set(key, { display: cur.display, total: cur.total + toMainAmt(tx), count: cur.count + 1 });
+    });
+    return [...map.values()].sort((a, b) => b.total - a.total);
+  }, [monthTxns, toMainAmt]);
+
   const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
     cash: Banknote, credit: CreditCard, check: FileCheck,
     transfer: Landmark, bit: Smartphone,
@@ -172,6 +182,7 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<'summary' | 'categories' | 'forecast'>('summary');
   const [drillCat, setDrillCat] = useState<string | null>(null);
   const [showAllCats, setShowAllCats] = useState(false);
+  const [showAllDesc, setShowAllDesc] = useState(false);
   const [selectedDay, setSelectedDay]   = useState<string | undefined>();
   const [budgetEditId, setBudgetEditId] = useState<string | null>(null);
   const [budgetEditVal, setBudgetEditVal] = useState('');
@@ -255,6 +266,10 @@ export default function AnalyticsPage() {
   const CAT_LIMIT = 7;
   const visibleCats = showAllCats ? catTotals : catTotals.slice(0, CAT_LIMIT);
   const hiddenCount = Math.max(0, catTotals.length - CAT_LIMIT);
+  const maxDesc = descTotals[0]?.total || 1;
+  const DESC_PAGE = 8;
+  const visibleDesc = showAllDesc ? descTotals : descTotals.slice(0, DESC_PAGE);
+  const hiddenDescCount = Math.max(0, descTotals.length - DESC_PAGE);
   const hasTrend = weeklyTotals.some(w => w.total > 0);
 
   // ── Hero: donut data ──────────────────────────────────────────────────────
@@ -811,6 +826,41 @@ export default function AnalyticsPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* ── Top descriptions ── */}
+          {descTotals.length > 0 && (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{lang === 'he' ? 'הוצאות מובילות' : 'Top merchants'}</span>
+                <span className="an-cat-card-count">{descTotals.length}</span>
+              </div>
+              {visibleDesc.map(({ display, total, count }) => (
+                <div key={display} className="an-cb-item">
+                  <div className="an-cb-row">
+                    <div className="an-cb-name-side">
+                      <div className="an-cb-name-group">
+                        <span className="an-cb-name">{display}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{count}✕</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-amount-side">
+                      <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                    </div>
+                  </div>
+                  <div className="an-cb-bar-row">
+                    <div className="an-cb-bar-fill" style={{ width: `${(total / maxDesc) * 100}%`, background: '#8B5CF6' }} />
+                  </div>
+                </div>
+              ))}
+              {hiddenDescCount > 0 && (
+                <button className="an-show-more" onClick={() => setShowAllDesc(s => !s)}>
+                  {showAllDesc
+                    ? (lang === 'he' ? 'הצג פחות' : 'Show less')
+                    : (lang === 'he' ? `+${hiddenDescCount} עוד` : `+${hiddenDescCount} more`)}
+                </button>
+              )}
             </div>
           )}
 
