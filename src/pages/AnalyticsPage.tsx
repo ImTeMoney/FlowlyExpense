@@ -180,7 +180,6 @@ export default function AnalyticsPage() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<'summary' | 'categories' | 'forecast'>('summary');
-  const [drillCat, setDrillCat] = useState<string | null>(null);
   const [showAllCats, setShowAllCats] = useState(false);
   const [showAllDesc, setShowAllDesc] = useState(false);
   const [selectedDay, setSelectedDay]   = useState<string | undefined>();
@@ -394,11 +393,11 @@ export default function AnalyticsPage() {
           <button
             key={tab}
             className={`an-tab${activeTab === tab ? ' an-tab--active' : ''}`}
-            onClick={() => { setActiveTab(tab); setDrillCat(null); }}
+            onClick={() => setActiveTab(tab)}
           >
             {lang === 'he'
-              ? { summary: 'סיכום', categories: 'קטגוריות', forecast: 'תחזית' }[tab]
-              : { summary: 'Summary', categories: 'Categories', forecast: 'Forecast' }[tab]}
+              ? { summary: 'סיכום', categories: 'מובילות', forecast: 'תחזית' }[tab]
+              : { summary: 'Summary', categories: 'Merchants', forecast: 'Forecast' }[tab]}
           </button>
         ))}
       </div>
@@ -410,184 +409,47 @@ export default function AnalyticsPage() {
         </Suspense>
       )}
 
-      {/* Categories drill-down tab */}
+      {/* Top merchants tab */}
       {activeTab === 'categories' && (
         <div>
-          {drillCat === null ? (
-            catTotals.length === 0 ? (
-              <div className="an-empty">
-                <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
-                <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
+          {descTotals.length === 0 ? (
+            <div className="an-empty">
+              <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
+              <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
+            </div>
+          ) : (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{lang === 'he' ? 'הוצאות מובילות' : 'Top merchants'}</span>
+                <span className="an-cat-card-count">{descTotals.length}</span>
               </div>
-            ) : (
-              <div className="an-cat-card">
-                <div className="an-cat-card-header">
-                  <span className="an-cat-card-title">{lang === 'he' ? 'קטגוריות' : 'Categories'}</span>
-                  <span className="an-cat-card-count">{catTotals.length}</span>
-                </div>
-                {catTotals.map(({ cat, total }) => {
-                  const Icon = resolveCatIcon(cat);
-                  const pct = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
-                  return (
-                    <button
-                      key={cat.id}
-                      className="an-cb-item an-cb-item--tappable"
-                      onClick={() => setDrillCat(cat.id)}
-                    >
-                      <div className="an-cb-row">
-                        <div className="an-cb-name-side">
-                          <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
-                            <Icon size={13} color={cat.color} />
-                          </div>
-                          <span className="an-cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
-                        </div>
-                        <div className="an-cb-amount-side">
-                          <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
-                          <span className="an-cb-pct">{pct}%</span>
-                        </div>
-                      </div>
-                      <div className="an-cb-bar-row">
-                        <div className="an-cb-bar-fill" style={{ width: `${(total / maxCat) * 100}%`, background: cat.color }} />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )
-          ) : (() => {
-            const cat = categories.find(c => c.id === drillCat);
-            const catTxns = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === drillCat);
-            const Icon = cat ? resolveCatIcon(cat) : BarChart2;
-            const catPmTotals = (() => {
-              const map = new Map<PaymentMethod, number>();
-              catTxns.forEach(tx => {
-                const mainAmt = toMainAmt(tx);
-                const splits = resolvePaymentSplits(tx);
-                if (splits.length === 1) {
-                  map.set(splits[0].paymentMethod, (map.get(splits[0].paymentMethod) ?? 0) + mainAmt);
-                } else {
-                  const ilsTotal = splits.reduce((s, sp) => s + sp.amount, 0);
-                  splits.forEach(sp => {
-                    const portion = ilsTotal > 0 ? mainAmt * (sp.amount / ilsTotal) : mainAmt / splits.length;
-                    map.set(sp.paymentMethod, (map.get(sp.paymentMethod) ?? 0) + portion);
-                  });
-                }
-              });
-              return Array.from(map)
-                .map(([pm, total]) => ({ pm, total }))
-                .filter(x => x.total > 0)
-                .sort((a, b) => b.total - a.total);
-            })();
-            const maxCatPm = catPmTotals[0]?.total || 1;
-            const catTotal = catTxns.reduce((s, tx) => s + toMainAmt(tx), 0);
-            const catCardTotals = (() => {
-              const map = new Map<string, number>();
-              catTxns.filter(tx => tx.cardId).forEach(tx => {
-                map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + toMainAmt(tx));
-              });
-              return Array.from(map)
-                .map(([id, total]) => ({ card: cards.find(c => c.id === id), total }))
-                .filter((x): x is { card: CreditCardType; total: number } => !!x.card)
-                .sort((a, b) => b.total - a.total);
-            })();
-            const maxCatCard   = catCardTotals[0]?.total || 1;
-            const totalCatCard = catCardTotals.reduce((s, x) => s + x.total, 0);
-            return (
-              <div>
-                <button className="an-drill-back" onClick={() => setDrillCat(null)}>
-                  {lang === 'he' ? '← חזרה לקטגוריות' : '← Back to categories'}
-                </button>
-                <div className="an-cat-card">
-                  <div className="an-cat-card-header">
+              {visibleDesc.map(({ display, total, count }) => (
+                <div key={display} className="an-cb-item">
+                  <div className="an-cb-row">
                     <div className="an-cb-name-side">
-                      {cat && (
-                        <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
-                          <Icon size={13} color={cat.color} />
-                        </div>
-                      )}
-                      <span className="an-cat-card-title">{cat ? catName(cat.id, cat.name, cat.isRenamed) : drillCat}</span>
+                      <div className="an-cb-name-group">
+                        <span className="an-cb-name">{display}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{count}✕</span>
+                      </div>
                     </div>
-                    <span className="an-cat-card-count">{catTxns.length}</span>
+                    <div className="an-cb-amount-side">
+                      <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                    </div>
                   </div>
-                  {catTxns.length > 0 && catPmTotals.length > 1 && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                        {lang === 'he' ? 'לפי אמצעי תשלום' : 'By payment method'}
-                      </div>
-                      {catPmTotals.map(({ pm, total }) => {
-                        const PmIcon = PM_ICON[pm];
-                        const pct = catTotal > 0 ? Math.round((total / catTotal) * 100) : 0;
-                        return (
-                          <div key={pm} className="an-cb-item">
-                            <div className="an-cb-row">
-                              <div className="an-cb-name-side">
-                                {PmIcon && <PmIcon size={13} color={PM_COLOR[pm]} />}
-                                <span className="an-cb-name">{pmLabel(pm)}</span>
-                              </div>
-                              <div className="an-cb-amount-side">
-                                <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
-                                <span className="an-cb-pct">{pct}%</span>
-                              </div>
-                            </div>
-                            <div className="an-cb-bar-row">
-                              <div className="an-cb-bar-fill" style={{ width: `${(total / maxCatPm) * 100}%`, background: PM_COLOR[pm] }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {catCardTotals.length > 0 && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                        {lang === 'he' ? 'לפי כרטיס אשראי' : 'By credit card'}
-                      </div>
-                      {catCardTotals.map(({ card, total }) => {
-                        const pct = totalCatCard > 0 ? Math.round((total / totalCatCard) * 100) : 0;
-                        return (
-                          <div key={card.id} className="an-cb-item">
-                            <div className="an-cb-row">
-                              <div className="an-cb-name-side">
-                                <div className="an-cb-icon-wrap" style={{ background: `${card.color}18`, border: `1px solid ${card.color}28` }}>
-                                  <CreditCard size={13} color={card.color} />
-                                </div>
-                                <div className="an-cb-name-group">
-                                  <span className="an-cb-name">{card.name}</span>
-                                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>•••• {card.last4}</span>
-                                </div>
-                              </div>
-                              <div className="an-cb-amount-side">
-                                <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
-                                <span className="an-cb-pct">{pct}%</span>
-                              </div>
-                            </div>
-                            <div className="an-cb-bar-row">
-                              <div className="an-cb-bar-fill" style={{ width: `${(total / maxCatCard) * 100}%`, background: card.color }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {catTxns.length === 0 ? (
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '12px 0', margin: 0 }}>
-                      {lang === 'he' ? 'אין עסקאות בקטגוריה זו' : 'No transactions in this category'}
-                    </p>
-                  ) : (
-                    catTxns.sort((a, b) => b.date.localeCompare(a.date)).map(tx => (
-                      <div key={tx.id} className="an-drill-txn">
-                        <div className="an-drill-txn-left">
-                          <span className="an-drill-txn-desc">{tx.description || (lang === 'he' ? 'ללא תיאור' : 'No description')}</span>
-                          <span className="an-drill-txn-date">{tx.date}</span>
-                        </div>
-                        <span className="an-drill-txn-amt">{formatCurrencyDirect(toMainAmt(tx))}</span>
-                      </div>
-                    ))
-                  )}
+                  <div className="an-cb-bar-row">
+                    <div className="an-cb-bar-fill" style={{ width: `${(total / maxDesc) * 100}%`, background: '#8B5CF6' }} />
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              ))}
+              {hiddenDescCount > 0 && (
+                <button className="an-show-more" onClick={() => setShowAllDesc(s => !s)}>
+                  {showAllDesc
+                    ? (lang === 'he' ? 'הצג פחות' : 'Show less')
+                    : (lang === 'he' ? `+${hiddenDescCount} עוד` : `+${hiddenDescCount} more`)}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -826,41 +688,6 @@ export default function AnalyticsPage() {
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {/* ── Top descriptions ── */}
-          {descTotals.length > 0 && (
-            <div className="an-cat-card">
-              <div className="an-cat-card-header">
-                <span className="an-cat-card-title">{lang === 'he' ? 'הוצאות מובילות' : 'Top merchants'}</span>
-                <span className="an-cat-card-count">{descTotals.length}</span>
-              </div>
-              {visibleDesc.map(({ display, total, count }) => (
-                <div key={display} className="an-cb-item">
-                  <div className="an-cb-row">
-                    <div className="an-cb-name-side">
-                      <div className="an-cb-name-group">
-                        <span className="an-cb-name">{display}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{count}✕</span>
-                      </div>
-                    </div>
-                    <div className="an-cb-amount-side">
-                      <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
-                    </div>
-                  </div>
-                  <div className="an-cb-bar-row">
-                    <div className="an-cb-bar-fill" style={{ width: `${(total / maxDesc) * 100}%`, background: '#8B5CF6' }} />
-                  </div>
-                </div>
-              ))}
-              {hiddenDescCount > 0 && (
-                <button className="an-show-more" onClick={() => setShowAllDesc(s => !s)}>
-                  {showAllDesc
-                    ? (lang === 'he' ? 'הצג פחות' : 'Show less')
-                    : (lang === 'he' ? `+${hiddenDescCount} עוד` : `+${hiddenDescCount} more`)}
-                </button>
-              )}
             </div>
           )}
 
