@@ -28,6 +28,7 @@ export interface CreditCard {
   billingDay: number;
   limit?: number;
   color: string;
+  isDefault?: boolean;
 }
 
 export interface TravelBudget {
@@ -176,6 +177,7 @@ type Action =
   | { type: 'ADD_CARD';                  payload: CreditCard }
   | { type: 'UPDATE_CARD';              payload: CreditCard }
   | { type: 'DELETE_CARD';              payload: string }
+  | { type: 'SET_DEFAULT_CARD';          payload: string }
   | { type: 'ADD_TRAVEL_BUDGET';        payload: TravelBudget }
   | { type: 'UPDATE_TRAVEL_BUDGET';     payload: TravelBudget }
   | { type: 'DELETE_TRAVEL_BUDGET';     payload: string }
@@ -732,6 +734,14 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'UPDATE_CARD':
         setCards(prev => prev.map(c => c.id === action.payload.id ? action.payload : c));
+        break;
+
+      case 'SET_DEFAULT_CARD':
+        setCards(prev => prev.map(c =>
+          c.id === action.payload
+            ? { ...c, isDefault: !c.isDefault }
+            : { ...c, isDefault: false }
+        ));
         break;
 
       case 'DELETE_CARD':

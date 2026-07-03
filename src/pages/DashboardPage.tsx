@@ -458,7 +458,9 @@ export default function DashboardPage() {
     setDesc(draft?.desc ?? '');
     setDate(draft?.date ?? todayStr());
     setCatId(draft?.catId ?? categories[0]?.id ?? '');
-    setPayMethod((draft?.payMethod as PaymentMethod | undefined) ?? 'credit');
+    const defPay = (draft?.payMethod as PaymentMethod | undefined) ?? 'credit';
+    setPayMethod(defPay);
+    setSelectedCardId(defPay === 'credit' ? cards.find(c => c.isDefault)?.id : undefined);
     setPmSplitEnabled(false);
     setPmSplits([{ pm: 'credit', amount: '' }, { pm: 'cash', amount: '' }]);
     setTxCurrency(mainCurrency);
@@ -1860,7 +1862,11 @@ export default function DashboardPage() {
                         <button
                           key={pm}
                           className={`pm-chip${selected ? ' selected' : ''}`}
-                          onClick={() => { setPayMethod(pm); if (pm !== 'credit') setSelectedCardId(undefined); }}
+                          onClick={() => {
+                            setPayMethod(pm);
+                            if (pm !== 'credit') setSelectedCardId(undefined);
+                            else setSelectedCardId(prev => prev ?? cards.find(c => c.isDefault)?.id);
+                          }}
                           style={selected ? {
                             borderColor: PM_COLOR[pm],
                             borderWidth: 2,

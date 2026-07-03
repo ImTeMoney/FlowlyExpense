@@ -6,7 +6,7 @@ import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, CreditCard as CreditCardIcon, Pencil } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, CreditCard as CreditCardIcon, Pencil, Star } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import LangToggle from '../components/LangToggle';
 import {
@@ -520,6 +520,13 @@ const SettingsPage: React.FC = () => {
                     {c.limit ? ` · ${lang === 'he' ? 'מסגרת' : 'Limit'}: ${c.limit.toLocaleString()}` : ''}
                   </div>
                 </div>
+                <button onClick={() => dispatch({ type: 'SET_DEFAULT_CARD', payload: c.id })}
+                  aria-label="default"
+                  title={lang === 'he' ? 'כרטיס ברירת מחדל' : 'Default card'}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6,
+                           color: c.isDefault ? '#F5B301' : 'var(--text-muted)', opacity: c.isDefault ? 1 : 0.7 }}>
+                  <Star size={14} fill={c.isDefault ? '#F5B301' : 'none'} />
+                </button>
                 <button onClick={() => openEditCard(c)} aria-label="edit"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6, opacity: 0.7 }}>
                   <Pencil size={14} />
