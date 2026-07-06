@@ -281,7 +281,7 @@ function SlideButton({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const TOTAL = 5;
+const TOTAL = 6;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
@@ -442,9 +442,9 @@ export default function Onboarding({ onDone }: Props) {
     );
   }
 
-  // ── Step 1: Quick setup ───────────────────────────────────────────────────
+  // ── Step 2: Quick setup (after currency so amounts are entered in the right currency) ──
 
-  if (step === 1) return (
+  if (step === 2) return (
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
@@ -452,7 +452,7 @@ export default function Onboarding({ onDone }: Props) {
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
-      <div className="ob-screen ob-screen-setup" key={1}>
+      <div className="ob-screen ob-screen-setup" key={2}>
         <h1 className="ob-title ob-title-grad">
           {he ? 'הגדרה מהירה' : 'Quick setup'}
         </h1>
@@ -551,9 +551,9 @@ export default function Onboarding({ onDone }: Props) {
     </div>
   );
 
-  // ── Step 2: Currency picker ───────────────────────────────────────────────
+  // ── Step 1: Currency picker (must precede amount entry) ──────────────────
 
-  if (step === 2) return (
+  if (step === 1) return (
     <div className="ob-overlay" dir={dir}>
       {aurora}
       {progressBar}
@@ -561,7 +561,7 @@ export default function Onboarding({ onDone }: Props) {
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
-      <div className="ob-screen ob-screen-currency" key={2}>
+      <div className="ob-screen ob-screen-currency" key={1}>
         <h1 className="ob-title ob-title-grad">
           {he ? 'באיזה מטבע אתה מנהל?' : 'What currency do you use?'}
         </h1>
@@ -737,7 +737,7 @@ export default function Onboarding({ onDone }: Props) {
       {aurora}
       {progressBar}
       {headerActions}
-      <div className="ob-screen ob-screen-install" key={4}>
+      <div className="ob-screen ob-screen-install" key={5}>
         <div className="ob-install-icon-ring">
           <img src="/icon-192.png" className="ob-install-app-icon" alt="Flowly" />
         </div>

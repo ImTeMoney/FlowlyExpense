@@ -3,11 +3,12 @@ import * as XLSX from 'xlsx';
 export interface ImportedRow {
   date: string;           // YYYY-MM-DD
   description: string;
-  amount: number;         // ILS amount; equals originalAmount when currency is foreign
+  amount: number;         // ILS amount (converted by the import UI when currency is foreign)
   currency?: string;      // original foreign currency e.g. 'USD'
   originalAmount?: number;
   last4?: string;
   isIncome?: boolean;
+  rateError?: boolean;    // set by the import UI when ILS conversion failed — amount is still foreign
 }
 
 function parseDateStr(v: string): string {

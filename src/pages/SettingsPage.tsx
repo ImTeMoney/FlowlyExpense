@@ -251,14 +251,24 @@ const SettingsPage: React.FC = () => {
       try {
         const parsed = JSON.parse(ev.target?.result as string) as Record<string, unknown>;
         if (!parsed._version) throw new Error('not a backup');
-        for (const key of BACKUP_STORAGE_KEYS) {
-          if (key in parsed) {
-            const v = parsed[key];
-            localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v));
-          }
-        }
-        showToast(t.backupImportSuccess);
-        setTimeout(() => window.location.reload(), 800);
+        const exportedAt = typeof parsed._exportedAt === 'string' ? parsed._exportedAt.slice(0, 10) : '';
+        setConfirm({
+          title: lang === 'he' ? 'לשחזר מגיבוי?' : 'Restore from backup?',
+          body: lang === 'he'
+            ? `פעולה זו תחליף את הנתונים הקיימים בנתונים מהגיבוי${exportedAt ? ` (${exportedAt})` : ''}.`
+            : `This will replace your current data with the backup${exportedAt ? ` (${exportedAt})` : ''}.`,
+          onConfirm: () => {
+            for (const key of BACKUP_STORAGE_KEYS) {
+              if (key in parsed) {
+                const v = parsed[key];
+                localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v));
+              }
+            }
+            setConfirm(null);
+            showToast(t.backupImportSuccess);
+            setTimeout(() => window.location.reload(), 800);
+          },
+        });
       } catch {
         showToast(t.backupImportError);
       }

@@ -170,7 +170,7 @@ export default function DashboardPage() {
       if (e.key !== 'Escape') return;
       if (confirm)       { setConfirm(null); return; }
       if (splitTx)       { setSplitTx(null); return; }
-      if (showModal)     { setShowModal(false); return; }
+      if (showModal)     { closeModal(); return; }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -453,6 +453,7 @@ export default function DashboardPage() {
 
   function openModal() {
     const draft = readDraft();
+    setEditingTx(null);
     setIsIncome(false);
     setAmount(draft?.amount ?? '');
     setDesc(draft?.desc ?? '');
@@ -532,7 +533,20 @@ export default function DashboardPage() {
     setSelectedCardId(undefined);
   }
 
+  // Async guard: convertAmount can take seconds on slow networks — without this a
+  // double-tap on the submit button dispatches the transaction (or group) twice
+  const submittingRef = useRef(false);
   async function handleAdd() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await doAdd();
+    } finally {
+      submittingRef.current = false;
+    }
+  }
+
+  async function doAdd() {
     const num = parseFloat(amount);
     if (!num || num <= 0 || !isFinite(num) || num > 9_999_999 || !catId) return;
 
@@ -562,8 +576,16 @@ export default function DashboardPage() {
       let pmPayload: { paymentMethod?: PaymentMethod; paymentSplits?: PaymentSplit[] } =
         { paymentMethod: payMethod };
       if (!isIncome && pmSplitEnabled) {
+        const splitAmounts = pmSplits.map(s => parseFloat(s.amount) || 0);
+        const splitTotal   = Math.round(splitAmounts.reduce((a, b) => a + b, 0) * 100) / 100;
+        // With installments kept, amount stays the per-installment figure; otherwise the new total
+        const splitTarget  = Math.round(((splitEnabled && editingTx.installments) ? editingTx.amount : finalAmount) * 100) / 100;
+        if (Math.abs(splitTotal - splitTarget) > 0.01) {
+          showToast(t.splitMustEqualTotal);
+          return;
+        }
         const splits: PaymentSplit[] = pmSplits
-          .map(s => ({ paymentMethod: s.pm, amount: parseFloat(s.amount) || 0 }))
+          .map((s, i) => ({ paymentMethod: s.pm, amount: splitAmounts[i] }))
           .filter(s => s.amount > 0);
         pmPayload = { paymentSplits: splits };
       }
@@ -1090,14 +1112,17 @@ export default function DashboardPage() {
         setBankImportErr(lang === 'he' ? 'לא נמצאו עסקאות בקובץ' : 'No transactions found in file');
         return;
       }
-      // Convert foreign-currency amounts to ILS so duplicate detection and display are correct
+      // Convert foreign-currency amounts to ILS so duplicate detection and display are correct.
+      // Use the transaction date so historical charges get their historical rate.
       const withILS = await Promise.all(parsed.map(async r => {
         if (!r.currency || r.currency === 'ILS' || r.currency === 'NIS') return r;
         try {
-          const { convertedAmount } = await convertAmount(r.amount, r.currency, 'ILS', 'latest');
+          const { convertedAmount } = await convertAmount(r.amount, r.currency, 'ILS', r.date);
           return { ...r, amount: convertedAmount };
         } catch {
-          return r; // keep foreign amount if offline
+          // No rate available (offline) — importing the foreign figure as ILS would corrupt
+          // totals, so flag the row; it renders with a warning and is excluded from import
+          return { ...r, rateError: true };
         }
       }));
       const rows: BankPreviewRow[] = withILS.map(r => {
@@ -1107,7 +1132,7 @@ export default function DashboardPage() {
           dupStatus: status,
           matchedCard: r.last4 ? cards.find(c => c.last4 === r.last4) : undefined,
           matchedTx,
-          excluded: false,
+          excluded: !!r.rateError,
           editDesc: r.description,
           editCatId: categories[0]?.id ?? '',
           editing: false,
@@ -1121,7 +1146,7 @@ export default function DashboardPage() {
 
   function confirmBankImport() {
     if (!bankPreview) return;
-    const toImport = bankPreview.rows.filter(r => r.dupStatus === 'new' && !r.excluded);
+    const toImport = bankPreview.rows.filter(r => r.dupStatus === 'new' && !r.excluded && !r.raw.rateError);
     if (toImport.length === 0) {
       setBankPreview(null);
       showToast(lang === 'he' ? 'כל העסקאות כבר קיימות' : 'All transactions already exist');
@@ -2142,11 +2167,25 @@ export default function DashboardPage() {
                   const cleanDesc = editingTx.description.startsWith('(קבועה) ')
                     ? editingTx.description.slice('(קבועה) '.length)
                     : editingTx.description;
+                  const inst = editingTx.installments;
                   setConfirm({
-                    title: t.confirmDeleteTitle,
-                    body: <strong>"{cleanDesc}"</strong>,
+                    title: inst ? t.deleteAllInstallments : t.confirmDeleteTitle,
+                    body: (
+                      <>
+                        <strong>"{cleanDesc}"</strong>
+                        {inst && (
+                          <>
+                            {' '}
+                            {lang === 'he'
+                              ? `(${inst.current}/${inst.total} תשלומים)`
+                              : `(${inst.current}/${inst.total} installments)`}
+                          </>
+                        )}
+                      </>
+                    ),
                     onConfirm: () => {
-                      handleDelete(editingTx.id);
+                      if (inst) handleDeleteGroup(inst.groupId);
+                      else handleDelete(editingTx.id);
                       setConfirm(null);
                       closeModal();
                     },
@@ -2371,7 +2410,11 @@ export default function DashboardPage() {
                                     ? `${CURRENCY_SYMBOL[r.raw.currency] ?? r.raw.currency} ${r.raw.originalAmount.toLocaleString()}`
                                     : `₪${r.raw.amount.toLocaleString()}`}
                                 </div>
-                                {r.raw.currency && r.raw.originalAmount && (
+                                {r.raw.rateError ? (
+                                  <div style={{ fontSize: 10, color: 'var(--danger)' }}>
+                                    {lang === 'he' ? 'שער לא זמין — נסה שוב מאוחר יותר' : 'Rate unavailable — try again later'}
+                                  </div>
+                                ) : r.raw.currency && r.raw.originalAmount && (
                                   <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>≈ ₪{r.raw.amount.toLocaleString()}</div>
                                 )}
                               </div>

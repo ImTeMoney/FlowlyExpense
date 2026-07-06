@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -343,6 +343,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [debts, setDebts] = useState<DebtEntry[]>(() =>
     loadFromStorage<DebtEntry[]>(STORAGE_KEYS.DEBTS, [])
   );
+  // dispatch is a []-deps useCallback, so it needs a latest-value ref to read
+  // current debts (SETTLE_DEBT / DELETE_DEBT side effects run outside updaters)
+  const debtsRef = useRef(debts);
+  debtsRef.current = debts;
   const [debtModeEnabled, setDebtModeEnabled] = useState<boolean>(() =>
     localStorage.getItem(STORAGE_KEYS.DEBT_MODE) === 'true'
   );
@@ -440,6 +444,27 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
             if (Array.isArray(v)) setCards(v);
             break;
           }
+          case STORAGE_KEYS.DEBTS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setDebts(v);
+            break;
+          }
+          case STORAGE_KEYS.TRAVEL_BUDGETS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setTravelBudgets(v);
+            break;
+          }
+          case STORAGE_KEYS.CATEGORY_BUDGETS: {
+            const v = JSON.parse(e.newValue);
+            if (v && typeof v === 'object' && !Array.isArray(v)) setCategoryBudgets(v);
+            break;
+          }
+          case STORAGE_KEYS.DEBT_MODE:
+            setDebtModeEnabled(e.newValue === 'true');
+            break;
+          case STORAGE_KEYS.TRAVEL_MODE:
+            setTravelModeEnabled(e.newValue === 'true');
+            break;
         }
       } catch { /* malformed JSON – ignore */ }
     }
@@ -520,6 +545,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: r.paymentMethod,
       recurringId:   r.id,
       ...(r.cardId ? { cardId: r.cardId } : {}),
+      ...(r.currency && r.originalAmount !== undefined
+        ? { currency: r.currency, originalAmount: r.originalAmount }
+        : {}),
     }));
     setTransactions(prev => [...newTxns, ...prev]);
     setRecurringExpenses(prev => {
@@ -681,35 +709,33 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       }
 
       case 'SETTLE_DEBT': {
-        setDebts(prev => {
-          const settling = prev.find(d => d.id === action.payload);
-          if (!settling) return prev;
-          const txId = generateId();
-          const settledTx: Transaction = {
-            id: txId,
-            amount: settling.amount,
-            categoryId: DEBT_CATEGORY_ID,
-            date: new Date().toISOString().slice(0, 10),
-            description: `חוב — ${settling.name}`,
-            isIncome: settling.direction === 'owes_me',
-          };
-          setTransactions(tPrev => [settledTx, ...tPrev]);
-          return prev.map(d => d.id === action.payload
-            ? { ...d, settled: true, settledDate: settledTx.date, transactionId: txId }
-            : d
-          );
-        });
+        // Side effects must stay outside the updater — an impure updater runs
+        // twice under StrictMode and would prepend a duplicate settlement tx
+        const settling = debtsRef.current.find(d => d.id === action.payload && !d.settled);
+        if (!settling) break;
+        const txId = generateId();
+        const settledTx: Transaction = {
+          id: txId,
+          amount: settling.amount,
+          categoryId: DEBT_CATEGORY_ID,
+          date: new Date().toISOString().slice(0, 10),
+          description: `חוב — ${settling.name}`,
+          isIncome: settling.direction === 'owes_me',
+        };
+        setTransactions(tPrev => [settledTx, ...tPrev]);
+        setDebts(prev => prev.map(d => d.id === action.payload
+          ? { ...d, settled: true, settledDate: settledTx.date, transactionId: txId }
+          : d
+        ));
         break;
       }
 
       case 'DELETE_DEBT': {
-        setDebts(prev => {
-          const toDelete = prev.find(d => d.id === action.payload);
-          if (toDelete?.transactionId) {
-            setTransactions(tPrev => tPrev.filter(t => t.id !== toDelete.transactionId));
-          }
-          return prev.filter(d => d.id !== action.payload);
-        });
+        const toDelete = debtsRef.current.find(d => d.id === action.payload);
+        if (toDelete?.transactionId) {
+          setTransactions(tPrev => tPrev.filter(t => t.id !== toDelete.transactionId));
+        }
+        setDebts(prev => prev.filter(d => d.id !== action.payload));
         break;
       }
 
@@ -748,6 +774,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setCards(prev => prev.filter(c => c.id !== action.payload));
         setTransactions(prev => prev.map(tx =>
           tx.cardId === action.payload ? { ...tx, cardId: undefined } : tx
+        ));
+        setRecurringExpenses(prev => prev.map(r =>
+          r.cardId === action.payload ? { ...r, cardId: undefined } : r
         ));
         break;
 
