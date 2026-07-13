@@ -109,6 +109,7 @@ export interface RecurringExpense {
   originalAmount?: number;     // amount in original currency for lossless display
   cardId?: string;             // credit card to charge each month
   endedMonth?: string;         // 'YYYY-MM' — if set, don't auto-post from this month onward
+  pausedFromMonth?: string;    // 'YYYY-MM' — paused from this month until resumed
 }
 
 /**
@@ -152,7 +153,9 @@ type Action =
   | { type: 'ADD_RECURRING';             payload: RecurringExpense }
   | { type: 'UPDATE_RECURRING';          payload: RecurringExpense; oldDescription?: string }
   | { type: 'DELETE_RECURRING';          payload: string }
-  | { type: 'END_RECURRING';            payload: { id: string; endedMonth: string } }
+  | { type: 'END_RECURRING';            payload: { id: string; endedMonth: string; removePosted?: boolean } }
+  | { type: 'PAUSE_RECURRING';          payload: { id: string; pausedFromMonth: string } }
+  | { type: 'RESUME_RECURRING';         payload: string }
   | { type: 'SET_BUDGET';                payload: number }
   | { type: 'SET_SAVINGS_GOAL';          payload: number }
   | { type: 'ADD_CATEGORY';              payload: Category }
@@ -263,6 +266,11 @@ function generateId(): string {
   return '_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+function prevMonthStr(ms: string): string {
+  const [y, m] = ms.split('-').map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+}
+
 export function getDeviceId(): string {
   let id = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
   if (!id) {
@@ -347,6 +355,10 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   // current debts (SETTLE_DEBT / DELETE_DEBT side effects run outside updaters)
   const debtsRef = useRef(debts);
   debtsRef.current = debts;
+  const transactionsRef = useRef(transactions);
+  transactionsRef.current = transactions;
+  const recurringRef = useRef(recurringExpenses);
+  recurringRef.current = recurringExpenses;
   const [debtModeEnabled, setDebtModeEnabled] = useState<boolean>(() =>
     localStorage.getItem(STORAGE_KEYS.DEBT_MODE) === 'true'
   );
@@ -532,6 +544,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       if (r.lastPostedMonth === currentMonthStr) return false;
       if (r.totalInstallments && (r.postedCount ?? 0) >= r.totalInstallments) return false;
       if (r.endedMonth && r.endedMonth <= currentMonthStr) return false;
+      if (r.pausedFromMonth && r.pausedFromMonth <= currentMonthStr) return false;
       return true;
     });
     if (toPost.length === 0) return;
@@ -608,9 +621,57 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setRecurringExpenses(prev => prev.filter(r => r.id !== action.payload));
         break;
 
-      case 'END_RECURRING':
+      case 'END_RECURRING': {
+        const { id, endedMonth, removePosted } = action.payload;
+        const rec = recurringRef.current.find(r => r.id === id);
+        let removedCount = 0;
+        if (removePosted && rec) {
+          const removedIds = new Set(
+            transactionsRef.current
+              .filter(tx =>
+                (tx.recurringId === id || (!tx.recurringId && tx.description === `(קבועה) ${rec.description}`))
+                && tx.date.slice(0, 7) >= endedMonth)
+              .map(tx => tx.id)
+          );
+          removedCount = removedIds.size;
+          if (removedCount > 0) setTransactions(prev => prev.filter(t => !removedIds.has(t.id)));
+        }
+        setRecurringExpenses(prev => prev.map(r => r.id === id ? {
+          ...r,
+          endedMonth,
+          postedCount: Math.max(0, (r.postedCount ?? 0) - removedCount),
+          lastPostedMonth: r.lastPostedMonth && r.lastPostedMonth >= endedMonth
+            ? prevMonthStr(endedMonth) : r.lastPostedMonth,
+        } : r));
+        break;
+      }
+
+      case 'PAUSE_RECURRING': {
+        const { id, pausedFromMonth } = action.payload;
+        const rec = recurringRef.current.find(r => r.id === id);
+        if (!rec) break;
+        const removedIds = new Set(
+          transactionsRef.current
+            .filter(tx =>
+              (tx.recurringId === id || (!tx.recurringId && tx.description === `(קבועה) ${rec.description}`))
+              && tx.date.slice(0, 7) >= pausedFromMonth)
+            .map(tx => tx.id)
+        );
+        if (removedIds.size > 0) setTransactions(prev => prev.filter(t => !removedIds.has(t.id)));
+        // Roll back lastPostedMonth so a later resume re-posts the current month
+        setRecurringExpenses(prev => prev.map(r => r.id === id ? {
+          ...r,
+          pausedFromMonth,
+          postedCount: Math.max(0, (r.postedCount ?? 0) - removedIds.size),
+          lastPostedMonth: r.lastPostedMonth && r.lastPostedMonth >= pausedFromMonth
+            ? prevMonthStr(pausedFromMonth) : r.lastPostedMonth,
+        } : r));
+        break;
+      }
+
+      case 'RESUME_RECURRING':
         setRecurringExpenses(prev => prev.map(r =>
-          r.id === action.payload.id ? { ...r, endedMonth: action.payload.endedMonth } : r
+          r.id === action.payload ? { ...r, pausedFromMonth: undefined } : r
         ));
         break;
 

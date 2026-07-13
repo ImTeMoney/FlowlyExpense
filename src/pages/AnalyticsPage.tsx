@@ -2,7 +2,7 @@ import React, { useState, useMemo, Suspense, lazy } from 'react';
 const GrowPage = lazy(() => import('./GrowPage'));
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, FileCheck, Landmark, Smartphone, ArrowLeftRight } from 'lucide-react';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, FileCheck, Landmark, Smartphone, ArrowLeftRight, Play, Pause } from 'lucide-react';
 import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct, resolvePaymentSplits, CreditCard as CreditCardType } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { resolveCatIcon } from '../components/CategoryPicker';
@@ -237,15 +237,17 @@ export default function AnalyticsPage() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
 
-  // End-recurring month picker
+  // End/pause-recurring month picker (shared UI, mode decides the dispatched action)
   const [showEndRecPicker, setShowEndRecPicker] = useState(false);
+  const [endRecPickerMode, setEndRecPickerMode] = useState<'end' | 'pause'>('end');
   const [endRecPickerYear, setEndRecPickerYear] = useState(now.getFullYear());
 
-  function openEndRecPicker() {
+  function openEndRecPicker(mode: 'end' | 'pause') {
     if (!editRec) return;
     // Default to next month after the viewed month
     const nextM = month === 12 ? 1 : month + 1;
     const nextY = month === 12 ? year + 1 : year;
+    setEndRecPickerMode(mode);
     setEndRecPickerYear(nextY);
     setShowEndRecPicker(true);
     // Pre-select next month visually handled in picker
@@ -254,8 +256,13 @@ export default function AnalyticsPage() {
 
   function confirmEndRec(endYear: number, endMonth: number) {
     if (!editRec) return;
-    const endedMonth = `${endYear}-${String(endMonth).padStart(2, '0')}`;
-    dispatch({ type: 'END_RECURRING', payload: { id: editRec.id, endedMonth } });
+    const fromMonth = `${endYear}-${String(endMonth).padStart(2, '0')}`;
+    if (endRecPickerMode === 'pause') {
+      dispatch({ type: 'PAUSE_RECURRING', payload: { id: editRec.id, pausedFromMonth: fromMonth } });
+    } else {
+      // removePosted: stopping "from July" also removes July's already-posted transaction
+      dispatch({ type: 'END_RECURRING', payload: { id: editRec.id, endedMonth: fromMonth, removePosted: true } });
+    }
     setShowEndRecPicker(false);
     setEditRec(null);
   }
@@ -317,7 +324,9 @@ export default function AnalyticsPage() {
     [recurringExpenses, ms]
   );
   const activeRec = useMemo(
-    () => recurringExpenses.filter(r => !r.endedMonth || r.endedMonth > currentMonthStr),
+    () => recurringExpenses.filter(r =>
+      (!r.endedMonth || r.endedMonth > currentMonthStr)
+      && !(r.pausedFromMonth && r.pausedFromMonth <= currentMonthStr)),
     [recurringExpenses, currentMonthStr] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -351,15 +360,17 @@ export default function AnalyticsPage() {
     });
   }, [monthTxns, viewedRec]);
 
-  // Smart bill predictor: days until next occurrence for each active recurring item
+  // Smart bill predictor: days until next occurrence, per recurring item of the VIEWED month
+  // (month-aware so stopping a recurring from July doesn't hide it in June's view)
   const recurringWithDue = useMemo(() => {
     const todayDay = now.getDate();
-    return activeRec.map(r => {
+    return viewedRec.map(r => {
       let daysUntil = r.dayOfMonth - todayDay;
       if (daysUntil < 0) daysUntil += daysInMonth; // next month occurrence
-      return { ...r, daysUntil, annualCost: recToMain(r) * 12 };
+      const paused = !!r.pausedFromMonth && r.pausedFromMonth <= ms;
+      return { ...r, daysUntil, paused, annualCost: recToMain(r) * 12 };
     }).sort((a, b) => a.daysUntil - b.daysUntil);
-  }, [activeRec, now, daysInMonth, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [viewedRec, ms, now, daysInMonth, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subscription health totals (active items only)
   const subHealth = useMemo(() => {
@@ -792,15 +803,19 @@ export default function AnalyticsPage() {
                   const badgeLabel = r.totalInstallments
                     ? `${r.postedCount ?? 0}/${r.totalInstallments}`
                     : t.monthlyBadge;
-                  const dueLabel = r.daysUntil === 0
-                    ? (lang === 'he' ? 'היום!' : 'Today!')
-                    : r.daysUntil === 1
-                      ? (lang === 'he' ? 'מחר' : 'Tomorrow')
-                      : (lang === 'he' ? `בעוד ${r.daysUntil} ימים` : `In ${r.daysUntil} days`);
-                  const dueUrgent = r.daysUntil <= 2;
-                  const dueSoon   = !dueUrgent && r.daysUntil <= 5;
+                  // Due countdown only makes sense for the real current month, and not while paused
+                  const showDue = ms === currentMonthStr && !r.paused;
+                  const dueLabel = showDue
+                    ? (r.daysUntil === 0
+                        ? (lang === 'he' ? 'היום!' : 'Today!')
+                        : r.daysUntil === 1
+                          ? (lang === 'he' ? 'מחר' : 'Tomorrow')
+                          : (lang === 'he' ? `בעוד ${r.daysUntil} ימים` : `In ${r.daysUntil} days`))
+                    : (lang === 'he' ? `יום ${r.dayOfMonth} בחודש` : `Day ${r.dayOfMonth}`);
+                  const dueUrgent = showDue && r.daysUntil <= 2;
+                  const dueSoon   = showDue && !dueUrgent && r.daysUntil <= 5;
                   return (
-                    <div key={r.id} className="rec-item">
+                    <div key={r.id} className="rec-item" style={r.paused ? { opacity: 0.6 } : undefined}>
                       <div className="rec-icon" style={{ color: r.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)') }}>
                         <Icon size={15} color={r.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} />
                       </div>
@@ -808,6 +823,11 @@ export default function AnalyticsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <div className="rec-name" style={{ marginBottom: 0 }}>{r.description}</div>
                           <span className="rec-badge">{badgeLabel}</span>
+                          {r.paused && (
+                            <span className="rec-badge" style={{ color: '#F59E0B', borderColor: '#F59E0B66', background: '#F59E0B1a' }}>
+                              {lang === 'he' ? 'מושהה' : 'Paused'}
+                            </span>
+                          )}
                           {(dueUrgent || dueSoon) && !r.isIncome && (
                             <span className={`rec-due-badge${dueUrgent ? ' urgent' : ' soon'}`}>{dueLabel}</span>
                           )}
@@ -839,6 +859,17 @@ export default function AnalyticsPage() {
                           title={t.setInstallments}
                         >
                           <GitFork size={13} />
+                        </button>
+                      )}
+                      {r.paused && (
+                        <button
+                          className="rec-del"
+                          onClick={() => dispatch({ type: 'RESUME_RECURRING', payload: r.id })}
+                          aria-label="Resume"
+                          title={lang === 'he' ? 'המשך קבוע' : 'Resume recurring'}
+                          style={{ color: '#30D158' }}
+                        >
+                          <Play size={13} />
                         </button>
                       )}
                       <button
@@ -1038,7 +1069,22 @@ export default function AnalyticsPage() {
                 <Check size={15} />
                 {lang === 'he' ? 'שמור שינויים' : 'Save changes'}
               </button>
-              <button className="rec-end-btn" onClick={openEndRecPicker}>
+              {editRec.pausedFromMonth ? (
+                <button
+                  className="rec-end-btn"
+                  style={{ color: '#30D158' }}
+                  onClick={() => { dispatch({ type: 'RESUME_RECURRING', payload: editRec.id }); setEditRec(null); }}
+                >
+                  <Play size={13} style={{ verticalAlign: -2 }} />{' '}
+                  {lang === 'he' ? 'המשך קבוע' : 'Resume recurring'}
+                </button>
+              ) : (
+                <button className="rec-end-btn" onClick={() => openEndRecPicker('pause')}>
+                  <Pause size={13} style={{ verticalAlign: -2 }} />{' '}
+                  {lang === 'he' ? 'השהה קבוע...' : 'Pause recurring...'}
+                </button>
+              )}
+              <button className="rec-end-btn" onClick={() => openEndRecPicker('end')}>
                 {lang === 'he' ? 'הפסק קבוע...' : 'End recurring...'}
               </button>
             </div>
@@ -1088,7 +1134,9 @@ export default function AnalyticsPage() {
         <div className="mpicker-overlay" onClick={() => setShowEndRecPicker(false)}>
           <div className="mpicker-card" onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center', padding: '0 0 10px', direction: 'rtl' }}>
-              {lang === 'he' ? 'הפסק קבוע החל מ...' : 'End recurring from...'}
+              {endRecPickerMode === 'pause'
+                ? (lang === 'he' ? 'השהה קבוע החל מ...' : 'Pause recurring from...')
+                : (lang === 'he' ? 'הפסק קבוע החל מ...' : 'End recurring from...')}
             </div>
             <div className="mpicker-year-nav">
               <button className="mpicker-yr-btn" onClick={() => setEndRecPickerYear(y => y - 1)}>‹</button>
