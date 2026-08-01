@@ -1,11 +1,16 @@
-
-.env.local
-.vercel
 node_modules/
 dist/
+
+# Environment — never commit secrets
+.env
+.env.*
+
+# Deploy / tooling
+.vercel
+.claude/
+.agents/
 
 # Python bytecode
 __pycache__/
 *.pyc
 *.pyo
-**/__pycache__/
