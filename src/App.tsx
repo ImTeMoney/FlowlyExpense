@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { pageView } from './services/analytics';
 import { ExpenseProvider } from './context/ExpenseContext';
-import { LanguageProvider } from './context/LanguageContext';
+import { LanguageProvider, useLang } from './context/LanguageContext';
 import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import SettingsPage from './pages/SettingsPage';
-import GrowPage from './pages/GrowPage';
 import Onboarding, { hasSeenOnboarding, markOnboardingDone } from './components/Onboarding';
+import PWAInstallModal from './components/PWAInstallModal';
+import { useInstallPrompt } from './hooks/useInstallPrompt';
+
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const SettingsPage  = lazy(() => import('./pages/SettingsPage'));
+const GrowPage      = lazy(() => import('./pages/GrowPage'));
 
 // ── Full-app Error Boundary ───────────────────────────────────────────────────
 // Catches any render error anywhere in the tree and shows a recovery screen
@@ -70,7 +74,43 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+function RouteTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => { pageView(pathname); }, [pathname]);
+  return null;
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
+
+function PWAModalWrapper({ children }: { children: React.ReactNode }) {
+  const { canPrompt, isIOSSafari, isStandalone } = useInstallPrompt();
+  const [dismissed, setDismissed] = useState(
+    () => !!sessionStorage.getItem('pwa_prompt_dismissed')
+  );
+
+  const showPWAModal = !isStandalone && (canPrompt || isIOSSafari) && !dismissed;
+
+  function dismissPWAModal() {
+    sessionStorage.setItem('pwa_prompt_dismissed', '1');
+    setDismissed(true);
+  }
+
+  return (
+    <>
+      {showPWAModal && <PWAInstallModal onDismiss={dismissPWAModal} />}
+      {children}
+    </>
+  );
+}
+
+function LangSync() {
+  const { lang } = useLang();
+  useEffect(() => {
+    document.documentElement.lang = lang === 'he' ? 'he' : 'en';
+    document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+  }, [lang]);
+  return null;
+}
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
@@ -89,18 +129,24 @@ function App() {
   return (
     <ErrorBoundary>
       <LanguageProvider>
+        <LangSync />
         <ExpenseProvider>
           <Router>
-            {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/grow" element={<GrowPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AppLayout>
+            <RouteTracker />
+            <PWAModalWrapper>
+              {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
+              <AppLayout>
+                <Suspense fallback={null}>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/grow" element={<Navigate to="/analytics" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </AppLayout>
+            </PWAModalWrapper>
           </Router>
         </ExpenseProvider>
       </LanguageProvider>

@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { convertAmount, CURRENCY_SYMBOL } from '../services/exchangeRate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type PaymentMethod = 'cash' | 'credit' | 'debit' | 'check' | 'transfer' | 'bit' | 'applepay' | 'standing_order';
+export type PaymentMethod = 'cash' | 'credit' | 'check' | 'transfer' | 'bit';
 export type MoneyMode = 'savings_based' | 'budget_based';
 
 export type CategoryBudgets = Record<string, number>; // catId → monthly budget amount
@@ -15,8 +15,32 @@ export interface DebtEntry {
   date: string;
   note?: string;
   direction: 'owes_me' | 'i_owe';
+  currency?: string;
   settled: boolean;
   settledDate?: string;
+  transactionId?: string;
+}
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  last4: string;
+  billingDay: number;
+  limit?: number;
+  color: string;
+  isDefault?: boolean;
+}
+
+export interface TravelBudget {
+  id: string;
+  name: string;
+  currency: string;
+  totalBudget: number;
+  cashBudget?: number;
+  creditBudget?: number;
+  startDate: string;
+  endDate?: string;
+  returnedWith?: number;
 }
 
 export interface StreakData {
@@ -26,7 +50,7 @@ export interface StreakData {
 }
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
-  'cash', 'credit', 'debit', 'check', 'transfer', 'bit', 'applepay', 'standing_order',
+  'cash', 'credit', 'check', 'transfer', 'bit',
 ];
 
 /** One leg of a split payment — method + amount for that leg. */
@@ -39,6 +63,7 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  icon?: string;
   isCustom?: boolean;
   isRenamed?: boolean;
 }
@@ -49,17 +74,9 @@ export interface InstallmentInfo {
   groupId: string;
 }
 
-/** Lightweight receipt metadata mirrored on the Transaction for fast list rendering. */
-export interface ReceiptMeta {
-  mimeType:   string;
-  filename?:  string;
-  size:       number;
-  capturedAt: number;
-}
-
 export interface Transaction {
   id: string;
-  amount: number;             // always stored in mainCurrency
+  amount: number;             // always stored in ILS (base currency)
   categoryId: string;
   date: string;
   description: string;
@@ -71,23 +88,28 @@ export interface Transaction {
   currency?: string;          // original currency (if different from main)
   originalAmount?: number;    // amount in original currency
   exchangeRate?: number;      // rate used: 1 original = rate main
-  /** IndexedDB id pointing to the attached receipt blob (image or PDF) */
-  receiptId?: string;
-  /** Metadata mirror of the attachment so the list can render without an IDB hit */
-  receipt?: ReceiptMeta;
+  /** Links to CreditCard.id when paymentMethod is credit/debit */
+  cardId?: string;
+  /** Links back to the RecurringExpense.id that auto-created this transaction */
+  recurringId?: string;
 }
 
 export interface RecurringExpense {
   id: string;
-  amount: number;
+  amount: number;              // always stored in ILS (base currency)
   categoryId: string;
   dayOfMonth: number;
   description: string;
   lastPostedMonth?: string;
   isIncome?: boolean;
   paymentMethod?: PaymentMethod;
-  totalInstallments?: number;   // if set → limited recurring, auto-deletes when done
-  postedCount?: number;         // how many months have been posted so far
+  totalInstallments?: number;  // if set → limited recurring, auto-deletes when done
+  postedCount?: number;        // how many months have been posted so far
+  currency?: string;           // original currency when entered (if not ILS)
+  originalAmount?: number;     // amount in original currency for lossless display
+  cardId?: string;             // credit card to charge each month
+  endedMonth?: string;         // 'YYYY-MM' — if set, don't auto-post from this month onward
+  pausedFromMonth?: string;    // 'YYYY-MM' — paused from this month until resumed
 }
 
 /**
@@ -118,6 +140,10 @@ export interface AppState {
   categoryBudgets: CategoryBudgets;
   debts: DebtEntry[];
   streakData: StreakData;
+  debtModeEnabled: boolean;
+  cards: CreditCard[];
+  travelBudgets: TravelBudget[];
+  travelModeEnabled: boolean;
 }
 
 type Action =
@@ -125,28 +151,40 @@ type Action =
   | { type: 'DELETE_TRANSACTION';        payload: string }
   | { type: 'DELETE_INSTALLMENT_GROUP';  payload: string }   // groupId
   | { type: 'ADD_RECURRING';             payload: RecurringExpense }
-  | { type: 'UPDATE_RECURRING';          payload: RecurringExpense }
+  | { type: 'UPDATE_RECURRING';          payload: RecurringExpense; oldDescription?: string }
   | { type: 'DELETE_RECURRING';          payload: string }
+  | { type: 'END_RECURRING';            payload: { id: string; endedMonth: string; removePosted?: boolean } }
+  | { type: 'PAUSE_RECURRING';          payload: { id: string; pausedFromMonth: string } }
+  | { type: 'RESUME_RECURRING';         payload: string }
   | { type: 'SET_BUDGET';                payload: number }
   | { type: 'SET_SAVINGS_GOAL';          payload: number }
   | { type: 'ADD_CATEGORY';              payload: Category }
   | { type: 'DELETE_CATEGORY';           payload: string }
-  | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string } }
+  | { type: 'RENAME_CATEGORY';           payload: { id: string; name: string; color: string; icon?: string } }
   | { type: 'UPDATE_LAST_POSTED';        payload: { id: string; month: string } }
   | { type: 'SET_RECURRING_INSTALLMENTS'; payload: { id: string; totalInstallments: number } }
   | { type: 'SET_DASHBOARD_FILTER';      payload: Partial<DashboardFilter> }
   | { type: 'SET_MAIN_CURRENCY';         payload: string }
   | { type: 'SET_MONEY_MODE';            payload: MoneyMode }
   | { type: 'MERGE_TRANSACTIONS';        payload: Transaction[] }   // append imported rows
-  | { type: 'UPDATE_TRANSACTION_RECEIPT'; payload: { id: string; receiptId?: string; receipt?: ReceiptMeta } }
   | { type: 'UPDATE_TRANSACTION';        payload: Transaction }
   | { type: 'REORDER_CATEGORIES';        payload: Category[] }
   | { type: 'SET_CATEGORY_BUDGET';       payload: { catId: string; amount: number } }
   | { type: 'CLEAR_CATEGORY_BUDGET';     payload: string }
   | { type: 'ADD_DEBT';                  payload: DebtEntry }
+  | { type: 'UPDATE_DEBT';               payload: DebtEntry }
   | { type: 'SETTLE_DEBT';               payload: string }
   | { type: 'DELETE_DEBT';               payload: string }
-  | { type: 'UPDATE_STREAK';             payload: StreakData };
+  | { type: 'SET_DEBT_MODE';             payload: boolean }
+  | { type: 'UPDATE_STREAK';             payload: StreakData }
+  | { type: 'ADD_CARD';                  payload: CreditCard }
+  | { type: 'UPDATE_CARD';              payload: CreditCard }
+  | { type: 'DELETE_CARD';              payload: string }
+  | { type: 'SET_DEFAULT_CARD';          payload: string }
+  | { type: 'ADD_TRAVEL_BUDGET';        payload: TravelBudget }
+  | { type: 'UPDATE_TRAVEL_BUDGET';     payload: TravelBudget }
+  | { type: 'DELETE_TRAVEL_BUDGET';     payload: string }
+  | { type: 'SET_TRAVEL_MODE';          payload: boolean };
 
 // ── Static built-in categories ────────────────────────────────────────────────
 
@@ -164,14 +202,17 @@ export const INITIAL_CATEGORIES: Category[] = [
 
 // Color palette for custom categories
 export const CATEGORY_COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#84cc16',
-  '#10b981', '#14b8a6', '#0ea5e9', '#3b82f6',
-  '#8b5cf6', '#ec4899', '#f43f5e', '#94a3b8',
+  '#f97316', '#f59e0b', '#84cc16', '#10b981',
+  '#14b8a6', '#0ea5e9', '#3b82f6', '#8b5cf6',
+  '#ec4899', '#f43f5e', '#94a3b8',
 ];
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
-const STORAGE_KEYS = {
+export const DEBT_CATEGORY_ID = 'cat_debt';
+export const DEBT_CATEGORY: Category = { id: DEBT_CATEGORY_ID, name: 'חוב', color: '#6366f1' };
+
+export const STORAGE_KEYS = {
   TRANSACTIONS:      'expense_transactions',
   RECURRING:         'expense_recurring',
   BUDGET:            'expense_budget',
@@ -183,6 +224,10 @@ const STORAGE_KEYS = {
   CATEGORY_BUDGETS:  'expense_category_budgets',
   DEBTS:             'expense_debts',
   STREAKS:           'expense_streaks',
+  DEBT_MODE:         'expense_debt_mode',
+  CARDS:             'expense_cards',
+  TRAVEL_BUDGETS:    'expense_travel_budgets',
+  TRAVEL_MODE:       'expense_travel_mode',
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -221,6 +266,11 @@ function generateId(): string {
   return '_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+function prevMonthStr(ms: string): string {
+  const [y, m] = ms.split('-').map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+}
+
 export function getDeviceId(): string {
   let id = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
   if (!id) {
@@ -235,11 +285,15 @@ export function getDeviceId(): string {
 // 'expense_custom_categories' key (which only stored custom additions).
 function loadCategories(): Category[] {
   const stored = loadFromStorage<Category[]>(STORAGE_KEYS.CATEGORIES, []);
-  if (stored.length > 0) return stored;
+  let cats = stored.length > 0
+    ? stored
+    : [...INITIAL_CATEGORIES, ...loadFromStorage<Category[]>('expense_custom_categories', [])];
 
-  // Migration: merge INITIAL_CATEGORIES with any previously saved custom ones
-  const legacy = loadFromStorage<Category[]>('expense_custom_categories', []);
-  return [...INITIAL_CATEGORIES, ...legacy];
+  // Debt mode is on by default; add cat_debt if not already present
+  if (localStorage.getItem(STORAGE_KEYS.DEBT_MODE) !== 'false' && !cats.some(c => c.id === DEBT_CATEGORY_ID)) {
+    cats = [...cats, DEBT_CATEGORY];
+  }
+  return cats;
 }
 
 // ── Context shape ─────────────────────────────────────────────────────────────
@@ -250,6 +304,8 @@ interface ExpenseContextProps {
   formatCurrency: (amount: number) => string;
   /** Format an amount that is already in mainCurrency (no displayRate applied) */
   formatCurrencyDirect: (amount: number) => string;
+  /** Convert a transaction's stored ILS amount to mainCurrency, preserving originalAmount when available */
+  toMainAmt: (tx: Transaction) => number;
   filteredDashboardTransactions: Transaction[];
   isLoading: boolean;
   deviceId: string;
@@ -286,9 +342,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [moneyMode, setMoneyMode] = useState<MoneyMode>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.MONEY_MODE);
     if (stored === 'savings_based' || stored === 'budget_based') return stored;
-    // Auto-detect: existing users with a savings goal default to savings_based
-    const savedGoal = loadFromStorage<number>(STORAGE_KEYS.SAVINGS_GOAL, 0);
-    return savedGoal > 0 ? 'savings_based' : 'budget_based';
+    return 'savings_based';
   });
 
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgets>(() =>
@@ -297,8 +351,28 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [debts, setDebts] = useState<DebtEntry[]>(() =>
     loadFromStorage<DebtEntry[]>(STORAGE_KEYS.DEBTS, [])
   );
+  // dispatch is a []-deps useCallback, so it needs a latest-value ref to read
+  // current debts (SETTLE_DEBT / DELETE_DEBT side effects run outside updaters)
+  const debtsRef = useRef(debts);
+  debtsRef.current = debts;
+  const transactionsRef = useRef(transactions);
+  transactionsRef.current = transactions;
+  const recurringRef = useRef(recurringExpenses);
+  recurringRef.current = recurringExpenses;
+  const [debtModeEnabled, setDebtModeEnabled] = useState<boolean>(() =>
+    localStorage.getItem(STORAGE_KEYS.DEBT_MODE) === 'true'
+  );
   const [streakData, setStreakData] = useState<StreakData>(() =>
     loadFromStorage<StreakData>(STORAGE_KEYS.STREAKS, { currentStreak: 0, longestStreak: 0, lastCheckedDate: '' })
+  );
+  const [cards, setCards] = useState<CreditCard[]>(() =>
+    loadFromStorage<CreditCard[]>(STORAGE_KEYS.CARDS, [])
+  );
+  const [travelBudgets, setTravelBudgets] = useState<TravelBudget[]>(() =>
+    loadFromStorage<TravelBudget[]>(STORAGE_KEYS.TRAVEL_BUDGETS, [])
+  );
+  const [travelModeEnabled, setTravelModeEnabled] = useState<boolean>(() =>
+    localStorage.getItem(STORAGE_KEYS.TRAVEL_MODE) === 'true'
   );
 
   const deviceId = useMemo(() => getDeviceId(), []);
@@ -333,7 +407,11 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   }, [moneyMode]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.CATEGORY_BUDGETS, categoryBudgets); }, [categoryBudgets]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.DEBTS, debts); }, [debts]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.DEBT_MODE, String(debtModeEnabled)); }, [debtModeEnabled]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.STREAKS, streakData); }, [streakData]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.CARDS, cards); }, [cards]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.TRAVEL_BUDGETS, travelBudgets); }, [travelBudgets]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.TRAVEL_MODE, String(travelModeEnabled)); }, [travelModeEnabled]);
 
   // Cross-tab sync: when another tab writes to localStorage, mirror the change here
   useEffect(() => {
@@ -341,27 +419,63 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       if (!e.key || e.newValue === null) return;
       try {
         switch (e.key) {
-          case STORAGE_KEYS.TRANSACTIONS:
-            setTransactions(JSON.parse(e.newValue));
+          case STORAGE_KEYS.TRANSACTIONS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setTransactions(v);
             break;
-          case STORAGE_KEYS.RECURRING:
-            setRecurringExpenses(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.RECURRING: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setRecurringExpenses(v);
             break;
-          case STORAGE_KEYS.BUDGET:
-            setMonthlyBudget(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.BUDGET: {
+            const v = JSON.parse(e.newValue);
+            if (typeof v === 'number' && isFinite(v)) setMonthlyBudget(v);
             break;
-          case STORAGE_KEYS.SAVINGS_GOAL:
-            setSavingsGoal(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.SAVINGS_GOAL: {
+            const v = JSON.parse(e.newValue);
+            if (typeof v === 'number' && isFinite(v)) setSavingsGoal(v);
             break;
-          case STORAGE_KEYS.CATEGORIES:
-            setCategories(JSON.parse(e.newValue));
+          }
+          case STORAGE_KEYS.CATEGORIES: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setCategories(v);
             break;
+          }
           case STORAGE_KEYS.MAIN_CURRENCY:
             setMainCurrency(e.newValue);
             break;
           case STORAGE_KEYS.MONEY_MODE:
             if (e.newValue === 'savings_based' || e.newValue === 'budget_based')
               setMoneyMode(e.newValue);
+            break;
+          case STORAGE_KEYS.CARDS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setCards(v);
+            break;
+          }
+          case STORAGE_KEYS.DEBTS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setDebts(v);
+            break;
+          }
+          case STORAGE_KEYS.TRAVEL_BUDGETS: {
+            const v = JSON.parse(e.newValue);
+            if (Array.isArray(v)) setTravelBudgets(v);
+            break;
+          }
+          case STORAGE_KEYS.CATEGORY_BUDGETS: {
+            const v = JSON.parse(e.newValue);
+            if (v && typeof v === 'object' && !Array.isArray(v)) setCategoryBudgets(v);
+            break;
+          }
+          case STORAGE_KEYS.DEBT_MODE:
+            setDebtModeEnabled(e.newValue === 'true');
+            break;
+          case STORAGE_KEYS.TRAVEL_MODE:
+            setTravelModeEnabled(e.newValue === 'true');
             break;
         }
       } catch { /* malformed JSON – ignore */ }
@@ -388,16 +502,32 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     if (streakData.lastCheckedDate === todayStr) return; // already checked today
 
     const daysInMonth = new Date(yyyy, today.getMonth() + 1, 0).getDate();
-    const dailyQuota = monthlyBudget / daysInMonth;
+    const dailyQuota = monthlyBudget / daysInMonth; // monthlyBudget is in mainCurrency
     const yesterdaySpend = transactions
       .filter(t => !t.isIncome && t.date === yesterdayStr)
-      .reduce((s, t) => s + t.amount, 0);
+      .reduce((s, t) => s + (t.currency === mainCurrency && t.originalAmount !== undefined ? t.originalAmount : t.amount * displayRate), 0);
 
     const underBudget = yesterdaySpend <= dailyQuota;
     const newStreak = underBudget ? streakData.currentStreak + 1 : 0;
     const newLongest = Math.max(streakData.longestStreak, newStreak);
     setStreakData({ currentStreak: newStreak, longestStreak: newLongest, lastCheckedDate: todayStr });
-  }, [transactions, monthlyBudget]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions, monthlyBudget, mainCurrency, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Migrate existing recurring expenses created before originalAmount was tracked.
+  // When mainCurrency !== ILS and displayRate is available, back-fill originalAmount
+  // so display is lossless (avoids 50.01 instead of 50 from round-trip conversion).
+  useEffect(() => {
+    if (mainCurrency === 'ILS' || displayRate <= 0 || displayRate === 1) return;
+    const toMigrate = recurringExpenses.filter(r => r.originalAmount === undefined);
+    if (toMigrate.length === 0) return;
+    setRecurringExpenses(prev => prev.map(r => {
+      if (r.originalAmount !== undefined) return r;
+      const raw = r.amount * displayRate;
+      const rounded = Math.round(raw);
+      const originalAmount = Math.abs(raw - rounded) <= 0.02 ? rounded : Math.round(raw * 100) / 100;
+      return { ...r, currency: mainCurrency, originalAmount };
+    }));
+  }, [displayRate, mainCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-post recurring expenses whenever the recurring list changes.
   // Using `recurringExpenses` as a dependency (instead of []) means newly added
@@ -409,11 +539,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const currentDay = today.getDate();
+    const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const toPost = recurringExpenses.filter(r => {
       if (r.lastPostedMonth === currentMonthStr) return false;
-      if (currentDay < r.dayOfMonth) return false;
       if (r.totalInstallments && (r.postedCount ?? 0) >= r.totalInstallments) return false;
+      if (r.endedMonth && r.endedMonth <= currentMonthStr) return false;
+      if (r.pausedFromMonth && r.pausedFromMonth <= currentMonthStr) return false;
       return true;
     });
     if (toPost.length === 0) return;
@@ -421,10 +552,15 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       id:            generateId(),
       amount:        r.amount,
       categoryId:    r.categoryId,
-      date:          `${currentMonthStr}-${String(r.dayOfMonth).padStart(2, '0')}`,
+      date:          `${currentMonthStr}-${String(Math.min(r.dayOfMonth, daysInCurrentMonth)).padStart(2, '0')}`,
       description:   `(קבועה) ${r.description}`,
       isIncome:      r.isIncome,
       paymentMethod: r.paymentMethod,
+      recurringId:   r.id,
+      ...(r.cardId ? { cardId: r.cardId } : {}),
+      ...(r.currency && r.originalAmount !== undefined
+        ? { currency: r.currency, originalAmount: r.originalAmount }
+        : {}),
     }));
     setTransactions(prev => [...newTxns, ...prev]);
     setRecurringExpenses(prev => {
@@ -458,12 +594,85 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         setRecurringExpenses(prev => [...prev, { ...action.payload, id: generateId() }]);
         break;
 
-      case 'UPDATE_RECURRING':
-        setRecurringExpenses(prev => prev.map(r => r.id === action.payload.id ? action.payload : r));
+      case 'UPDATE_RECURRING': {
+        const upd = action.payload;
+        const oldDesc = action.oldDescription;
+        setRecurringExpenses(prev => prev.map(r => r.id === upd.id ? upd : r));
+        // Sync the already-posted transaction for the current month (if any).
+        // Match by recurringId (new transactions) or by old description (legacy).
+        const curMs = new Date().toISOString().slice(0, 7);
+        setTransactions(prev => prev.map(tx => {
+          if (!tx.date.startsWith(curMs)) return tx;
+          const byId       = tx.recurringId === upd.id;
+          const byDesc     = !tx.recurringId && !!oldDesc && tx.description === `(קבועה) ${oldDesc}`;
+          // Category+amount fallback: catches legacy txns where description may differ
+          const byCategory = !tx.recurringId && !byDesc &&
+            tx.description.startsWith('(קבועה) ') &&
+            tx.categoryId === upd.categoryId &&
+            !!tx.isIncome === !!upd.isIncome &&
+            Math.abs(tx.amount - upd.amount) < 1;
+          if (!byId && !byDesc && !byCategory) return tx;
+          return { ...tx, paymentMethod: upd.paymentMethod, cardId: upd.cardId, recurringId: upd.id };
+        }));
         break;
+      }
 
       case 'DELETE_RECURRING':
         setRecurringExpenses(prev => prev.filter(r => r.id !== action.payload));
+        break;
+
+      case 'END_RECURRING': {
+        const { id, endedMonth, removePosted } = action.payload;
+        const rec = recurringRef.current.find(r => r.id === id);
+        let removedCount = 0;
+        if (removePosted && rec) {
+          const removedIds = new Set(
+            transactionsRef.current
+              .filter(tx =>
+                (tx.recurringId === id || (!tx.recurringId && tx.description === `(קבועה) ${rec.description}`))
+                && tx.date.slice(0, 7) >= endedMonth)
+              .map(tx => tx.id)
+          );
+          removedCount = removedIds.size;
+          if (removedCount > 0) setTransactions(prev => prev.filter(t => !removedIds.has(t.id)));
+        }
+        setRecurringExpenses(prev => prev.map(r => r.id === id ? {
+          ...r,
+          endedMonth,
+          postedCount: Math.max(0, (r.postedCount ?? 0) - removedCount),
+          lastPostedMonth: r.lastPostedMonth && r.lastPostedMonth >= endedMonth
+            ? prevMonthStr(endedMonth) : r.lastPostedMonth,
+        } : r));
+        break;
+      }
+
+      case 'PAUSE_RECURRING': {
+        const { id, pausedFromMonth } = action.payload;
+        const rec = recurringRef.current.find(r => r.id === id);
+        if (!rec) break;
+        const removedIds = new Set(
+          transactionsRef.current
+            .filter(tx =>
+              (tx.recurringId === id || (!tx.recurringId && tx.description === `(קבועה) ${rec.description}`))
+              && tx.date.slice(0, 7) >= pausedFromMonth)
+            .map(tx => tx.id)
+        );
+        if (removedIds.size > 0) setTransactions(prev => prev.filter(t => !removedIds.has(t.id)));
+        // Roll back lastPostedMonth so a later resume re-posts the current month
+        setRecurringExpenses(prev => prev.map(r => r.id === id ? {
+          ...r,
+          pausedFromMonth,
+          postedCount: Math.max(0, (r.postedCount ?? 0) - removedIds.size),
+          lastPostedMonth: r.lastPostedMonth && r.lastPostedMonth >= pausedFromMonth
+            ? prevMonthStr(pausedFromMonth) : r.lastPostedMonth,
+        } : r));
+        break;
+      }
+
+      case 'RESUME_RECURRING':
+        setRecurringExpenses(prev => prev.map(r =>
+          r.id === action.payload ? { ...r, pausedFromMonth: undefined } : r
+        ));
         break;
 
       case 'SET_RECURRING_INSTALLMENTS':
@@ -488,12 +697,15 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
       case 'DELETE_CATEGORY':
         setCategories(prev => prev.filter(c => c.id !== action.payload));
+        setTransactions(prev => prev.map(tx =>
+          tx.categoryId === action.payload ? { ...tx, categoryId: 'cat_other' } : tx
+        ));
         break;
 
       case 'RENAME_CATEGORY':
         setCategories(prev =>
           prev.map(c => c.id === action.payload.id
-            ? { ...c, name: action.payload.name, color: action.payload.color, isRenamed: true }
+            ? { ...c, name: action.payload.name, color: action.payload.color, icon: action.payload.icon, isRenamed: true }
             : c
           )
         );
@@ -539,38 +751,112 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         break;
 
       case 'ADD_DEBT': {
+        // Only record the debt — transaction is created on settlement
         const newDebt: DebtEntry = { ...action.payload, id: generateId() };
         setDebts(prev => [newDebt, ...prev]);
         break;
       }
 
-      case 'SETTLE_DEBT':
+      case 'UPDATE_DEBT': {
+        const d = action.payload;
+        setDebts(prev => prev.map(e => e.id === d.id ? d : e));
+        if (d.transactionId) {
+          setTransactions(prev => prev.map(t => t.id === d.transactionId
+            ? { ...t, amount: d.amount, description: `חוב — ${d.name}`, date: d.date, isIncome: d.direction === 'owes_me' }
+            : t
+          ));
+        }
+        break;
+      }
+
+      case 'SETTLE_DEBT': {
+        // Side effects must stay outside the updater — an impure updater runs
+        // twice under StrictMode and would prepend a duplicate settlement tx
+        const settling = debtsRef.current.find(d => d.id === action.payload && !d.settled);
+        if (!settling) break;
+        const txId = generateId();
+        const settledTx: Transaction = {
+          id: txId,
+          amount: settling.amount,
+          categoryId: DEBT_CATEGORY_ID,
+          date: new Date().toISOString().slice(0, 10),
+          description: `חוב — ${settling.name}`,
+          isIncome: settling.direction === 'owes_me',
+        };
+        setTransactions(tPrev => [settledTx, ...tPrev]);
         setDebts(prev => prev.map(d => d.id === action.payload
-          ? { ...d, settled: true, settledDate: new Date().toISOString().slice(0, 10) }
+          ? { ...d, settled: true, settledDate: settledTx.date, transactionId: txId }
           : d
         ));
         break;
+      }
 
-      case 'DELETE_DEBT':
+      case 'DELETE_DEBT': {
+        const toDelete = debtsRef.current.find(d => d.id === action.payload);
+        if (toDelete?.transactionId) {
+          setTransactions(tPrev => tPrev.filter(t => t.id !== toDelete.transactionId));
+        }
         setDebts(prev => prev.filter(d => d.id !== action.payload));
         break;
+      }
+
+      case 'SET_DEBT_MODE': {
+        setDebtModeEnabled(action.payload);
+        if (action.payload) {
+          // Ensure cat_debt exists when enabling
+          setCategories(prev =>
+            prev.some(c => c.id === DEBT_CATEGORY_ID) ? prev : [...prev, DEBT_CATEGORY]
+          );
+        }
+        break;
+      }
 
       case 'UPDATE_STREAK':
         setStreakData(action.payload);
         break;
 
-      case 'UPDATE_TRANSACTION_RECEIPT':
-        setTransactions(prev => prev.map(tx => {
-          if (tx.id !== action.payload.id) return tx;
-          if (action.payload.receiptId) {
-            return { ...tx, receiptId: action.payload.receiptId, receipt: action.payload.receipt };
-          }
-          const next = { ...tx };
-          delete next.receiptId;
-          delete next.receipt;
-          return next;
-        }));
+      case 'ADD_CARD':
+        setCards(prev => [...prev, { ...action.payload, id: generateId() }]);
         break;
+
+      case 'UPDATE_CARD':
+        setCards(prev => prev.map(c => c.id === action.payload.id ? action.payload : c));
+        break;
+
+      case 'SET_DEFAULT_CARD':
+        setCards(prev => prev.map(c =>
+          c.id === action.payload
+            ? { ...c, isDefault: !c.isDefault }
+            : { ...c, isDefault: false }
+        ));
+        break;
+
+      case 'DELETE_CARD':
+        setCards(prev => prev.filter(c => c.id !== action.payload));
+        setTransactions(prev => prev.map(tx =>
+          tx.cardId === action.payload ? { ...tx, cardId: undefined } : tx
+        ));
+        setRecurringExpenses(prev => prev.map(r =>
+          r.cardId === action.payload ? { ...r, cardId: undefined } : r
+        ));
+        break;
+
+      case 'ADD_TRAVEL_BUDGET':
+        setTravelBudgets(prev => [...prev, { ...action.payload, id: generateId() }]);
+        break;
+
+      case 'UPDATE_TRAVEL_BUDGET':
+        setTravelBudgets(prev => prev.map(b => b.id === action.payload.id ? action.payload : b));
+        break;
+
+      case 'DELETE_TRAVEL_BUDGET':
+        setTravelBudgets(prev => prev.filter(b => b.id !== action.payload));
+        break;
+
+      case 'SET_TRAVEL_MODE':
+        setTravelModeEnabled(action.payload);
+        break;
+
     }
   }, []);
 
@@ -585,8 +871,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     moneyMode,
     categoryBudgets,
     debts,
+    debtModeEnabled,
     streakData,
-  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, streakData]);
+    cards,
+    travelBudgets,
+    travelModeEnabled,
+  }), [transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, dashboardFilter, mainCurrency, moneyMode, categoryBudgets, debts, debtModeEnabled, streakData, cards, travelBudgets, travelModeEnabled]);
 
   const filteredDashboardTransactions = useMemo(() => {
     const { period, customMonthStr, categoryId } = dashboardFilter;
@@ -619,7 +909,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     const converted = amount * displayRate;
     if (mainCurrency === 'ILS') {
       return new Intl.NumberFormat('he-IL', {
-        style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
+        style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 2,
       }).format(converted);
     }
     const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
@@ -630,15 +920,23 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const formatCurrencyDirect = useCallback((amount: number) => {
     if (mainCurrency === 'ILS') {
       return new Intl.NumberFormat('he-IL', {
-        style: 'currency', currency: 'ILS', maximumFractionDigits: 0,
+        style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 2,
       }).format(amount);
     }
     const sym = CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency;
     return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }, [mainCurrency]);
 
+  /** Convert a transaction's ILS-stored amount to mainCurrency, using originalAmount when available to avoid round-trip precision loss */
+  const toMainAmt = useCallback((tx: Transaction): number =>
+    tx.currency === mainCurrency && tx.originalAmount !== undefined
+      ? tx.originalAmount
+      : tx.amount * displayRate,
+    [mainCurrency, displayRate]
+  );
+
   return (
-    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, formatCurrencyDirect, filteredDashboardTransactions, isLoading: false, deviceId, displayRate }}>
+    <ExpenseContext.Provider value={{ state, dispatch, formatCurrency, formatCurrencyDirect, toMainAmt, filteredDashboardTransactions, isLoading: false, deviceId, displayRate }}>
       {children}
     </ExpenseContext.Provider>
   );

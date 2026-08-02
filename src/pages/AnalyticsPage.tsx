@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
+const GrowPage = lazy(() => import('./GrowPage'));
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target } from 'lucide-react';
-import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct } from '../context/ExpenseContext';
+import { Package, X, BarChart2, GitFork, TrendingUp, Pencil, Check, Target, ChevronDown, Banknote, CreditCard, FileCheck, Landmark, Smartphone, ArrowLeftRight, Play, Pause } from 'lucide-react';
+import { useExpense, RecurringExpense, PAYMENT_METHODS, PaymentMethod, getCategoryBudgetPct, resolvePaymentSplits, CreditCard as CreditCardType } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
-import { CAT_ICON } from '../components/CategoryPicker';
+import { resolveCatIcon } from '../components/CategoryPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import CalendarHeatmap from '../components/CalendarHeatmap';
 
@@ -47,10 +48,10 @@ function SideDonut({ pct, color, sublabel }: { pct: number; color: string; subla
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const { state, dispatch, formatCurrency } = useExpense();
+  const { state, dispatch, formatCurrency, formatCurrencyDirect, toMainAmt, displayRate } = useExpense();
   const { t, lang, monthLabel, catName } = useLang();
   const navigate = useNavigate();
-  const { transactions, categories, recurringExpenses, monthlyBudget, savingsGoal, categoryBudgets } = state;
+  const { transactions, categories, recurringExpenses, categoryBudgets, cards } = state;
 
   // Month navigation
   const now = new Date();
@@ -76,8 +77,8 @@ export default function AnalyticsPage() {
   const monthTxns = useMemo(() => transactions.filter(tx => tx.date.startsWith(ms)), [transactions, ms]);
   const prevTxns  = useMemo(() => transactions.filter(tx => tx.date.startsWith(prevMs)), [transactions, prevMs]);
 
-  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
-  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + tx.amount, 0);
+  const spent  = monthTxns.filter(tx => !tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
+  const income = monthTxns.filter(tx =>  tx.isIncome).reduce((s,tx) => s + toMainAmt(tx), 0);
   const savings = income - spent;
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -89,16 +90,74 @@ export default function AnalyticsPage() {
     return categories
       .map(cat => {
         const catTxns   = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id);
-        const total     = catTxns.reduce((s,tx) => s + tx.amount, 0);
-        const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + tx.amount, 0);
+        const total     = catTxns.reduce((s,tx) => s + toMainAmt(tx), 0);
+        const prevTotal = prevTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).reduce((s,tx) => s + toMainAmt(tx), 0);
         return { cat, total, prevTotal };
       })
       .filter(x => x.total > 0)
       .sort((a,b) => b.total - a.total);
-  }, [categories, monthTxns, prevTxns]);
+  }, [categories, monthTxns, prevTxns, toMainAmt]);
 
   const maxCat        = catTotals[0]?.total || 1;
   const totalCatSpent = catTotals.reduce((s, x) => s + x.total, 0);
+
+  const descTotals = useMemo(() => {
+    const map = new Map<string, { display: string; total: number; count: number }>();
+    monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
+      const key = tx.description.trim().toLowerCase();
+      const cur = map.get(key) ?? { display: tx.description.trim(), total: 0, count: 0 };
+      map.set(key, { display: cur.display, total: cur.total + toMainAmt(tx), count: cur.count + 1 });
+    });
+    return [...map.values()].sort((a, b) => b.total - a.total);
+  }, [monthTxns, toMainAmt]);
+
+  const PM_ICON: Record<string, React.FC<{ size?: number; color?: string }>> = {
+    cash: Banknote, credit: CreditCard, check: FileCheck,
+    transfer: Landmark, bit: Smartphone,
+  };
+  const PM_COLOR: Record<string, string> = {
+    cash: '#22C55E', credit: '#8B5CF6', check: '#F59E0B',
+    transfer: '#0EA5E9', bit: '#06B6D4',
+  };
+
+  const pmTotals = useMemo(() => {
+    const map = new Map<PaymentMethod, number>();
+    monthTxns.filter(tx => !tx.isIncome).forEach(tx => {
+      const mainAmt = toMainAmt(tx);
+      const splits = resolvePaymentSplits(tx);
+      if (splits.length === 1) {
+        map.set(splits[0].paymentMethod, (map.get(splits[0].paymentMethod) ?? 0) + mainAmt);
+      } else {
+        const ilsTotal = splits.reduce((s, sp) => s + sp.amount, 0);
+        splits.forEach(sp => {
+          const portion = ilsTotal > 0 ? mainAmt * (sp.amount / ilsTotal) : mainAmt / splits.length;
+          map.set(sp.paymentMethod, (map.get(sp.paymentMethod) ?? 0) + portion);
+        });
+      }
+    });
+    return Array.from(map)
+      .map(([pm, total]) => ({ pm, total }))
+      .filter(x => x.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [monthTxns, toMainAmt]);
+
+  const maxPm        = pmTotals[0]?.total || 1;
+  const totalPmSpent = pmTotals.reduce((s, x) => s + x.total, 0);
+
+  // Per-card breakdown
+  const cardTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    monthTxns.filter(tx => !tx.isIncome && tx.cardId).forEach(tx => {
+      map.set(tx.cardId!, (map.get(tx.cardId!) ?? 0) + toMainAmt(tx));
+    });
+    return Array.from(map)
+      .map(([id, total]) => ({ card: cards.find(c => c.id === id), total }))
+      .filter((x): x is { card: CreditCardType; total: number } => !!x.card)
+      .sort((a, b) => b.total - a.total);
+  }, [monthTxns, cards, toMainAmt]);
+
+  const maxCard        = cardTotals[0]?.total || 1;
+  const totalCardSpent = cardTotals.reduce((s, x) => s + x.total, 0);
 
   // Weekly breakdown
   const weeklyTotals = useMemo(() => {
@@ -112,15 +171,17 @@ export default function AnalyticsPage() {
           const day = parseInt(tx.date.split('-')[2]);
           return day >= start && day <= end;
         })
-        .reduce((s, tx) => s + tx.amount, 0);
+        .reduce((s, tx) => s + toMainAmt(tx), 0);
       weeks.push({ label: `${start}–${end}`, total });
     }
     return weeks;
-  }, [monthTxns, daysInMonth]);
+  }, [monthTxns, daysInMonth, toMainAmt]);
   const maxWeek = Math.max(...weeklyTotals.map(w => w.total), 1);
 
   // UI state
+  const [activeTab, setActiveTab] = useState<'summary' | 'categories' | 'forecast'>('summary');
   const [showAllCats, setShowAllCats] = useState(false);
+  const [showAllDesc, setShowAllDesc] = useState(false);
   const [selectedDay, setSelectedDay]   = useState<string | undefined>();
   const [budgetEditId, setBudgetEditId] = useState<string | null>(null);
   const [budgetEditVal, setBudgetEditVal] = useState('');
@@ -132,107 +193,194 @@ export default function AnalyticsPage() {
   const [editRecAmount, setEditRecAmount] = useState('');
   const [editRecDay, setEditRecDay] = useState('');
   const [editRecCat, setEditRecCat] = useState('');
-  const [editRecPm, setEditRecPm] = useState<PaymentMethod | ''>('');
+  const [editRecPm, setEditRecPm]         = useState<PaymentMethod | ''>('');
+  const [editRecCardId, setEditRecCardId] = useState<string | undefined>(undefined);
 
   function openEditRec(r: RecurringExpense) {
     setEditRec(r);
     setEditRecDesc(r.description);
-    setEditRecAmount(String(r.amount));
+    setEditRecAmount(String(
+      r.currency === state.mainCurrency && r.originalAmount !== undefined
+        ? r.originalAmount
+        : r.amount * displayRate
+    ));
     setEditRecDay(String(r.dayOfMonth));
     setEditRecCat(r.categoryId);
-    setEditRecPm(r.paymentMethod ?? '');
+    setEditRecPm((r.paymentMethod && (PAYMENT_METHODS as string[]).includes(r.paymentMethod)) ? r.paymentMethod : '');
+    setEditRecCardId(r.cardId);
   }
 
   function saveEditRec() {
     if (!editRec) return;
-    const amt = parseFloat(editRecAmount);
+    const amt = parseFloat(editRecAmount); // amt is in mainCurrency
     const day = parseInt(editRecDay);
     if (!editRecDesc.trim() || isNaN(amt) || amt <= 0 || isNaN(day) || day < 1 || day > 28) return;
+    const ilsAmt = state.mainCurrency === 'ILS' || displayRate <= 0 ? amt : amt / displayRate;
+    const pm = (editRecPm || undefined) as PaymentMethod | undefined;
     dispatch({
       type: 'UPDATE_RECURRING',
+      oldDescription: editRec.description,
       payload: {
         ...editRec,
         description: editRecDesc.trim(),
-        amount: amt,
+        amount: ilsAmt,
         dayOfMonth: day,
         categoryId: editRecCat,
-        paymentMethod: (editRecPm || undefined) as PaymentMethod | undefined,
+        paymentMethod: pm,
+        cardId: pm === 'credit' ? editRecCardId : undefined,
+        ...(state.mainCurrency !== 'ILS' ? { currency: state.mainCurrency, originalAmount: amt } : { currency: undefined, originalAmount: undefined }),
       },
     });
     setEditRec(null);
   }
+
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(now.getFullYear());
+
+  // End/pause-recurring month picker (shared UI, mode decides the dispatched action)
+  const [showEndRecPicker, setShowEndRecPicker] = useState(false);
+  const [endRecPickerMode, setEndRecPickerMode] = useState<'end' | 'pause'>('end');
+  const [endRecPickerYear, setEndRecPickerYear] = useState(now.getFullYear());
+
+  function openEndRecPicker(mode: 'end' | 'pause') {
+    if (!editRec) return;
+    // Default to next month after the viewed month
+    const nextM = month === 12 ? 1 : month + 1;
+    const nextY = month === 12 ? year + 1 : year;
+    setEndRecPickerMode(mode);
+    setEndRecPickerYear(nextY);
+    setShowEndRecPicker(true);
+    // Pre-select next month visually handled in picker
+    void nextM;
+  }
+
+  function confirmEndRec(endYear: number, endMonth: number) {
+    if (!editRec) return;
+    const fromMonth = `${endYear}-${String(endMonth).padStart(2, '0')}`;
+    if (endRecPickerMode === 'pause') {
+      dispatch({ type: 'PAUSE_RECURRING', payload: { id: editRec.id, pausedFromMonth: fromMonth } });
+    } else {
+      // removePosted: stopping "from July" also removes July's already-posted transaction
+      dispatch({ type: 'END_RECURRING', payload: { id: editRec.id, endedMonth: fromMonth, removePosted: true } });
+    }
+    setShowEndRecPicker(false);
+    setEditRec(null);
+  }
+
 
   const hasData = monthTxns.length > 0;
   const CAT_LIMIT = 7;
   const visibleCats = showAllCats ? catTotals : catTotals.slice(0, CAT_LIMIT);
   const hiddenCount = Math.max(0, catTotals.length - CAT_LIMIT);
+  const maxDesc = descTotals[0]?.total || 1;
+  const DESC_PAGE = 8;
+  const visibleDesc = showAllDesc ? descTotals : descTotals.slice(0, DESC_PAGE);
+  const hiddenDescCount = Math.max(0, descTotals.length - DESC_PAGE);
   const hasTrend = weeklyTotals.some(w => w.total > 0);
 
   // ── Hero: donut data ──────────────────────────────────────────────────────
   // Both modes use the same visual metaphor: ring fills as spending increases.
   // Green = healthy, orange = caution, red = danger.
-  const { moneyMode } = state;
-  let heroPct: number, heroColor: string, heroSublabel: string;
+  // Burn rate: how much of this month's income has been spent
+  const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
+  const heroPct: number = Math.min(Math.max(0, burnRate), 1);
+  const heroColor: string = burnRate >= 1 ? '#FF3B30' : '#8B5CF6';
+  const heroSublabel: string = income > 0
+    ? (lang === 'he' ? 'מההכנסות' : 'of income')
+    : (lang === 'he' ? 'הוצאות' : 'spent');
   let heroRemaining: string, heroRemainingColor: string;
-
-  if (moneyMode === 'budget_based') {
-    const budget    = monthlyBudget;
-    const remaining = budget - spent;
-    const overBudget = remaining < 0;
-    heroPct       = budget > 0 ? Math.min(spent / budget, 1) : 0;
-    heroColor     = heroPct >= 1 ? '#EF4444' : heroPct > 0.75 ? '#F59E0B' : '#22C55E';
-    heroSublabel  = lang === 'he' ? 'מהתקציב' : 'of budget';
-    heroRemaining = budget > 0
-      ? (overBudget
-          ? (lang === 'he' ? `חרגת ב־${formatCurrency(Math.abs(remaining))}` : `Over by ${formatCurrency(Math.abs(remaining))}`)
-          : (lang === 'he' ? `נשאר ${formatCurrency(remaining)} מהתקציב` : `${formatCurrency(remaining)} left in budget`))
-      : (lang === 'he' ? 'לא הוגדר תקציב' : 'no budget set');
-    heroRemainingColor = budget > 0 ? (overBudget ? '#EF4444' : '#22C55E') : 'var(--text-secondary)';
+  if (!income) {
+    heroRemaining      = '';
+    heroRemainingColor = 'var(--text-muted)';
+  } else if (savings >= 0) {
+    heroRemaining      = lang === 'he'
+      ? `חסכת ${formatCurrencyDirect(savings)} החודש`
+      : `Saved ${formatCurrencyDirect(savings)} this month`;
+    heroRemainingColor = '#30D158';
   } else {
-    // Savings mode: show burn rate (spent / income) — universally clear regardless of savings goal
-    const burnRate = income > 0 ? spent / income : (spent > 0 ? 1 : 0);
-    heroPct       = Math.min(Math.max(0, burnRate), 1);
-    heroColor     = burnRate >= 1 ? '#EF4444' : burnRate > 0.85 ? '#F59E0B' : '#22C55E';
-    heroSublabel  = lang === 'he' ? 'מההכנסות' : 'of income';
-    if (!income) {
-      heroRemaining      = lang === 'he' ? 'לא נרשמו הכנסות' : 'no income recorded';
-      heroRemainingColor = 'var(--text-muted)';
-    } else if (savings >= 0) {
-      heroRemaining      = lang === 'he'
-        ? `חסכת ${formatCurrency(savings)} החודש`
-        : `Saved ${formatCurrency(savings)} this month`;
-      heroRemainingColor = '#22C55E';
-    } else {
-      heroRemaining      = lang === 'he'
-        ? `גירעון של ${formatCurrency(Math.abs(savings))}`
-        : `Deficit of ${formatCurrency(Math.abs(savings))}`;
-      heroRemainingColor = '#EF4444';
-    }
+    heroRemaining      = lang === 'he'
+      ? `גירעון של ${formatCurrencyDirect(Math.abs(savings))}`
+      : `Deficit of ${formatCurrencyDirect(Math.abs(savings))}`;
+    heroRemainingColor = '#FF3B30';
   }
 
-  const pmLabel = (pm: string) => (t as any)[`pm_${pm}`] ?? pm;
+  const pmLabel = (pm: string) => { const k = `pm_${pm}` as keyof typeof t; return (t[k] as string | undefined) ?? pm; };
 
-  // Smart bill predictor: days until next occurrence for each recurring item
+  // Convert a recurring expense's ILS amount to mainCurrency, using originalAmount when available.
+  // When falling back to amount*displayRate, snap near-integers to avoid floating-point drift (e.g. $50.01→$50).
+  const recToMain = (r: { amount: number; currency?: string; originalAmount?: number }) => {
+    if (r.currency === state.mainCurrency && r.originalAmount !== undefined) return r.originalAmount;
+    const raw = r.amount * displayRate;
+    const rounded = Math.round(raw);
+    return Math.abs(raw - rounded) <= 0.02 ? rounded : raw;
+  };
+  const fmtRec = (r: { amount: number; currency?: string; originalAmount?: number }) =>
+    formatCurrencyDirect(recToMain(r));
+
+  // Recurring items filtered by viewed month (for historical display)
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const viewedRec = useMemo(
+    () => recurringExpenses.filter(r => !r.endedMonth || r.endedMonth > ms),
+    [recurringExpenses, ms]
+  );
+  const activeRec = useMemo(
+    () => recurringExpenses.filter(r =>
+      (!r.endedMonth || r.endedMonth > currentMonthStr)
+      && !(r.pausedFromMonth && r.pausedFromMonth <= currentMonthStr)),
+    [recurringExpenses, currentMonthStr] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Recurring transactions in this month whose template was deleted (for recovery display)
+  const orphanedRecTxns = useMemo(() => {
+    const viewedRecIds     = new Set(viewedRec.map(r => r.id));
+    const viewedRecDescs   = new Set(viewedRec.map(r => r.description.toLowerCase().trim()));
+    const viewedRecAmtKeys = new Set(viewedRec.map(r => `${r.isIncome ? 1 : 0}_${r.amount}`));
+
+    const seen = new Set<string>();
+    return monthTxns.filter(tx => {
+      const isRec = tx.recurringId
+        ? !viewedRecIds.has(tx.recurringId)
+        : tx.description.startsWith('(קבועה) ');
+      if (!isRec) return false;
+
+      const cleanDesc = tx.description.startsWith('(קבועה) ')
+        ? tx.description.slice('(קבועה) '.length).toLowerCase().trim()
+        : tx.description.toLowerCase().trim();
+
+      // Already covered by an active template with same description
+      if (viewedRecDescs.has(cleanDesc)) return false;
+      // Already covered by an active template with same amount+type
+      // (handles renamed templates like "ביטוח רכב ותשלומים" → "ביטוח רכב")
+      if (viewedRecAmtKeys.has(`${tx.isIncome ? 1 : 0}_${tx.amount}`)) return false;
+
+      const key = tx.recurringId ?? tx.description;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [monthTxns, viewedRec]);
+
+  // Smart bill predictor: days until next occurrence, per recurring item of the VIEWED month
+  // (month-aware so stopping a recurring from July doesn't hide it in June's view)
   const recurringWithDue = useMemo(() => {
     const todayDay = now.getDate();
-    return recurringExpenses.map(r => {
+    return viewedRec.map(r => {
       let daysUntil = r.dayOfMonth - todayDay;
       if (daysUntil < 0) daysUntil += daysInMonth; // next month occurrence
-      return { ...r, daysUntil, annualCost: r.amount * 12 };
+      const paused = !!r.pausedFromMonth && r.pausedFromMonth <= ms;
+      return { ...r, daysUntil, paused, annualCost: recToMain(r) * 12 };
     }).sort((a, b) => a.daysUntil - b.daysUntil);
-  }, [recurringExpenses, now, daysInMonth]);
+  }, [viewedRec, ms, now, daysInMonth, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Subscription health totals
+  // Subscription health totals (active items only)
   const subHealth = useMemo(() => {
-    const expenses = recurringExpenses.filter(r => !r.isIncome);
-    const total = expenses.reduce((s, r) => s + r.amount, 0);
-    const streaming = expenses.filter(r => r.categoryId === 'cat_entertainment').reduce((s, r) => s + r.amount, 0);
-    const utilities = expenses.filter(r => ['cat_utilities', 'cat_rent'].includes(r.categoryId)).reduce((s, r) => s + r.amount, 0);
+    const expenses = activeRec.filter(r => !r.isIncome);
+    const total = expenses.reduce((s, r) => s + recToMain(r), 0);
+    const streaming = expenses.filter(r => r.categoryId === 'cat_entertainment').reduce((s, r) => s + recToMain(r), 0);
+    const utilities = expenses.filter(r => ['cat_utilities', 'cat_rent'].includes(r.categoryId)).reduce((s, r) => s + recToMain(r), 0);
     const other = total - streaming - utilities;
     return { total, annualCost: total * 12, streaming, utilities, other };
-  }, [recurringExpenses]);
+  }, [activeRec, displayRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="page analytics-page">
@@ -250,16 +398,77 @@ export default function AnalyticsPage() {
         <button className="mnav-btn" onClick={nextMonth} disabled={isCurrentMonth} aria-label="Next month">›</button>
       </div>
 
-      {/* Single empty state */}
-      {!hasData ? (
+      {/* Tab bar */}
+      <div className="an-tabs">
+        {(['summary', 'categories', 'forecast'] as const).map(tab => (
+          <button
+            key={tab}
+            className={`an-tab${activeTab === tab ? ' an-tab--active' : ''}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {lang === 'he'
+              ? { summary: 'סיכום', categories: 'מובילות', forecast: 'תחזית' }[tab]
+              : { summary: 'Summary', categories: 'Merchants', forecast: 'Forecast' }[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Forecast tab — GrowPage embedded */}
+      {activeTab === 'forecast' && (
+        <Suspense fallback={null}>
+          <GrowPage embedded />
+        </Suspense>
+      )}
+
+      {/* Top merchants tab */}
+      {activeTab === 'categories' && (
+        <div>
+          {descTotals.length === 0 ? (
+            <div className="an-empty">
+              <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
+              <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
+            </div>
+          ) : (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{lang === 'he' ? 'הוצאות מובילות' : 'Top merchants'}</span>
+                <span className="an-cat-card-count">{descTotals.length}</span>
+              </div>
+              {visibleDesc.map(({ display, total, count }) => (
+                <div key={display} className="an-cb-item">
+                  <div className="an-cb-row">
+                    <div className="an-cb-name-side">
+                      <div className="an-cb-name-group">
+                        <span className="an-cb-name">{display}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{count}✕</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-amount-side">
+                      <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                    </div>
+                  </div>
+                  <div className="an-cb-bar-row">
+                    <div className="an-cb-bar-fill" style={{ width: `${(total / maxDesc) * 100}%`, background: '#8B5CF6' }} />
+                  </div>
+                </div>
+              ))}
+              {hiddenDescCount > 0 && (
+                <button className="an-show-more" onClick={() => setShowAllDesc(s => !s)}>
+                  {showAllDesc
+                    ? (lang === 'he' ? 'הצג פחות' : 'Show less')
+                    : (lang === 'he' ? `+${hiddenDescCount} עוד` : `+${hiddenDescCount} more`)}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Summary tab */}
+      {activeTab === 'summary' && (!hasData ? (
         <div className="an-empty">
           <BarChart2 size={36} strokeWidth={1.5} color="var(--text-dim)" />
           <p className="an-empty-msg">{lang === 'he' ? 'אין נתונים עדיין' : 'No data yet'}</p>
-          <p className="an-empty-hint">
-            {lang === 'he'
-              ? 'הוסף הוצאה ראשונה כדי להתחיל לעקוב'
-              : 'Add your first expense to start tracking.'}
-          </p>
           <button className="an-empty-cta" onClick={() => navigate('/')}>
             {lang === 'he' ? 'הוסף הוצאה' : 'Add expense'}
           </button>
@@ -268,16 +477,19 @@ export default function AnalyticsPage() {
         <>
           {/* ── Summary card ── */}
           <div className="an-summary-card">
+            <div className="an-donut-col">
+              <SideDonut pct={heroPct} color={heroColor} sublabel={heroSublabel} />
+            </div>
             <div className="an-kpis">
               {income > 0 && (
                 <div className="an-kpi-row">
                   <span className="an-kpi-lbl">{t.income}</span>
-                  <span className="an-kpi-val" style={{ color: '#30D158' }}>{formatCurrency(income)}</span>
+                  <span className="an-kpi-val" style={{ color: '#30D158' }}>{formatCurrencyDirect(income)}</span>
                 </div>
               )}
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'הוצאות' : 'Expenses'}</span>
-                <span className="an-kpi-val" style={{ color: '#FF453A' }}>{formatCurrency(spent)}</span>
+                <span className="an-kpi-val" style={{ color: '#FF3B30' }}>{formatCurrencyDirect(spent)}</span>
               </div>
               {income > 0 && (
                 <div className="an-kpi-row">
@@ -287,22 +499,19 @@ export default function AnalyticsPage() {
                       : (lang === 'he' ? 'גירעון החודש' : 'Deficit this month')}
                   </span>
                   <span className="an-kpi-val" style={{
-                    color: savings >= 0 ? '#30D158' : '#FF9F0A',
+                    color: savings >= 0 ? '#8B5CF6' : '#FF3B30',
                   }}>
                     {savings >= 0
-                      ? formatCurrency(savings)
-                      : `−${formatCurrency(Math.abs(savings))}`}
+                      ? formatCurrencyDirect(savings)
+                      : `−${formatCurrencyDirect(Math.abs(savings))}`}
                   </span>
                 </div>
               )}
               <div className="an-kpi-divider" />
               <div className="an-kpi-row">
                 <span className="an-kpi-lbl">{lang === 'he' ? 'ממוצע יומי' : 'Daily avg'}</span>
-                <span className="an-kpi-val" style={{ fontSize: 13, fontWeight: 600 }}>{formatCurrency(dailyAvg)}</span>
+                <span className="an-kpi-val an-kpi-val-sm">{formatCurrencyDirect(dailyAvg)}</span>
               </div>
-            </div>
-            <div className="an-donut-col">
-              <SideDonut pct={heroPct} color={heroColor} sublabel={heroSublabel} />
             </div>
           </div>
           {heroRemaining && (
@@ -319,9 +528,9 @@ export default function AnalyticsPage() {
                 <span className="an-cat-card-count">{catTotals.length} {lang === 'he' ? 'קטגוריות' : 'categories'}</span>
               </div>
               {visibleCats.map(({ cat, total }) => {
-                const Icon = CAT_ICON[cat.id] ?? Package;
+                const Icon = resolveCatIcon(cat);
                 const pctOfTotal = totalCatSpent > 0 ? Math.round((total / totalCatSpent) * 100) : 0;
-                const isRecurringCat = recurringExpenses.some(r => r.categoryId === cat.id && !r.isIncome);
+                const isRecurringCat = viewedRec.some(r => r.categoryId === cat.id && !r.isIncome);
                 const isSingleTx = monthTxns.filter(tx => !tx.isIncome && tx.categoryId === cat.id).length === 1;
                 const budgetInfo = getCategoryBudgetPct(cat.id, total, categoryBudgets);
                 const budgetMarkerPct = budgetInfo.budget > 0 ? Math.min((budgetInfo.budget / maxCat) * 100, 100) : null;
@@ -331,7 +540,7 @@ export default function AnalyticsPage() {
                     <div className="an-cb-row">
                       <div className="an-cb-name-side">
                         <div className="an-cb-icon-wrap" style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}28` }}>
-                          <Icon size={17} color={cat.color} />
+                          <Icon size={13} color={cat.color} />
                         </div>
                         <div className="an-cb-name-group">
                           <span className="an-cb-name">{catName(cat.id, cat.name, cat.isRenamed)}</span>
@@ -340,7 +549,7 @@ export default function AnalyticsPage() {
                         </div>
                       </div>
                       <div className="an-cb-amount-side">
-                        <span className="an-cb-amt">{formatCurrency(total)}</span>
+                        <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
                         {budgetInfo.status !== 'none' ? (
                           <span className={`an-cb-budget-badge ${budgetInfo.status}`}>
                             {Math.round(budgetInfo.pct * 100)}%
@@ -421,6 +630,78 @@ export default function AnalyticsPage() {
             </div>
           )}
 
+          {/* ── Payment Method Breakdown ── */}
+          {pmTotals.length > 0 && (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{t.byPaymentMethod}</span>
+                <span className="an-cat-card-count">{pmTotals.length}</span>
+              </div>
+
+              {pmTotals.map(({ pm, total }) => {
+                const PmIcon = PM_ICON[pm] ?? ArrowLeftRight;
+                const color  = PM_COLOR[pm] ?? '#8B5CF6';
+                const pct    = totalPmSpent > 0 ? Math.round((total / totalPmSpent) * 100) : 0;
+                const label  = t[`pm_${pm}` as keyof typeof t] as string ?? pm;
+
+                return (
+                  <div key={pm} className="an-cb-item">
+                    <div className="an-cb-row">
+                      <div className="an-cb-name-side">
+                        <div className="an-cb-icon-wrap" style={{ background: `${color}18`, border: `1px solid ${color}28` }}>
+                          <PmIcon size={13} color={color} />
+                        </div>
+                        <span className="an-cb-name">{label}</span>
+                      </div>
+                      <div className="an-cb-amount-side">
+                        <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                        <span className="an-cb-pct">{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-bar-row">
+                      <div className="an-cb-bar-fill" style={{ width: `${(total / maxPm) * 100}%`, background: color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Per-card breakdown ── */}
+          {cardTotals.length > 0 && (
+            <div className="an-cat-card">
+              <div className="an-cat-card-header">
+                <span className="an-cat-card-title">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
+                <span className="an-cat-card-count">{cardTotals.length}</span>
+              </div>
+              {cardTotals.map(({ card, total }) => {
+                const pct = totalCardSpent > 0 ? Math.round((total / totalCardSpent) * 100) : 0;
+                return (
+                  <div key={card.id} className="an-cb-item">
+                    <div className="an-cb-row">
+                      <div className="an-cb-name-side">
+                        <div className="an-cb-icon-wrap" style={{ background: `${card.color}18`, border: `1px solid ${card.color}28` }}>
+                          <CreditCard size={13} color={card.color} />
+                        </div>
+                        <div className="an-cb-name-group">
+                          <span className="an-cb-name">{card.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>•••• {card.last4}</span>
+                        </div>
+                      </div>
+                      <div className="an-cb-amount-side">
+                        <span className="an-cb-amt">{formatCurrencyDirect(total)}</span>
+                        <span className="an-cb-pct">{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="an-cb-bar-row">
+                      <div className="an-cb-bar-fill" style={{ width: `${(total / maxCard) * 100}%`, background: card.color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* ── Weekly trend — compact, no card ── */}
           {hasTrend && (
             <div className="an-section">
@@ -448,8 +729,8 @@ export default function AnalyticsPage() {
                 return (
                   <div className="an-insight">
                     {lang === 'he'
-                      ? `שיא בשבוע ${peak.label} — ${formatCurrency(peak.total)} (${pct}%)`
-                      : `Peak week ${peak.label} — ${formatCurrency(peak.total)} (${pct}%)`}
+                      ? `שיא בשבוע ${peak.label} — ${formatCurrencyDirect(peak.total)} (${pct}%)`
+                      : `Peak week ${peak.label} — ${formatCurrencyDirect(peak.total)} (${pct}%)`}
                   </div>
                 );
               })()}
@@ -480,7 +761,7 @@ export default function AnalyticsPage() {
                           <li key={tx.id} className="cal-day-detail-item">
                             <span className="cal-day-detail-dot" style={{ background: cat?.color ?? 'var(--purple)' }} />
                             <span className="cal-day-detail-desc">{tx.description}</span>
-                            <span className="cal-day-detail-amt">{formatCurrency(tx.amount)}</span>
+                            <span className="cal-day-detail-amt">{formatCurrencyDirect(toMainAmt(tx))}</span>
                           </li>
                         );
                       })}
@@ -492,20 +773,25 @@ export default function AnalyticsPage() {
           )}
 
           {/* ── Recurring / Subscription health ── */}
-          {recurringExpenses.length > 0 && (
-            <div className="an-section">
-              <div className="an-section-title">{t.recurringExpenses}</div>
+          <div className="an-section">
+            <div className="an-section-title">{t.recurringExpenses}</div>
+          {viewedRec.length === 0 && orphanedRecTxns.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0', margin: 0 }}>
+              {lang === 'he' ? 'אין הוצאות קבועות — הוסף אחת מטופס ההוצאה' : 'No recurring expenses yet — add one from the expense form'}
+            </p>
+          ) : (
+            <>
               {subHealth.total > 0 && (
                 <div className="sub-health-card">
                   <div className="sub-health-main">
                     <div>
-                      <div className="sub-health-total">{formatCurrency(subHealth.total)}</div>
-                      <div className="sub-health-sub">{lang === 'he' ? `לחודש · ${formatCurrency(subHealth.annualCost)} לשנה` : `/mo · ${formatCurrency(subHealth.annualCost)}/yr`}</div>
+                      <div className="sub-health-total">{formatCurrencyDirect(subHealth.total)}</div>
+                      <div className="sub-health-sub">{lang === 'he' ? `לחודש · ${formatCurrencyDirect(subHealth.annualCost)} לשנה` : `/mo · ${formatCurrencyDirect(subHealth.annualCost)}/yr`}</div>
                     </div>
                     <div className="sub-health-chips">
-                      {subHealth.streaming > 0 && <span className="sub-health-chip ent">{lang === 'he' ? 'בידור' : 'Ent.'} {formatCurrency(subHealth.streaming)}</span>}
-                      {subHealth.utilities > 0 && <span className="sub-health-chip util">{lang === 'he' ? 'שירותים' : 'Utils'} {formatCurrency(subHealth.utilities)}</span>}
-                      {subHealth.other > 0 && <span className="sub-health-chip other">{lang === 'he' ? 'אחר' : 'Other'} {formatCurrency(subHealth.other)}</span>}
+                      {subHealth.streaming > 0 && <span className="sub-health-chip ent">{lang === 'he' ? 'בידור' : 'Ent.'} {formatCurrencyDirect(subHealth.streaming)}</span>}
+                      {subHealth.utilities > 0 && <span className="sub-health-chip util">{lang === 'he' ? 'שירותים' : 'Utils'} {formatCurrencyDirect(subHealth.utilities)}</span>}
+                      {subHealth.other > 0 && <span className="sub-health-chip other">{lang === 'he' ? 'אחר' : 'Other'} {formatCurrencyDirect(subHealth.other)}</span>}
                     </div>
                   </div>
                 </div>
@@ -513,19 +799,23 @@ export default function AnalyticsPage() {
               <div className="rec-list">
                 {recurringWithDue.map(r => {
                   const cat  = categories.find(c => c.id === r.categoryId);
-                  const Icon = r.isIncome ? TrendingUp : (CAT_ICON[r.categoryId] ?? Package);
+                  const Icon = r.isIncome ? TrendingUp : resolveCatIcon(cat);
                   const badgeLabel = r.totalInstallments
                     ? `${r.postedCount ?? 0}/${r.totalInstallments}`
                     : t.monthlyBadge;
-                  const dueLabel = r.daysUntil === 0
-                    ? (lang === 'he' ? 'היום!' : 'Today!')
-                    : r.daysUntil === 1
-                      ? (lang === 'he' ? 'מחר' : 'Tomorrow')
-                      : (lang === 'he' ? `בעוד ${r.daysUntil} ימים` : `In ${r.daysUntil} days`);
-                  const dueUrgent = r.daysUntil <= 2;
-                  const dueSoon   = !dueUrgent && r.daysUntil <= 5;
+                  // Due countdown only makes sense for the real current month, and not while paused
+                  const showDue = ms === currentMonthStr && !r.paused;
+                  const dueLabel = showDue
+                    ? (r.daysUntil === 0
+                        ? (lang === 'he' ? 'היום!' : 'Today!')
+                        : r.daysUntil === 1
+                          ? (lang === 'he' ? 'מחר' : 'Tomorrow')
+                          : (lang === 'he' ? `בעוד ${r.daysUntil} ימים` : `In ${r.daysUntil} days`))
+                    : (lang === 'he' ? `יום ${r.dayOfMonth} בחודש` : `Day ${r.dayOfMonth}`);
+                  const dueUrgent = showDue && r.daysUntil <= 2;
+                  const dueSoon   = showDue && !dueUrgent && r.daysUntil <= 5;
                   return (
-                    <div key={r.id} className="rec-item">
+                    <div key={r.id} className="rec-item" style={r.paused ? { opacity: 0.6 } : undefined}>
                       <div className="rec-icon" style={{ color: r.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)') }}>
                         <Icon size={15} color={r.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} />
                       </div>
@@ -533,19 +823,33 @@ export default function AnalyticsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <div className="rec-name" style={{ marginBottom: 0 }}>{r.description}</div>
                           <span className="rec-badge">{badgeLabel}</span>
+                          {r.paused && (
+                            <span className="rec-badge" style={{ color: '#F59E0B', borderColor: '#F59E0B66', background: '#F59E0B1a' }}>
+                              {lang === 'he' ? 'מושהה' : 'Paused'}
+                            </span>
+                          )}
                           {(dueUrgent || dueSoon) && !r.isIncome && (
                             <span className={`rec-due-badge${dueUrgent ? ' urgent' : ' soon'}`}>{dueLabel}</span>
                           )}
                         </div>
                         <div className="rec-meta">
-                          {!r.isIncome && !dueUrgent && !dueSoon ? `${t.day} ${r.dayOfMonth}` : dueLabel}
+                          {dueLabel}
                           {!r.isIncome && cat ? ` · ${catName(cat.id, cat.name, cat.isRenamed)}` : ''}
                           {r.paymentMethod ? ` · ${pmLabel(r.paymentMethod)}` : ''}
-                          {!r.isIncome && <span className="rec-annual-note"> · {formatCurrency(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
+                          {!r.isIncome && <span className="rec-annual-note"> · {formatCurrencyDirect(r.annualCost)}/{lang === 'he' ? 'שנה' : 'yr'}</span>}
                         </div>
+                        {r.cardId && (() => {
+                          const linkedCard = cards.find(c => c.id === r.cardId);
+                          return linkedCard ? (
+                            <div className="rec-card-chip" style={{ borderColor: linkedCard.color, color: linkedCard.color, background: `${linkedCard.color}18` }}>
+                              <CreditCard size={10} />
+                              <span>{linkedCard.name} •••• {linkedCard.last4}</span>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                       <span className={`rec-amt ${r.isIncome ? 'income' : ''}`}>
-                        {r.isIncome ? '+' : ''}{formatCurrency(r.amount)}
+                        {r.isIncome ? '+' : ''}{fmtRec(r)}
                       </span>
                       {!r.isIncome && !r.totalInstallments && (
                         <button
@@ -555,6 +859,17 @@ export default function AnalyticsPage() {
                           title={t.setInstallments}
                         >
                           <GitFork size={13} />
+                        </button>
+                      )}
+                      {r.paused && (
+                        <button
+                          className="rec-del"
+                          onClick={() => dispatch({ type: 'RESUME_RECURRING', payload: r.id })}
+                          aria-label="Resume"
+                          title={lang === 'he' ? 'המשך קבוע' : 'Resume recurring'}
+                          style={{ color: '#30D158' }}
+                        >
+                          <Play size={13} />
                         </button>
                       )}
                       <button
@@ -573,7 +888,7 @@ export default function AnalyticsPage() {
                             <>
                               <strong>"{r.description}"</strong>
                               {' '}
-                              {lang === 'he' ? `— ${formatCurrency(r.amount)} לחודש` : `· ${formatCurrency(r.amount)}/mo`}
+                              {lang === 'he' ? `— ${fmtRec(r)} לחודש` : `· ${fmtRec(r)}/mo`}
                             </>
                           ),
                           onConfirm: () => { dispatch({ type: 'DELETE_RECURRING', payload: r.id }); setConfirm(null); },
@@ -586,10 +901,37 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-            </div>
+              {/* Orphaned recurring transactions — template deleted but transaction still exists */}
+              {orphanedRecTxns.length > 0 && (
+                <div className="rec-list" style={{ marginTop: viewedRec.length > 0 ? 8 : 0 }}>
+                  {orphanedRecTxns.map(tx => {
+                    const cleanDesc = tx.description.startsWith('(קבועה) ')
+                      ? tx.description.slice('(קבועה) '.length)
+                      : tx.description;
+                    const cat = categories.find(c => c.id === tx.categoryId);
+                    const Icon = tx.isIncome ? TrendingUp : resolveCatIcon(cat);
+                    return (
+                      <div key={tx.id} className="rec-item" style={{ opacity: 0.6 }}>
+                        <div className="rec-icon" style={{ color: tx.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)') }}>
+                          <Icon size={15} color={tx.isIncome ? 'var(--success)' : (cat?.color ?? 'var(--purple)')} />
+                        </div>
+                        <div className="rec-info">
+                          <div className="rec-name">{cleanDesc}</div>
+                          <div className="rec-meta">{lang === 'he' ? 'היסטוריה בלבד' : 'History only'}</div>
+                        </div>
+                        <div className={`rec-amt${tx.isIncome ? ' income' : ''}`}>
+                          {formatCurrencyDirect(toMainAmt(tx))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
+          </div>
         </>
-      )}
+      ))}
 
       {/* ── Modals ── */}
       {confirm && (
@@ -611,7 +953,7 @@ export default function AnalyticsPage() {
             </div>
             <div style={{ padding: '4px 2px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{splitRec.description}</span>
-              {' — '}{formatCurrency(splitRec.amount)} {t.perMonth}
+              {' — '}{fmtRec(splitRec)} {t.perMonth}
             </div>
             <div className="inst-stepper" style={{ marginBottom: 12 }}>
               <button type="button" className="inst-step-btn"
@@ -627,7 +969,7 @@ export default function AnalyticsPage() {
               <span className="inst-step-lbl">{t.installments}</span>
             </div>
             <div className="split-preview" style={{ marginBottom: 16 }}>
-              {splitRecN} × {formatCurrency(splitRec.amount)} = {formatCurrency(splitRecN * splitRec.amount)} {t.total}
+              {splitRecN} × {fmtRec(splitRec)} = {formatCurrencyDirect(recToMain(splitRec) * splitRecN)} {t.total}
             </div>
             <button className="submit-btn" onClick={() => {
               dispatch({ type: 'SET_RECURRING_INSTALLMENTS', payload: { id: splitRec.id, totalInstallments: splitRecN } });
@@ -682,7 +1024,7 @@ export default function AnalyticsPage() {
                   className="set-input"
                   value={editRecCat}
                   onChange={e => setEditRecCat(e.target.value)}
-                  style={{ textAlign: 'right' }}
+                  style={{ textAlign: 'right', width: '100%', direction: 'rtl' }}
                 >
                   {categories.map(c => (
                     <option key={c.id} value={c.id}>{catName(c.id, c.name, c.isRenamed)}</option>
@@ -693,18 +1035,57 @@ export default function AnalyticsPage() {
                 <select
                   className="set-input"
                   value={editRecPm}
-                  onChange={e => setEditRecPm(e.target.value as PaymentMethod)}
-                  style={{ textAlign: 'right' }}
+                  onChange={e => { setEditRecPm(e.target.value as PaymentMethod); if (e.target.value !== 'credit') setEditRecCardId(undefined); }}
+                  style={{ textAlign: 'right', width: '100%', direction: 'rtl' }}
                 >
                   <option value="">{lang === 'he' ? '— אמצעי תשלום —' : '— Payment method —'}</option>
                   {PAYMENT_METHODS.map(pm => (
-                    <option key={pm} value={pm}>{(t as any)[`pm_${pm}`]}</option>
+                    <option key={pm} value={pm}>{pmLabel(pm)}</option>
                   ))}
                 </select>
+              )}
+              {!editRec.isIncome && editRecPm === 'credit' && cards.length > 0 && (
+                <div className="card-picker">
+                  <button
+                    className={`card-chip${!editRecCardId ? ' selected' : ''}`}
+                    onClick={() => setEditRecCardId(undefined)}
+                  >
+                    {lang === 'he' ? 'ללא כרטיס' : 'No card'}
+                  </button>
+                  {cards.map(c => (
+                    <button
+                      key={c.id}
+                      className={`card-chip${editRecCardId === c.id ? ' selected' : ''}`}
+                      style={editRecCardId === c.id ? { borderColor: c.color, background: `${c.color}22`, color: c.color } : {}}
+                      onClick={() => setEditRecCardId(c.id)}
+                    >
+                      <span>{c.name}</span>
+                      <span className="card-chip-last4">•••• {c.last4}</span>
+                    </button>
+                  ))}
+                </div>
               )}
               <button className="submit-btn" onClick={saveEditRec} style={{ marginTop: 4 }}>
                 <Check size={15} />
                 {lang === 'he' ? 'שמור שינויים' : 'Save changes'}
+              </button>
+              {editRec.pausedFromMonth ? (
+                <button
+                  className="rec-end-btn"
+                  style={{ color: '#30D158' }}
+                  onClick={() => { dispatch({ type: 'RESUME_RECURRING', payload: editRec.id }); setEditRec(null); }}
+                >
+                  <Play size={13} style={{ verticalAlign: -2 }} />{' '}
+                  {lang === 'he' ? 'המשך קבוע' : 'Resume recurring'}
+                </button>
+              ) : (
+                <button className="rec-end-btn" onClick={() => openEndRecPicker('pause')}>
+                  <Pause size={13} style={{ verticalAlign: -2 }} />{' '}
+                  {lang === 'he' ? 'השהה קבוע...' : 'Pause recurring...'}
+                </button>
+              )}
+              <button className="rec-end-btn" onClick={() => openEndRecPicker('end')}>
+                {lang === 'he' ? 'הפסק קבוע...' : 'End recurring...'}
               </button>
             </div>
           </div>
@@ -738,6 +1119,44 @@ export default function AnalyticsPage() {
                     className={`mpicker-month-btn${isSelected ? ' active' : ''}`}
                     disabled={isFuture}
                     onClick={() => { setYear(pickerYear); setMonth(m); setShowMonthPicker(false); }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showEndRecPicker && createPortal(
+        <div className="mpicker-overlay" onClick={() => setShowEndRecPicker(false)}>
+          <div className="mpicker-card" onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center', padding: '0 0 10px', direction: 'rtl' }}>
+              {endRecPickerMode === 'pause'
+                ? (lang === 'he' ? 'השהה קבוע החל מ...' : 'Pause recurring from...')
+                : (lang === 'he' ? 'הפסק קבוע החל מ...' : 'End recurring from...')}
+            </div>
+            <div className="mpicker-year-nav">
+              <button className="mpicker-yr-btn" onClick={() => setEndRecPickerYear(y => y - 1)}>‹</button>
+              <span className="mpicker-yr-label">{endRecPickerYear}</span>
+              <button
+                className="mpicker-yr-btn"
+                onClick={() => setEndRecPickerYear(y => y + 1)}
+                disabled={endRecPickerYear >= now.getFullYear() + 1}
+              >›</button>
+            </div>
+            <div className="mpicker-grid">
+              {Array.from({ length: 12 }, (_, i) => {
+                const m = i + 1;
+                const label = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-US', { month: 'short' })
+                  .format(new Date(2000, i, 1));
+                return (
+                  <button
+                    key={m}
+                    className="mpicker-month-btn"
+                    onClick={() => confirmEndRec(endRecPickerYear, m)}
                   >
                     {label}
                   </button>

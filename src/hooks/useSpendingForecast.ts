@@ -7,6 +7,7 @@ export interface SpendingForecast {
   confidenceHigh: number;
   knownRecurring: number;
   projectedVariable: number;
+  spentSoFar: number;
   daysLeft: number;
   confidence: 'high' | 'medium' | 'low';
 }
@@ -17,6 +18,41 @@ function daysInMonth(year: number, month: number): number {
 
 function monthStr(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Robust daily rate for a historical month.
+ * Builds per-day spending, then excludes outlier days (> median × 5).
+ * This prevents single large purchases (flights, rent lump sums) from
+ * inflating the forecast.
+ */
+function robustDailyRate(
+  transactions: Transaction[],
+  ms: string,
+  totalDays: number,
+): number {
+  const dayMap: Record<string, number> = {};
+  transactions
+    .filter(t => !t.isIncome && t.date.startsWith(ms))
+    .forEach(t => { dayMap[t.date] = (dayMap[t.date] ?? 0) + t.amount; });
+
+  const vals = Object.values(dayMap);
+  if (vals.length === 0) return 0;
+
+  const sorted = [...vals].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+
+  // Cap: days with spending > 5× the median day are treated as one-time outliers
+  const outlierThreshold = Math.max(median * 5, 300);
+  const normal = vals.filter(v => v <= outlierThreshold);
+
+  if (normal.length === 0) {
+    // Entire month was one big purchase; use a heavily discounted rate
+    return sorted[0] / totalDays;
+  }
+
+  // Sum of normal-day spending / full month days gives expected daily rate
+  return normal.reduce((s, v) => s + v, 0) / totalDays;
 }
 
 export function useSpendingForecast(
@@ -43,31 +79,61 @@ export function useSpendingForecast(
       .filter(r => !r.isIncome && r.dayOfMonth > today)
       .reduce((s, r) => s + r.amount, 0);
 
-    // Historical variable spend rate: last 3 months weighted avg daily spend
+    // Historical robust daily rates (outlier days excluded)
     const historicalRates: number[] = [];
+    let outlierMonths = 0;
     for (let i = 1; i <= 3; i++) {
       const d = new Date(year, month - i, 1);
       const ms = monthStr(d);
       const days = daysInMonth(d.getFullYear(), d.getMonth());
-      const spend = transactions
+
+      const rawTotal = transactions
         .filter(t => !t.isIncome && t.date.startsWith(ms))
         .reduce((s, t) => s + t.amount, 0);
-      if (spend > 0) historicalRates.push(spend / days);
+      if (rawTotal === 0) continue;
+
+      const robust = robustDailyRate(transactions, ms, days);
+      const rawAvg = rawTotal / days;
+      if (rawAvg > robust * 1.5) outlierMonths++;
+      historicalRates.push(robust);
     }
 
-    // Current month pace (only count elapsed days)
-    const elapsedDays = Math.max(1, today - 1);
-    const currentPace = spentSoFar / elapsedDays;
+    // Recurring fixed costs already due this month (dayOfMonth <= today).
+    // These are known amounts — rent, insurance, etc. — and should NOT drive
+    // the variable daily rate. Strip them out before computing pace.
+    const paidRecurring = recurringExpenses
+      .filter(r => !r.isIncome && r.dayOfMonth <= today)
+      .reduce((s, r) => s + r.amount, 0);
+    const variableSpent = Math.max(0, spentSoFar - paidRecurring);
+
+    // Variable daily rate for the current month
+    const elapsedDays = Math.max(1, today);
+    let currentRate = variableSpent / elapsedDays;
+
+    // Cap early-month rate at 3× historical average — noise guard for first few days
+    if (historicalRates.length > 0 && today <= 10) {
+      const histAvg = historicalRates.reduce((s, r) => s + r, 0) / historicalRates.length;
+      currentRate = Math.min(currentRate, histAvg * 3);
+    }
+
+    // Dynamic weight: ramp from ~2% on day 1 to 70% by month end.
+    // Starting near zero prevents a single early-month spike from dominating.
+    const currentWeight = Math.min(0.70, (today / totalDays) * 0.72);
 
     let dailyAvg: number;
     if (historicalRates.length === 0) {
-      dailyAvg = currentPace;
+      dailyAvg = currentRate;
     } else if (historicalRates.length === 1) {
-      dailyAvg = currentPace * 0.5 + historicalRates[0] * 0.5;
+      dailyAvg = currentRate * currentWeight + historicalRates[0] * (1 - currentWeight);
     } else if (historicalRates.length === 2) {
-      dailyAvg = currentPace * 0.5 + historicalRates[0] * 0.3 + historicalRates[1] * 0.2;
+      const hw = 1 - currentWeight;
+      dailyAvg = currentRate * currentWeight + historicalRates[0] * (hw * 0.65) + historicalRates[1] * (hw * 0.35);
     } else {
-      dailyAvg = currentPace * 0.5 + historicalRates[0] * 0.3 + historicalRates[1] * 0.15 + historicalRates[2] * 0.05;
+      const hw = 1 - currentWeight;
+      dailyAvg = currentRate * currentWeight
+        + historicalRates[0] * (hw * 0.55)
+        + historicalRates[1] * (hw * 0.30)
+        + historicalRates[2] * (hw * 0.15);
     }
 
     const projectedVariable = dailyAvg * daysLeft;
@@ -80,8 +146,11 @@ export function useSpendingForecast(
     const stdDev = Math.sqrt(variance);
     const ci = stdDev * Math.sqrt(Math.max(1, daysLeft));
 
-    const confidence: SpendingForecast['confidence'] =
+    // Confidence: downgrade if outlier months were detected
+    const baseConfidence: SpendingForecast['confidence'] =
       historicalRates.length >= 3 ? 'high' : historicalRates.length >= 1 ? 'medium' : 'low';
+    const confidence: SpendingForecast['confidence'] =
+      outlierMonths > 0 && baseConfidence === 'high' ? 'medium' : baseConfidence;
 
     return {
       forecastTotal,
@@ -89,8 +158,10 @@ export function useSpendingForecast(
       confidenceHigh: forecastTotal + ci,
       knownRecurring,
       projectedVariable,
+      spentSoFar,
       daysLeft,
       confidence,
     };
   }, [transactions, recurringExpenses]);
 }
+

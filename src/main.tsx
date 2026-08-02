@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
+import '@fontsource/rubik/hebrew-400.css';
+import '@fontsource/rubik/hebrew-700.css';
+import '@fontsource/rubik/latin-400.css';
+import '@fontsource/rubik/latin-700.css';
 import './styles/index.css';
 
 // Trigger SW update check whenever the user brings the app to foreground.
@@ -29,6 +33,10 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
+
+import { initAnalytics } from './services/analytics';
+const _deviceId = localStorage.getItem('expense_device_id') ?? 'anonymous';
+initAnalytics(_deviceId);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

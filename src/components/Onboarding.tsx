@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useExpense } from '../context/ExpenseContext';
-import { TrendingUp, Wallet, Plus, ChevronRight, X, Check } from 'lucide-react';
-import { CURRENCY_SYMBOL } from '../services/exchangeRate';
-import type { MoneyMode } from '../context/ExpenseContext';
+import { useTheme } from '../hooks/useTheme';
+import { Plus, ChevronRight, ChevronLeft, X, Check, Sparkles, Download, Share2, Sun, Moon, ChevronDown, Home, TrendingUp, TrendingDown, Tag, CreditCard, Users, Plane } from 'lucide-react';
+import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
+import LangToggle from './LangToggle';
+
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -102,47 +105,175 @@ function AppPreview({ he }: { he: boolean }) {
   );
 }
 
-// ── Reactive ring (step 2) ────────────────────────────────────────────────────
 
-function ReactiveRing({ amount, isSavings, currency }: {
-  amount: string; isSavings: boolean; currency: string;
-}) {
-  const refMax = isSavings ? 6000 : 12000;
-  const val    = parseFloat(amount) || 0;
-  const pct    = val > 0 ? Math.min(val / refMax, 0.92) : 0;
-  const color  = isSavings ? '#22C55E' : '#F59E0B';
-  const label  = val > 0 ? `${currency}${val.toLocaleString()}` : '?';
+// ── Add-expense tutorial preview ──────────────────────────────────────────────
+
+function AddExpensePreview({ he, currSym }: { he: boolean; currSym: string }) {
+  const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const s = currSym;
+  const txns = he
+    ? [{ color:'#22C55E', icon:'🛒', name:'קניות סופר', cat:'קניות',  amt:`${s}340`   },
+       { color:'#8B5CF6', icon:'🏠', name:'שכירות',     cat:'דיור',   amt:`${s}3,500` },
+       { color:'#F59E0B', icon:'⛽', name:'דלק',         cat:'רכב',    amt:`${s}180`   }]
+    : [{ color:'#22C55E', icon:'🛒', name:'Groceries',  cat:'Shopping',amt:`${s}95`    },
+       { color:'#8B5CF6', icon:'🏠', name:'Rent',       cat:'Housing', amt:`${s}1,200` },
+       { color:'#F59E0B', icon:'⛽', name:'Fuel',       cat:'Car',     amt:`${s}55`    }];
+
   return (
-    <div className="ob-reactive-ring">
-      <Ring pct={pct} size={110} stroke={9} color={color} label={label} />
+    <div className="ob-phone-wrap">
+      <div className="ob-phone-frame" dir={he ? 'rtl' : 'ltr'}>
+
+        {/* Mini filter bar — matches real app */}
+        <div className="ob-preview-filterbar">
+          <div className="ob-preview-chip">{he ? 'תשלום' : 'Payment'} ›</div>
+          <div className="ob-preview-chip">{he ? 'קטגוריות' : 'Categories'} ›</div>
+          <div className="ob-preview-search">🔍</div>
+        </div>
+
+        {/* Transaction rows — styled like real .txn-item */}
+        <div className="ob-phone-txns">
+          {txns.map(({ color, icon, name, cat, amt }, i) => (
+            <div key={i} className="ob-preview-txn">
+              <div className="ob-preview-txn-icon" style={{ background: color + '20', border: `1px solid ${color}40` }}>
+                <span style={{ fontSize: 11 }}>{icon}</span>
+              </div>
+              <div className="ob-preview-txn-body">
+                <span className="ob-preview-txn-name">{name}</span>
+                <span className="ob-preview-txn-cat">{cat}</span>
+              </div>
+              <span className="ob-preview-txn-amt" style={{ color: '#EF4444' }}>-{amt}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* FAB */}
+        <button
+          className={`ob-phone-fab${!open ? ' ob-phone-fab-pulse' : ''}`}
+          onClick={() => { setOpen(v => !v); }}
+        >
+          <Plus
+            size={20}
+            strokeWidth={2.5}
+            style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 0.22s cubic-bezier(0.22,1,0.36,1)' }}
+          />
+        </button>
+
+        {/* Sheet slides up from bottom */}
+        <div className={`ob-phone-sheet${open ? ' open' : ''}`}>
+          <div className="ob-phone-sheet-handle" />
+          {saved ? (
+            <div className="ob-phone-sheet-saved">
+              <div className="ob-phone-sheet-check"><Check size={20} strokeWidth={2.5} /></div>
+              <span>{he ? 'נשמר!' : 'Saved!'}</span>
+            </div>
+          ) : (
+            <>
+              <div className="ob-phone-sheet-amount">
+                <span className="ob-phone-sheet-sym">{currSym}</span>
+                <span className="ob-phone-sheet-num">250</span>
+              </div>
+              <div className="ob-phone-sheet-cats">
+                {[['🛒','#22C55E'],['🍕','#F59E0B'],['⚡','#8B5CF6'],['☕','#EC4899']].map(([ic, bg], i) => (
+                  <div key={i} className={`ob-phone-sheet-cat${i === 0 ? ' sel' : ''}`}
+                    style={i === 0 ? { background: (bg as string) + '28', borderColor: bg as string } : {}}>
+                    {ic}
+                  </div>
+                ))}
+              </div>
+              <div className="ob-phone-sheet-savebtn" style={{ cursor: 'pointer' }} onClick={() => { setSaved(true); setTimeout(() => { setSaved(false); setOpen(false); }, 1500); }}>{he ? 'שמור' : 'Save'}</div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Launch screen preview ─────────────────────────────────────────────────────
+// ── Day options ───────────────────────────────────────────────────────────────
+const DAY_OPTS = Array.from({ length: 28 }, (_, i) => i + 1);
 
-function LaunchPreview() {
+// ── SlideButton ───────────────────────────────────────────────────────────────
+const SLIDE_THUMB_W = 46;
+const SLIDE_MARGIN  = 4;
+
+function SlideButton({
+  label,
+  onConfirm,
+  className = '',
+  dir = 'ltr',
+}: {
+  label: string;
+  onConfirm: () => void;
+  className?: string;
+  dir?: string;
+}) {
+  const rtl   = dir === 'rtl';
+  const elRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState(0);
+  const [snap,   setSnap]   = useState(false);
+  const dragging = useRef(false);
+  const startX   = useRef(0);
+  const moved    = useRef(false);
+
+  const max = () => (elRef.current?.offsetWidth ?? 320) - SLIDE_THUMB_W - SLIDE_MARGIN * 2;
+
+  const fire = () => {
+    setSnap(true);
+    setOffset(max());
+    setTimeout(() => {
+      setOffset(0);
+      setSnap(false);
+      onConfirm();
+    }, 260);
+  };
+
+  const reset = () => {
+    setSnap(true);
+    setOffset(0);
+    setTimeout(() => setSnap(false), 360);
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragging.current = true;
+    moved.current    = false;
+    startX.current   = e.clientX;
+    setSnap(false);
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    e.stopPropagation();
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    const delta = rtl ? startX.current - e.clientX : e.clientX - startX.current;
+    if (Math.abs(delta) > 6) moved.current = true;
+    setOffset(Math.max(0, Math.min(delta, max())));
+  };
+
+  const onPointerUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (!moved.current) { fire(); return; }
+    offset >= max() * 0.72 ? fire() : reset();
+  };
+
+  const thumbStyle: React.CSSProperties = rtl
+    ? { right: SLIDE_MARGIN + offset }
+    : { left:  SLIDE_MARGIN + offset };
+
   return (
-    <div className="ob-launch-preview">
-      <div className="ob-launch-mock">
-        {/* Fake transaction rows */}
-        {[70, 50, 85].map((w, i) => (
-          <div key={i} className="ob-launch-mock-row">
-            <div className="ob-launch-mock-dot" style={{
-              background: ['#22C55E','#8B5CF6','#F59E0B'][i],
-            }} />
-            <div className="ob-launch-mock-bar" style={{ width: `${w}%` }} />
-          </div>
-        ))}
-        {/* FAB button in mock */}
-        <div className="ob-launch-fab-mock">
-          <Plus size={20} color="#fff" strokeWidth={2.5} />
-        </div>
-      </div>
-      {/* Arrow pointing up to FAB */}
-      <div className="ob-launch-arrow-wrap">
-        <div className="ob-launch-arrow-line" />
-        <div className="ob-launch-arrow-head" />
+    <div
+      ref={elRef}
+      className={`ob-slide-btn${snap ? ' ob-slide-btn--snap' : ''}${className ? ' ' + className : ''}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      style={{ touchAction: 'none' }}
+    >
+      <span className="ob-slide-label">{label}</span>
+      <div className="ob-slide-thumb" style={thumbStyle}>
+        {rtl ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
       </div>
     </div>
   );
@@ -150,40 +281,72 @@ function LaunchPreview() {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const TOTAL = 4;
+const TOTAL = 6;
 interface Props { onDone: () => void; }
 
 export default function Onboarding({ onDone }: Props) {
-  const { lang }              = useLang();
-  const { dispatch, state }   = useExpense();
-  const he                    = lang !== 'en';
+  const { lang, t, toggleLang } = useLang();
+  const { dispatch, state, displayRate } = useExpense();
+  const [theme, toggleTheme]   = useTheme();
+  const he                     = lang !== 'en';
   const dir                   = he ? 'rtl' : 'ltr';
   const currencySymbol        = CURRENCY_SYMBOL[state.mainCurrency] ?? state.mainCurrency;
 
   const [step, setStep]               = useState(0);
-  const [selectedMode, setSelectedMode] = useState<MoneyMode | null>(null);
-  const [goalAmount, setGoalAmount]   = useState('');
-  const goalInputRef                  = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (step === 2) setTimeout(() => goalInputRef.current?.focus(), 300);
-  }, [step]);
+  const [selectedCurrency, setSelectedCurrency] = useState(state.mainCurrency);
+  const [income, setIncome]           = useState('');
+  const [incomeDay, setIncomeDay]     = useState('1');
+  const [incomeDesc, setIncomeDesc]   = useState('');
+  const [recurringRows, setRecurringRows] = useState([{ name: '', amount: '', day: '1' }]);
+  const { canPrompt, isIOSSafari, triggerInstall } = useInstallPrompt();
 
   function advance() { setStep(s => s + 1); }
 
-  function pickMode(modeId: MoneyMode) {
-    setSelectedMode(modeId);
-    dispatch({ type: 'SET_MONEY_MODE', payload: modeId });
-    setTimeout(advance, 160);
+  function saveSetupAndAdvance() {
+    dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' });
+    const defaultCatId = state.categories[0]?.id ?? 'cat_other';
+    // User enters amounts in mainCurrency; convert to ILS for storage (ILS is the base currency).
+    // Store originalAmount + currency so display can show the exact entered value.
+    const mainCurrency = state.mainCurrency;
+    const toILS = (amt: number) => mainCurrency === 'ILS' || displayRate <= 0 ? amt : amt / displayRate;
+    const currencyMeta = (amt: number) => mainCurrency !== 'ILS'
+      ? { currency: mainCurrency, originalAmount: amt }
+      : {};
+    const incomeVal = parseFloat(income);
+    const incomeDayVal = Math.min(28, Math.max(1, parseInt(incomeDay) || 1));
+    if (!isNaN(incomeVal) && incomeVal > 0) {
+      dispatch({ type: 'SET_BUDGET', payload: incomeVal }); // budget stays in mainCurrency
+      dispatch({ type: 'ADD_RECURRING', payload: {
+        id: `rec_income_${Date.now()}`,
+        amount: toILS(incomeVal),
+        categoryId: defaultCatId,
+        dayOfMonth: incomeDayVal,
+        description: incomeDesc.trim() || (he ? 'משכורת' : 'Salary'),
+        isIncome: true,
+        ...currencyMeta(incomeVal),
+      }});
+    }
+    recurringRows.forEach((row, i) => {
+      const amt = parseFloat(row.amount);
+      const day = Math.min(28, Math.max(1, parseInt(row.day) || 1));
+      if (row.name.trim() && !isNaN(amt) && amt > 0) {
+        dispatch({ type: 'ADD_RECURRING', payload: {
+          id: `rec_${Date.now()}_${i}`,
+          amount: toILS(amt),
+          categoryId: defaultCatId,
+          dayOfMonth: day,
+          description: row.name.trim(),
+          isIncome: false,
+          ...currencyMeta(amt),
+        }});
+      }
+    });
+    advance();
   }
 
-  function saveGoalAndAdvance() {
-    const val = parseFloat(goalAmount);
-    if (!isNaN(val) && val > 0) {
-      if (selectedMode === 'savings_based') dispatch({ type: 'SET_SAVINGS_GOAL', payload: val });
-      else dispatch({ type: 'SET_BUDGET', payload: val });
-    }
-    advance();
+  function pickCurrency(c: string) {
+    setSelectedCurrency(c);
+    dispatch({ type: 'SET_MAIN_CURRENCY', payload: c });
   }
 
   function handleLaunch() {
@@ -191,43 +354,86 @@ export default function Onboarding({ onDone }: Props) {
     onDone();
   }
 
-  const dots = (
-    <div className="ob-dots">
+  async function handleInstall() {
+    const outcome = await triggerInstall();
+    if (outcome === 'accepted') handleLaunch();
+    // if 'dismissed': stay on step so user can tap "Maybe later"
+  }
+
+  // ── Story-style progress bar ──────────────────────────────────────────────
+  const progressBar = (
+    <div className="ob-progress-bar">
       {Array.from({ length: TOTAL }).map((_, i) => (
-        <div key={i} className={`ob-dot${i === step ? ' active' : ''}`} />
+        <div
+          key={i}
+          className={`ob-progress-seg${i === step ? ' active' : i < step ? ' done' : ''}`}
+        />
       ))}
     </div>
   );
 
-  // ── Step 0: Intro ─────────────────────────────────────────────────────────
+  // ── Header actions (theme + lang grouped) ────────────────────────────────
+  const headerActions = (
+    <div className="ob-header-actions">
+      <button
+        className="ob-theme-toggle"
+        onClick={toggleTheme}
+        aria-label={theme === 'dark' ? (he ? 'מצב בהיר' : 'Light mode') : (he ? 'מצב כהה' : 'Dark mode')}
+      >
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+      <LangToggle variant="floating" />
+    </div>
+  );
+
+  // ── Aurora blobs background ───────────────────────────────────────────────
+  const aurora = (
+    <div className="ob-aurora" aria-hidden="true">
+      <div className="ob-aurora-blob ob-aurora-blob-1" />
+      <div className="ob-aurora-blob ob-aurora-blob-2" />
+      <div className="ob-aurora-blob ob-aurora-blob-3" />
+    </div>
+  );
+
+  // ── Step 0: Welcome ───────────────────────────────────────────────────────
 
   if (step === 0) {
     const features = he
-      ? ['הכל נשמר אצלך — אין שרת', 'בלי הרשמה, בלי אימייל', 'עובד גם ללא אינטרנט']
+      ? ['הכל נשמר אצלך במכשיר', 'בלי הרשמה, בלי אימייל', 'עובד גם ללא אינטרנט']
       : ['Everything stored on your device', 'No signup, no email', 'Works fully offline'];
     return (
       <div className="ob-overlay" dir={dir}>
+        {aurora}
+        {progressBar}
+        {headerActions}
+
         <div className="ob-screen ob-screen-visual" key={0}>
+          {/* App preview */}
           <AppPreview he={he} />
+
           <div className="ob-visual-text">
-            <h1 className="ob-title ob-title-sm">
+            {/* Big gradient logo */}
+            <h1 className="ob-logo-title">Flowly</h1>
+            <p className="ob-logo-sub">
               {he ? 'הכסף שלך, ברור סוף סוף' : 'Your money. Finally clear.'}
-            </h1>
-            <ul className="ob-feature-list">
+            </p>
+
+            {/* Glass feature pills */}
+            <div className="ob-feature-pills">
               {features.map((f, i) => (
-                <li key={i} className="ob-feature-item">
-                  <Check size={13} strokeWidth={2.5} className="ob-feature-check" />
-                  <span>{f}</span>
-                </li>
+                <div key={i} className="ob-feature-pill">
+                  <span className="ob-feature-pill-check">
+                    <Check size={12} strokeWidth={3} />
+                  </span>
+                  <span className="ob-feature-pill-text">{f}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
+
         <div className="ob-bottom">
-          {dots}
-          <button className="ob-btn-primary" onClick={advance}>
-            {he ? 'מתחילים' : 'Get started'} <ChevronRight size={16} />
-          </button>
+          <SlideButton label={he ? 'מתחילים' : 'Get started'} onConfirm={advance} dir={dir} />
           <button className="ob-dont-show" onClick={onDone}>
             {he ? 'דלג' : 'Skip'}
           </button>
@@ -236,152 +442,342 @@ export default function Onboarding({ onDone }: Props) {
     );
   }
 
-  // ── Step 1: Mode picker ───────────────────────────────────────────────────
+  // ── Step 2: Quick setup (after currency so amounts are entered in the right currency) ──
 
-  if (step === 1) return (
+  if (step === 2) return (
     <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
       <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
         <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
       </button>
-      <div className="ob-screen" key={1}>
-        <h1 className="ob-title ob-title-sm">
-          {he ? 'איך אתה מנהל כסף?' : "What's your money style?"}
+      <div className="ob-screen ob-screen-setup" key={2}>
+        <h1 className="ob-title ob-title-grad">
+          {he ? 'הגדרה מהירה' : 'Quick setup'}
         </h1>
         <p className="ob-sub ob-mode-intro">
           {he
-            ? 'בחר את הגישה שמתאימה לך — המערכת תתאים את עצמה.'
-            : 'Pick the approach that fits you — the app adapts to match.'}
+            ? 'כמה פרטים ותוכל לעקוב מיד — אפשר לדלג ולהוסיף מאוחר יותר.'
+            : 'A few details and you can track right away — or skip and add later.'}
         </p>
-        <div className="ob-modes">
-          {([
-            {
-              id:     'savings_based' as MoneyMode,
-              icon:   <TrendingUp size={22} color="#22C55E" />,
-              bg:     'rgba(34,197,94,0.15)',
-              accent: '#22C55E',
-              title:  he ? 'אני רוצה לחסוך יותר'         : 'I want to save more',
-              desc:   he
-                ? 'קובע יעד חיסכון חודשי. המערכת מחשבת כמה מותר לבזבז לפי ההכנסות שלך.'
-                : 'Set a monthly savings target. The app calculates your safe-to-spend from your income.',
-              tag:    he ? 'מעקב הכנסות + הוצאות + חיסכון' : 'Tracks income · expenses · savings',
-            },
-            {
-              id:     'budget_based' as MoneyMode,
-              icon:   <Wallet size={22} color="#F59E0B" />,
-              bg:     'rgba(245,158,11,0.15)',
-              accent: '#F59E0B',
-              title:  he ? 'יש לי תקציב חודשי קבוע'      : 'I have a fixed monthly budget',
-              desc:   he
-                ? 'קובע כמה מותר לבזבז החודש. מקבל התראה לפני חריגה — ללא מעקב הכנסות.'
-                : 'Set how much you want to spend. Get warned before overspending — no income tracking.',
-              tag:    he ? 'מעקב הוצאות מול תקציב בלבד'   : 'Tracks spending against your cap',
-            },
-          ] as const).map(m => (
-            <button
-              key={m.id}
-              className={`ob-mode-card ob-mode-btn${selectedMode === m.id ? ' ob-mode-selected' : ''}`}
-              onClick={() => pickMode(m.id)}
-            >
-              <div className="ob-mode-icon-wrap" style={{ background: m.bg }}>{m.icon}</div>
-              <div className="ob-mode-text">
-                <div className="ob-mode-title">{m.title}</div>
-                <div className="ob-mode-desc">{m.desc}</div>
-                <div className="ob-mode-tag" style={{ color: m.accent }}>{m.tag}</div>
-              </div>
-              <ChevronRight size={14} className="ob-mode-chevron" />
-            </button>
-          ))}
+
+        {/* Income */}
+        <div className="ob-section-label">
+          <TrendingUp size={14} color="var(--success)" />
+          <span>{he ? 'הכנסה חודשית' : 'Monthly income'}</span>
+          <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-        <p className="ob-sub">
-          {he ? 'ניתן לשנות בכל עת בפרופיל.' : 'Change this any time in Profile.'}
-        </p>
-      </div>
-      <div className="ob-bottom ob-bottom-dots-only">{dots}</div>
-    </div>
-  );
-
-  // ── Step 2: Goal input ────────────────────────────────────────────────────
-
-  if (step === 2) {
-    const isSavings = selectedMode !== 'budget_based';
-    const question  = he
-      ? (isSavings ? 'כמה אתה רוצה לחסוך בחודש?' : 'מה התקציב החודשי שלך?')
-      : (isSavings ? 'How much do you want to save per month?' : "What's your monthly budget?");
-    const explain = he
-      ? (isSavings
-          ? 'Flowly יחסיר את היעד מהכנסותיך ויציג כמה מותר לבזבז החודש.'
-          : 'Flowly יציג כמה נשאר מהתקציב ויתריע לפני שחורגים.')
-      : (isSavings
-          ? 'Flowly subtracts this from your income to show how much you can safely spend each month.'
-          : 'Flowly shows remaining budget and warns you before you overspend.');
-
-    return (
-      <div className="ob-overlay" dir={dir}>
-        <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
-          <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
-        </button>
-        <div className="ob-screen ob-screen-goal" key={2}>
-          <ReactiveRing amount={goalAmount} isSavings={isSavings} currency={currencySymbol} />
-          <div className="ob-goal-block">
-            <h1 className="ob-title ob-title-sm">{question}</h1>
-            <div className="ob-goal-wrap">
-              <span className="ob-goal-currency">{currencySymbol}</span>
+        <div className="ob-setup-card">
+          <input
+            type="text" className="ob-setup-name"
+            placeholder={he ? 'תיאור (משכורת, פרילנס...)' : 'Description (salary, freelance...)'}
+            value={incomeDesc} maxLength={50}
+            onChange={e => setIncomeDesc(e.target.value)}
+          />
+          <div className="ob-setup-row">
+            <label className="ob-setup-amt">
+              <span className="ob-setup-sym">{currencySymbol}</span>
               <input
-                ref={goalInputRef}
-                type="number"
-                inputMode="numeric"
-                className="ob-goal-input"
-                placeholder={he ? 'הכנס סכום' : 'Enter amount'}
-                value={goalAmount}
-                onChange={e => setGoalAmount(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && saveGoalAndAdvance()}
+                type="number" inputMode="numeric" className="ob-setup-input"
+                placeholder={he ? 'סכום' : 'Amount'} value={income} min="0" max="9999999"
+                onChange={e => setIncome(e.target.value)}
               />
-            </div>
-            <p className="ob-goal-example">
-              {he
-                ? `לדוגמה: ${currencySymbol}${isSavings ? '5,000' : '10,000'}`
-                : `e.g. ${currencySymbol}${isSavings ? '5,000' : '10,000'}`}
-            </p>
-            <div className="ob-goal-explain" dir={dir}>
-              <span className="ob-goal-explain-label">
-                {he ? 'איך זה עובד?' : 'How this works'}
-              </span>
-              <span className="ob-goal-explain-text">{explain}</span>
-            </div>
+            </label>
+            <label className="ob-setup-day">
+              <span>{he ? 'יום' : 'day'}</span>
+              <select className="ob-setup-day-select" value={incomeDay}
+                onChange={e => setIncomeDay(e.target.value)}>
+                {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
+              </select>
+            </label>
           </div>
         </div>
-        <div className="ob-bottom">
-          {dots}
-          <button className="ob-btn-primary" onClick={saveGoalAndAdvance} disabled={!goalAmount}>
-            {he ? 'המשך' : 'Continue'} <ChevronRight size={16} />
-          </button>
-          <button className="ob-dont-show" onClick={advance}>
-            {he ? 'עדיין לא יודע' : 'Skip for now'}
-          </button>
+
+        {/* Recurring expenses */}
+        <div className="ob-section-label" style={{ marginTop: 20 }}>
+          <TrendingDown size={14} color="var(--danger)" />
+          <span>{he ? 'הוצאות קבועות' : 'Fixed expenses'}</span>
+          <span className="ob-optional-tag">{he ? 'אופציונלי' : 'optional'}</span>
         </div>
-      </div>
-    );
-  }
-
-  // ── Step 3: Launch ────────────────────────────────────────────────────────
-
-  return (
-    <div className="ob-overlay" dir={dir}>
-      <div className="ob-screen ob-screen-visual" key={3}>
-        <LaunchPreview />
-        <div className="ob-visual-text">
-          <h1 className="ob-title ob-title-sm">{he ? 'הכל מוכן!' : "You're all set!"}</h1>
-          <p className="ob-sub">
-            {he
-              ? 'לחץ על + כדי לרשום את ההוצאה הראשונה שלך.'
-              : 'Tap + to log your first expense.'}
-          </p>
+        <div className="ob-recurring-rows">
+          {recurringRows.map((row, i) => (
+            <div key={i} className="ob-setup-card">
+              <div className="ob-setup-name-row">
+                <input
+                  type="text" className="ob-setup-name"
+                  placeholder={he ? 'שם ההוצאה (שכירות, חשמל...)' : 'Expense name (rent, electricity...)'}
+                  value={row.name} maxLength={50}
+                  onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, name: e.target.value } : r))}
+                />
+                {recurringRows.length > 1 && (
+                  <button type="button" className="ob-recurring-remove"
+                    onClick={() => setRecurringRows(rs => rs.filter((_, j) => j !== i))}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              <div className="ob-setup-row">
+                <label className="ob-setup-amt">
+                  <span className="ob-setup-sym">{currencySymbol}</span>
+                  <input
+                    type="number" inputMode="numeric" className="ob-setup-input"
+                    placeholder="0" value={row.amount} min="0" max="9999999"
+                    onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, amount: e.target.value } : r))}
+                  />
+                </label>
+                <label className="ob-setup-day">
+                  <span>{he ? 'יום' : 'day'}</span>
+                  <select className="ob-setup-day-select" value={row.day}
+                    onChange={e => setRecurringRows(rs => rs.map((r, j) => j === i ? { ...r, day: e.target.value } : r))}>
+                    {DAY_OPTS.map(d => <option key={d} value={String(d)}>{d}</option>)}
+                  </select>
+                </label>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="ob-recurring-add"
+            onClick={() => setRecurringRows(rs => [...rs, { name: '', amount: '', day: '1' }])}
+          >
+            + {he ? 'הוסף עוד' : 'Add another'}
+          </button>
         </div>
       </div>
       <div className="ob-bottom">
-        {dots}
-        <button className="ob-btn-primary ob-btn-launch" onClick={handleLaunch}>
-          {he ? 'הוסף הוצאה ראשונה' : 'Add first expense'} <ChevronRight size={16} />
+        <SlideButton label={he ? 'המשך' : 'Continue'} onConfirm={saveSetupAndAdvance} dir={dir} />
+      </div>
+    </div>
+  );
+
+  // ── Step 1: Currency picker (must precede amount entry) ──────────────────
+
+  if (step === 1) return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
+      <button className="ob-skip" onClick={onDone} aria-label={he ? 'דלג' : 'Skip'}>
+        <X size={18} /><span>{he ? 'דלג' : 'Skip'}</span>
+      </button>
+      <div className="ob-screen ob-screen-currency" key={1}>
+        <h1 className="ob-title ob-title-grad">
+          {he ? 'באיזה מטבע אתה מנהל?' : 'What currency do you use?'}
+        </h1>
+        <p className="ob-sub ob-mode-intro">
+          {he
+            ? 'זה יהיה מטבע הניהול הראשי שלך. ניתן להוסיף הוצאות במטבע אחר — הן יומרו אוטומטית.'
+            : 'This will be your primary management currency. Expenses in other currencies are auto-converted.'}
+        </p>
+        <div className="ob-currency-grid">
+          {CURRENCIES.map(c => {
+            const sym  = CURRENCY_SYMBOL[c];
+            const name = he ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c];
+            const active = selectedCurrency === c;
+            return (
+              <button
+                key={c}
+                className={`ob-currency-card${active ? ' ob-currency-selected' : ''}`}
+                onClick={() => pickCurrency(c)}
+              >
+                <span className="ob-currency-sym">{sym}</span>
+                <span className="ob-currency-code">{c}</span>
+                <span className="ob-currency-name">{name}</span>
+                {active && (
+                  <div className="ob-currency-check-badge">
+                    <Check size={10} strokeWidth={3} />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="ob-bottom">
+        <SlideButton label={he ? 'המשך' : 'Continue'} onConfirm={advance} dir={dir} />
+      </div>
+    </div>
+  );
+
+  // ── Step 3: Settings intro ────────────────────────────────────────────────
+
+  if (step === 3) return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
+      <div className="ob-screen ob-screen-settings" key={3}>
+        <h1 className="ob-title ob-title-grad">
+          {he ? 'כוח ב-הגדרות' : 'Power in Settings'}
+        </h1>
+        <p className="ob-sub ob-mode-intro">
+          {he
+            ? 'ב-הגדרות תוכל להתאים את האפליקציה לצרכים שלך.'
+            : 'In Settings you can tailor the app to your needs.'}
+        </p>
+        <div className="ob-settings-features">
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#8B5CF620', border: '1px solid #8B5CF640' }}>
+              <Tag size={22} color="#8B5CF6" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'קטגוריות' : 'Categories'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'הוסף, שנה שם ובחר צבעים לקטגוריות שלך' : 'Add, rename and color-code your categories'}
+              </span>
+            </div>
+          </div>
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#3B82F620', border: '1px solid #3B82F640' }}>
+              <CreditCard size={22} color="#3B82F6" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'נהל כרטיסים ועקוב אחר הוצאות לפי כרטיס' : 'Manage cards and track spending per card'}
+              </span>
+            </div>
+          </div>
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#F59E0B20', border: '1px solid #F59E0B40' }}>
+              <Users size={22} color="#F59E0B" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'מצב חובות' : 'Debt Mode'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'עקוב אחרי חובות והלוואות בינך לבין אנשים' : 'Track debts and loans between you and others'}
+              </span>
+            </div>
+          </div>
+          <div className="ob-settings-feature">
+            <div className="ob-settings-feature-icon" style={{ background: '#10B98120', border: '1px solid #10B98140' }}>
+              <Plane size={22} color="#10B981" />
+            </div>
+            <div className="ob-settings-feature-body">
+              <span className="ob-settings-feature-title">{he ? 'מצב טיול' : 'Travel Mode'}</span>
+              <span className="ob-settings-feature-desc">
+                {he ? 'עקוב אחרי תקציב הטיול שלך בכל מטבע' : 'Track your travel budget in any currency'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="ob-bottom">
+        <button
+          className="ob-btn-primary ob-btn-launch"
+          onClick={advance}
+        >
+          <Sparkles size={16} />
+          {he ? 'המשך' : 'Continue'}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 4: Add expense tutorial ─────────────────────────────────────────
+
+  if (step === 4) return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
+      <div className="ob-screen ob-screen-add" key={4}>
+        <h1 className="ob-title ob-title-grad" style={{ marginBottom: 4 }}>
+          {he ? 'איך מוסיפים הוצאה?' : 'How to add an expense'}
+        </h1>
+        <AddExpensePreview he={he} currSym={currencySymbol} />
+        <div className="ob-add-steps" dir={he ? 'rtl' : 'ltr'}>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">1</span>
+            <span>{he ? 'לחץ על +' : 'Tap +'}</span>
+          </div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">2</span>
+            <span>{he ? 'הכנס סכום וקטגוריה' : 'Enter amount & category'}</span>
+          </div>
+          <div className="ob-add-step">
+            <span className="ob-add-step-num">3</span>
+            <span>{he ? 'לחץ שמור — זהו!' : 'Tap Save — done!'}</span>
+          </div>
+        </div>
+      </div>
+      <div className="ob-bottom">
+        <button
+          className="ob-btn-primary ob-btn-launch"
+          onClick={canPrompt || isIOSSafari ? advance : handleLaunch}
+        >
+          <Sparkles size={16} />
+          {canPrompt || isIOSSafari
+            ? (he ? 'המשך' : 'Continue')
+            : (he ? 'הוסף הוצאה ראשונה' : 'Start tracking')}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Step 5: Add to home screen ────────────────────────────────────────────
+
+  const installSteps = he
+    ? [
+        { icon: <Share2 size={18} />,      text: 'לחץ על כפתור השיתוף' },
+        { icon: <ChevronDown size={18} />, text: 'גלול למטה בתפריט' },
+        { icon: <Home size={18} />,        text: 'לחץ על "הוסף למסך הבית"' },
+        { icon: <Check size={18} />,       text: 'לחץ "הוסף" לאישור' },
+      ]
+    : [
+        { icon: <Share2 size={18} />,      text: 'Tap the Share button' },
+        { icon: <ChevronDown size={18} />, text: 'Scroll down in the menu' },
+        { icon: <Home size={18} />,        text: 'Tap "Add to Home Screen"' },
+        { icon: <Check size={18} />,       text: 'Tap "Add" to confirm' },
+      ];
+
+  return (
+    <div className="ob-overlay" dir={dir}>
+      {aurora}
+      {progressBar}
+      {headerActions}
+      <div className="ob-screen ob-screen-install" key={5}>
+        <div className="ob-install-icon-ring">
+          <img src="/icon-192.png" className="ob-install-app-icon" alt="Flowly" />
+        </div>
+        <h1 className="ob-install-title">
+          {he
+            ? <>{`הוסף את `}<span className="ob-install-brand">Flowly</span>{` למסך הבית`}</>
+            : <>{'Add '}<span className="ob-install-brand">Flowly</span>{' to Home Screen'}</>}
+        </h1>
+        <p className="ob-install-subtitle">
+          {he ? '4 שלבים פשוטים' : '4 simple steps'}
+        </p>
+
+        {canPrompt && (
+          <button className="ob-btn-primary ob-btn-install" onClick={handleInstall}>
+            <Download size={16} />
+            {he ? 'הוסף למסך הבית' : 'Add to Home Screen'}
+          </button>
+        )}
+
+        {!canPrompt && (
+          <div className="ob-install-steps">
+            {installSteps.map((s, i) => (
+              <div key={i} className="ob-install-step">
+                <div className="ob-install-step-icon">{s.icon}</div>
+                <div className="ob-install-step-text">{s.text}</div>
+                <div className="ob-install-step-num">{i + 1}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="ob-bottom">
+        <button
+          className={canPrompt ? 'ob-dont-show' : 'ob-btn-primary ob-btn-launch-pulse'}
+          onClick={handleLaunch}
+        >
+          {canPrompt
+            ? (he ? 'אולי אחר כך' : 'Maybe later')
+            : (he ? 'הבנתי, מתחיל!' : "Got it, let's go!")}
         </button>
       </div>
     </div>

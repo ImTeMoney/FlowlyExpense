@@ -1,11 +1,14 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
+import { track } from '../services/analytics';
 import { createPortal } from 'react-dom';
-import { useExpense, CATEGORY_COLORS, PAYMENT_METHODS, PaymentMethod, Transaction } from '../context/ExpenseContext';
+import { useExpense, CATEGORY_COLORS, STORAGE_KEYS, CreditCard as CreditCardType } from '../context/ExpenseContext';
+import { suggestIcon } from '../services/iconSuggest';
 import { CURRENCIES, CURRENCY_SYMBOL, CURRENCY_NAME, CURRENCY_NAME_EN } from '../services/exchangeRate';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
-import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical } from 'lucide-react';
+import { Plus, Trash2, PiggyBank, Tag, Download, Upload, Sun, Moon, Check, X, RefreshCw, CheckCircle, ChevronRight, Target, BarChart2, BookOpen, GripVertical, RotateCcw, CreditCard as CreditCardIcon, Pencil, Star } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import LangToggle from '../components/LangToggle';
 import {
   DndContext,
   closestCenter,
@@ -52,8 +55,7 @@ const SettingsPage: React.FC = () => {
   const { state, dispatch } = useExpense();
   const { t, toggleLang, lang, monthLabel, catName } = useLang();
   const [theme, toggleTheme] = useTheme();
-
-  const { transactions, categories, monthlyBudget, savingsGoal, mainCurrency, moneyMode } = state;
+  const { transactions, categories, mainCurrency, debtModeEnabled, travelModeEnabled } = state;
 
   // DnD sensors (pointer for desktop, touch for mobile)
   const sensors = useSensors(
@@ -76,7 +78,54 @@ const SettingsPage: React.FC = () => {
   function showToast(msg: string) {
     if (toastTimer) clearTimeout(toastTimer);
     setToast(msg);
-    setToastTimer(setTimeout(() => setToast(''), 2200));
+    setToastTimer(setTimeout(() => setToast(''), 3000));
+  }
+
+  // Card management
+  const { cards } = state;
+  const [cardFormOpen, setCardFormOpen] = useState(false);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [cardName, setCardName] = useState('');
+  const [cardLast4, setCardLast4] = useState('');
+  const [cardBillingDay, setCardBillingDay] = useState('');
+  const [cardLimit, setCardLimit] = useState('');
+  const [cardColor, setCardColor] = useState(CATEGORY_COLORS[1]);
+  const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
+
+  function openAddCard() {
+    setEditingCardId(null);
+    setCardName(''); setCardLast4(''); setCardBillingDay(''); setCardLimit('');
+    setCardColor(CATEGORY_COLORS[1]);
+    setCardFormOpen(true);
+  }
+
+  function openEditCard(c: CreditCardType) {
+    setEditingCardId(c.id);
+    setCardName(c.name); setCardLast4(c.last4);
+    setCardBillingDay(String(c.billingDay));
+    setCardLimit(c.limit ? String(c.limit) : '');
+    setCardColor(c.color);
+    setCardFormOpen(true);
+  }
+
+  function saveCard() {
+    if (!cardName.trim() || cardLast4.length !== 4) return;
+    const day = parseInt(cardBillingDay) || 1;
+    const payload: CreditCardType = {
+      id: editingCardId ?? '',
+      name: cardName.trim(),
+      last4: cardLast4,
+      billingDay: Math.min(28, Math.max(1, day)),
+      limit: cardLimit ? parseFloat(cardLimit) : undefined,
+      color: cardColor,
+    };
+    if (editingCardId) {
+      dispatch({ type: 'UPDATE_CARD', payload });
+    } else {
+      dispatch({ type: 'ADD_CARD', payload });
+    }
+    setCardFormOpen(false);
+    setEditingCardId(null);
   }
 
   // Refresh / update check
@@ -147,42 +196,6 @@ const SettingsPage: React.FC = () => {
     }
   }
 
-  // Budget
-  const [budgetEdit, setBudgetEdit] = useState(monthlyBudget > 0 ? String(monthlyBudget) : '');
-  function saveBudget() {
-    const val = parseFloat(budgetEdit);
-    if (val > 0) { dispatch({ type: 'SET_BUDGET', payload: val }); showToast(t.savedSettings); }
-  }
-
-  // Savings goal
-  const [goalEdit, setGoalEdit] = useState(savingsGoal > 0 ? String(savingsGoal) : '');
-  function saveGoal() {
-    const val = parseFloat(goalEdit);
-    dispatch({ type: 'SET_SAVINGS_GOAL', payload: !isNaN(val) && val > 0 ? val : 0 });
-    showToast(t.savedSettings);
-  }
-
-  // CSV export (current month)
-  const now = new Date();
-  const ms  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthTxns = transactions.filter(tx => tx.date.startsWith(ms));
-
-  function exportCSV() {
-    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method']];
-    monthTxns.forEach(tx => {
-      const cat    = categories.find(c => c.id === tx.categoryId)?.name ?? '';
-      const pmName = tx.paymentSplits && tx.paymentSplits.length > 0
-        ? tx.paymentSplits.map(s => `${(t as any)[`pm_${s.paymentMethod}`] ?? s.paymentMethod}:${s.amount}`).join('+')
-        : tx.paymentMethod ? ((t as any)[`pm_${tx.paymentMethod}`] ?? tx.paymentMethod) : '';
-      rows.push([tx.date, tx.description, cat, tx.isIncome ? 'Income' : 'Expense', String(tx.amount), pmName]);
-    });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const a   = document.createElement('a');
-    a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
-    a.download = `finio_${ms}.csv`;
-    a.click();
-  }
-
   // Inline category editing
   const [editingId,    setEditingId]    = useState<string | null>(null);
   const [editingName,  setEditingName]  = useState('');
@@ -193,7 +206,9 @@ const SettingsPage: React.FC = () => {
   }
   function commitEdit() {
     if (editingId && editingName.trim()) {
-      dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name: editingName.trim(), color: editingColor } });
+      const name = editingName.trim();
+      dispatch({ type: 'RENAME_CATEGORY', payload: { id: editingId, name, color: editingColor, icon: suggestIcon(name) } });
+      track('category_renamed', {});
       showToast(t.categoryUpdated);
     }
     setEditingId(null);
@@ -207,19 +222,7 @@ const SettingsPage: React.FC = () => {
   // Full JSON backup/restore
   const backupInputRef = useRef<HTMLInputElement>(null);
 
-  const BACKUP_STORAGE_KEYS = [
-    'expense_transactions',
-    'expense_recurring',
-    'expense_budget',
-    'expense_savings_goal',
-    'expense_categories_v2',
-    'expense_device_id',
-    'expense_main_currency',
-    'expense_money_mode',
-    'expense_category_budgets',
-    'expense_debts',
-    'expense_streaks',
-  ];
+  const BACKUP_STORAGE_KEYS = Object.values(STORAGE_KEYS);
 
   function exportBackup() {
     const data: Record<string, unknown> = { _version: 1, _exportedAt: new Date().toISOString() };
@@ -242,176 +245,35 @@ const SettingsPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (backupInputRef.current) backupInputRef.current.value = '';
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast(t.backupImportError); return; }
     const reader = new FileReader();
     reader.onload = ev => {
       try {
         const parsed = JSON.parse(ev.target?.result as string) as Record<string, unknown>;
         if (!parsed._version) throw new Error('not a backup');
-        for (const key of BACKUP_STORAGE_KEYS) {
-          if (key in parsed) {
-            const v = parsed[key];
-            localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v));
-          }
-        }
-        showToast(t.backupImportSuccess);
-        setTimeout(() => window.location.reload(), 800);
+        const exportedAt = typeof parsed._exportedAt === 'string' ? parsed._exportedAt.slice(0, 10) : '';
+        setConfirm({
+          title: lang === 'he' ? 'לשחזר מגיבוי?' : 'Restore from backup?',
+          body: lang === 'he'
+            ? `פעולה זו תחליף את הנתונים הקיימים בנתונים מהגיבוי${exportedAt ? ` (${exportedAt})` : ''}.`
+            : `This will replace your current data with the backup${exportedAt ? ` (${exportedAt})` : ''}.`,
+          onConfirm: () => {
+            for (const key of BACKUP_STORAGE_KEYS) {
+              if (key in parsed) {
+                const v = parsed[key];
+                localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v));
+              }
+            }
+            setConfirm(null);
+            showToast(t.backupImportSuccess);
+            setTimeout(() => window.location.reload(), 800);
+          },
+        });
       } catch {
         showToast(t.backupImportError);
       }
     };
     reader.onerror = () => showToast(t.backupImportError);
-    reader.readAsText(file, 'utf-8');
-  }
-
-  // CSV import
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [pendingRows, setPendingRows] = useState<Transaction[] | null>(null);
-
-  // Build reverse map: localized payment label → PaymentMethod key
-  const pmReverseMap = useMemo<Record<string, PaymentMethod>>(() => {
-    const map: Record<string, PaymentMethod> = {};
-    for (const pm of PAYMENT_METHODS) {
-      const label = (t as any)[`pm_${pm}`] as string | undefined;
-      if (label) map[label.toLowerCase()] = pm;
-      map[pm.toLowerCase()] = pm; // also accept raw key
-    }
-    return map;
-  }, [t]);
-
-  function parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let i = 0, cur = '';
-    while (i < line.length) {
-      if (line[i] === '"') {
-        i++;
-        while (i < line.length) {
-          if (line[i] === '"' && line[i + 1] === '"') { cur += '"'; i += 2; }
-          else if (line[i] === '"') { i++; break; }
-          else cur += line[i++];
-        }
-      } else if (line[i] === ',') {
-        result.push(cur); cur = ''; i++;
-      } else {
-        cur += line[i++];
-      }
-    }
-    result.push(cur);
-    return result;
-  }
-
-  function parseCSVImport(text: string): { rows: Transaction[]; invalidCount: number; formatError: string | null } {
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (lines.length < 2) return { rows: [], invalidCount: 0, formatError: t.importInvalidFormat };
-
-    const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-    const required = ['date', 'description', 'category', 'type', 'amount', 'payment method'];
-    if (!required.every(r => header.includes(r)))
-      return { rows: [], invalidCount: 0, formatError: t.importInvalidFormat };
-
-    const idx = {
-      date: header.indexOf('date'),
-      desc: header.indexOf('description'),
-      cat:  header.indexOf('category'),
-      type: header.indexOf('type'),
-      amt:  header.indexOf('amount'),
-      pm:   header.indexOf('payment method'),
-    };
-
-    const rows: Transaction[] = [];
-    let invalidCount = 0;
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = parseCSVLine(lines[i]);
-      const date = cols[idx.date]?.trim() ?? '';
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { invalidCount++; continue; }
-      const amt = parseFloat(cols[idx.amt]?.trim() ?? '');
-      if (isNaN(amt) || amt < 0) { invalidCount++; continue; }
-
-      const catName = cols[idx.cat]?.trim() ?? '';
-      const cat = categories.find(c => c.name === catName);
-      const categoryId = cat?.id ?? 'cat_other';
-      const isIncome = (cols[idx.type]?.trim().toLowerCase() ?? '') === 'income';
-      const pmRaw = cols[idx.pm]?.trim().toLowerCase() ?? '';
-      const paymentMethod = pmReverseMap[pmRaw] ?? undefined;
-
-      rows.push({
-        id: `imp_${Date.now()}_${i}_${Math.random().toString(36).slice(2)}`,
-        date,
-        description: cols[idx.desc]?.trim() ?? '',
-        categoryId,
-        amount: amt,
-        isIncome,
-        paymentMethod,
-      });
-    }
-    return { rows, invalidCount, formatError: null };
-  }
-
-  function fingerprint(tx: { date: string; amount: number; description: string }) {
-    return `${tx.date}|${tx.amount}|${tx.description.trim().toLowerCase()}`;
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const text = ev.target?.result as string;
-      const { rows, invalidCount, formatError } = parseCSVImport(text);
-
-      if (formatError) {
-        setImportStatus({ type: 'error', msg: formatError });
-        return;
-      }
-
-      // Deduplication: skip rows whose date+amount+description already exist
-      const existingPrints = new Set(transactions.map(fingerprint));
-      const newRows = rows.filter(r => !existingPrints.has(fingerprint(r)));
-      const duplicateCount = rows.length - newRows.length;
-
-      // Nothing to import at all
-      if (newRows.length === 0 && rows.length === 0) {
-        setImportStatus({ type: 'error', msg: t.importInvalidFormat });
-        return;
-      }
-
-      // Build confirmation body
-      const iHe = lang === 'he';
-      const summaryLines: React.ReactNode[] = [];
-      if (newRows.length > 0)
-        summaryLines.push(<div key="new">{iHe ? `יובאו ${newRows.length} רשומות` : `${newRows.length} transaction${newRows.length !== 1 ? 's' : ''} will be imported`}</div>);
-      if (duplicateCount > 0)
-        summaryLines.push(<div key="dup" style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>{iHe ? `דולגו ${duplicateCount} כפילויות` : `${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} will be skipped`}</div>);
-      if (invalidCount > 0)
-        summaryLines.push(<div key="inv" style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{iHe ? `${invalidCount} שורות לא תקינות לא יובאו` : `${invalidCount} invalid row${invalidCount !== 1 ? 's' : ''} will be skipped`}</div>);
-
-      setPendingRows(newRows);
-      setConfirm({
-        title: t.importConfirmTitle,
-        body: <div style={{ lineHeight: 1.7 }}>{summaryLines}</div>,
-        onConfirm: () => {
-          if (newRows.length > 0) dispatch({ type: 'MERGE_TRANSACTIONS', payload: newRows });
-          setPendingRows(null);
-          setConfirm(null);
-          // Result summary message
-          const parts: string[] = [];
-          if (iHe) {
-            if (newRows.length > 0) parts.push(`יובאו ${newRows.length} רשומות`);
-            if (duplicateCount > 0) parts.push(`דולגו ${duplicateCount} כפילויות`);
-            if (invalidCount > 0)   parts.push(`${invalidCount} שורות לא תקינות`);
-          } else {
-            if (newRows.length > 0) parts.push(`${newRows.length} imported`);
-            if (duplicateCount > 0) parts.push(`${duplicateCount} skipped (duplicates)`);
-            if (invalidCount > 0)   parts.push(`${invalidCount} invalid`);
-          }
-          setImportStatus({ type: 'success', msg: parts.join(' · ') });
-          setTimeout(() => setImportStatus(null), 5000);
-        },
-      });
-    };
-    reader.onerror = () => setImportStatus({ type: 'error', msg: t.importError });
     reader.readAsText(file, 'utf-8');
   }
 
@@ -421,8 +283,9 @@ const SettingsPage: React.FC = () => {
     if (!name) return;
     dispatch({
       type: 'ADD_CATEGORY',
-      payload: { id: `cat_custom_${Date.now()}`, name, color: newCatColor, isCustom: true },
+      payload: { id: `cat_custom_${Date.now()}`, name, color: newCatColor, icon: suggestIcon(name), isCustom: true },
     });
+    track('category_added', {});
     setNewCatName('');
   }
 
@@ -434,124 +297,31 @@ const SettingsPage: React.FC = () => {
         <div className="header-row">
           <div className="header-brand">{t.settings}</div>
           <div className="header-actions">
+            <button className="header-naked-btn" onClick={() => { track('theme_changed', { theme: theme === 'dark' ? 'light' : 'dark' }); toggleTheme(); }} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <LangToggle variant="inline" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Currency ── */}
+      <div className="a-sec">
+        <div className="a-sec-title">
+          <span className="title-text">{t.mainCurrencyLabel}</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {CURRENCIES.map(c => (
             <button
-              className="icon-btn"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              aria-label={lang === 'he' ? 'בדוק עדכונים' : 'Check for updates'}
-              title={
-                isRefreshing
-                  ? (lang === 'he' ? 'בודק…' : 'Checking…')
-                  : updateCheck === 'ok'
-                  ? (lang === 'he' ? 'האפליקציה מעודכנת' : 'App is up to date')
-                  : (lang === 'he' ? 'בדוק עדכונים' : 'Check for updates')
-              }
-              style={updateCheck === 'ok' ? { color: '#22C55E' } : undefined}
+              key={c}
+              type="button"
+              className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
+              onClick={() => { track('currency_changed', { currency: c }); dispatch({ type: 'SET_MAIN_CURRENCY', payload: c }); }}
+              style={{ textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
-              {updateCheck === 'ok'
-                ? <CheckCircle size={16} />
-                : <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
-              }
+              {CURRENCY_SYMBOL[c]} {c}
             </button>
-            <button className="icon-btn lang-btn" onClick={toggleLang} aria-label="Toggle language">
-              {lang === 'he' ? 'EN' : 'עב'}
-            </button>
-            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Money Management Mode ── */}
-      <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text">{t.moneyModeTitle}</span>
-        </div>
-        <div className="mode-seg-ctrl">
-          <button
-            className={`mode-seg-btn${moneyMode === 'savings_based' ? ' active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'savings_based' })}
-          >
-            <Target size={14} />
-            <span>{t.modeTrackSavings}</span>
-          </button>
-          <button
-            className={`mode-seg-btn${moneyMode === 'budget_based' ? ' active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_MONEY_MODE', payload: 'budget_based' })}
-          >
-            <BarChart2 size={14} />
-            <span>{t.modeTrackBudget}</span>
-          </button>
-        </div>
-        <p className="mode-seg-desc">
-          {moneyMode === 'savings_based' ? t.modeTrackSavingsDesc : t.modeTrackBudgetDesc}
-        </p>
-      </div>
-
-      {/* ── Financial Goals (mode-dependent) ── */}
-      <div className="a-sec">
-        <div className="a-sec-title">
-          <span className="title-text">{t.financialGoals}</span>
-        </div>
-
-        {moneyMode === 'savings_based' ? (
-          <>
-            {/* Savings goal — PRIMARY */}
-            <div className="set-row">
-              <span className="set-lbl" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <PiggyBank size={13} color="#22C55E" />
-                {t.savingsGoalLabel} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})
-              </span>
-              <input
-                type="number" className="set-input"
-                placeholder={lang === 'he' ? 'לדוגמה: 5,000' : 'e.g. 5,000'}
-                value={goalEdit}
-                onChange={e => setGoalEdit(e.target.value)}
-                onBlur={saveGoal}
-                onKeyDown={e => e.key === 'Enter' && saveGoal()}
-                inputMode="numeric"
-              />
-            </div>
-
-            <p className="settings-helper">{t.savingsHelperText}</p>
-          </>
-        ) : (
-          <>
-            {/* Budget — PRIMARY */}
-            <div className="set-row">
-              <span className="set-lbl">{t.monthlyBudget} ({CURRENCY_SYMBOL[mainCurrency] ?? mainCurrency})</span>
-              <input
-                type="number" className="set-input"
-                placeholder={lang === 'he' ? 'לדוגמה: 10,000' : 'e.g. 10,000'}
-                value={budgetEdit}
-                onChange={e => setBudgetEdit(e.target.value)}
-                onBlur={saveBudget}
-                onKeyDown={e => e.key === 'Enter' && saveBudget()}
-                inputMode="numeric"
-              />
-            </div>
-
-            <p className="settings-helper">{t.budgetHelperText}</p>
-          </>
-        )}
-
-        {/* Main Currency */}
-        <div className="set-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <span className="set-lbl">{t.mainCurrencyLabel}</span>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {CURRENCIES.map(c => (
-              <button
-                key={c}
-                type="button"
-                className={`currency-pill${mainCurrency === c ? ' active' : ''}`}
-                onClick={() => dispatch({ type: 'SET_MAIN_CURRENCY', payload: c })}
-              >
-                {CURRENCY_SYMBOL[c]} {c}
-                <span style={{ fontSize: 10, opacity: 0.7, marginRight: 2 }}>— {lang === 'he' ? CURRENCY_NAME[c] : CURRENCY_NAME_EN[c]}</span>
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
 
@@ -594,15 +364,45 @@ const SettingsPage: React.FC = () => {
                         </div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
                           <button
-                            onClick={() => setConfirm({
-                              title: t.confirmDeleteCatTitle,
-                              body: <strong>"{editingName}"</strong>,
-                              onConfirm: () => {
-                                dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
-                                setEditingId(null);
-                                setConfirm(null);
-                              },
-                            })}
+                            onClick={() => {
+                              const affected = transactions
+                                .filter(tx => tx.categoryId === editingId)
+                                .map(tx => tx.date.slice(0, 7))
+                                .filter((m, i, a) => a.indexOf(m) === i)
+                                .sort((a, b) => b.localeCompare(a));
+
+                              const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+                              const monthLabels = affected.map(ym => {
+                                const [y, m] = ym.split('-');
+                                return lang === 'he'
+                                  ? `${HE_MONTHS[parseInt(m) - 1]} ${y}`
+                                  : new Date(`${ym}-01`).toLocaleDateString('en', { month: 'long', year: 'numeric' });
+                              });
+
+                              setConfirm({
+                                title: t.confirmDeleteCatTitle,
+                                body: affected.length > 0 ? (
+                                  <>
+                                    <strong>"{editingName}"</strong>
+                                    <br /><br />
+                                    <span style={{ color: 'var(--danger)', fontSize: 13 }}>
+                                      {lang === 'he'
+                                        ? `יש ${affected.length === 1 ? 'עסקה אחת' : `${affected.length} עסקאות`} מ: ${monthLabels.join(', ')}`
+                                        : `Has ${affected.length} transaction${affected.length !== 1 ? 's' : ''} from: ${monthLabels.join(', ')}`}
+                                    </span>
+                                    <br />
+                                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                                      {lang === 'he' ? 'העסקאות ישמרו ללא קטגוריה.' : 'Transactions will remain uncategorised.'}
+                                    </span>
+                                  </>
+                                ) : <strong>"{editingName}"</strong>,
+                                onConfirm: () => {
+                                  dispatch({ type: 'DELETE_CATEGORY', payload: editingId! });
+                                  setEditingId(null);
+                                  setConfirm(null);
+                                },
+                              });
+                            }}
                             style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}
                           >
                             <Trash2 size={12} /> {t.deleteLabel}
@@ -646,7 +446,7 @@ const SettingsPage: React.FC = () => {
             value={newCatName}
             onChange={e => setNewCatName(e.target.value)}
             maxLength={30}
-            style={{ width: '100%', textAlign: 'right' }}
+            style={{ width: '100%', textAlign: lang === 'he' ? 'right' : 'left', direction: lang === 'he' ? 'rtl' : 'ltr' }}
           />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {CATEGORY_COLORS.map(c => (
@@ -671,81 +471,195 @@ const SettingsPage: React.FC = () => {
         </form>
       </div>
 
+      {/* ── Debt Mode ── */}
+      <div className="a-sec">
+        <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="title-text">{lang === 'he' ? 'מצב חובות' : 'Debt Mode'}</span>
+          <button
+            className={`debt-mode-toggle${debtModeEnabled ? ' on' : ''}`}
+            onClick={() => dispatch({ type: 'SET_DEBT_MODE', payload: !debtModeEnabled })}
+            aria-label={lang === 'he' ? 'הפעל/כבה מצב חובות' : 'Toggle debt mode'}
+          >
+            <span className="debt-mode-thumb" />
+          </button>
+        </div>
+        <p className="mode-seg-desc" style={{ marginTop: 6 }}>
+          {lang === 'he'
+            ? 'כשפעיל, חוב נרשם גם כהוצאה/הכנסה'
+            : 'When on, each debt also records as an expense/income'}
+        </p>
+      </div>
+
+      {/* ── Travel Mode ── */}
+      <div className="a-sec">
+        <div className="a-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="title-text">{lang === 'he' ? 'מצב טיול' : 'Travel Mode'}</span>
+          <button
+            className={`debt-mode-toggle${travelModeEnabled ? ' on' : ''}`}
+            onClick={() => dispatch({ type: 'SET_TRAVEL_MODE', payload: !travelModeEnabled })}
+            aria-label={lang === 'he' ? 'הפעל/כבה מצב טיול' : 'Toggle travel mode'}
+          >
+            <span className="debt-mode-thumb" />
+          </button>
+        </div>
+        <p className="mode-seg-desc" style={{ marginTop: 6 }}>
+          {lang === 'he'
+            ? 'עקוב אחרי תקציב הטיול שלך לפי מטבע'
+            : 'Track your trip budget by currency'}
+        </p>
+      </div>
+
+      {/* ── Credit Cards ── */}
+      <div className="a-sec">
+        <div className="a-sec-title" style={{ justifyContent: 'flex-start', gap: 6 }}>
+          <CreditCardIcon size={14} />
+          <span className="title-text">{lang === 'he' ? 'כרטיסי אשראי' : 'Credit Cards'}</span>
+        </div>
+
+        {cards.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            {cards.map(c => (
+              <div key={c.id} className="card-row">
+                <div className="card-row-dot" style={{ background: c.color }} />
+                <div className="card-row-info">
+                  <div className="card-row-name">{c.name}</div>
+                  <div className="card-row-meta">
+                    •••• {c.last4}
+                    {' · '}
+                    {lang === 'he' ? `יום חיוב ${c.billingDay}` : `Bills on day ${c.billingDay}`}
+                    {c.limit ? ` · ${lang === 'he' ? 'מסגרת' : 'Limit'}: ${c.limit.toLocaleString()}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => dispatch({ type: 'SET_DEFAULT_CARD', payload: c.id })}
+                  aria-label="default"
+                  title={lang === 'he' ? 'כרטיס ברירת מחדל' : 'Default card'}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6,
+                           color: c.isDefault ? '#F5B301' : 'var(--text-muted)', opacity: c.isDefault ? 1 : 0.7 }}>
+                  <Star size={14} fill={c.isDefault ? '#F5B301' : 'none'} />
+                </button>
+                <button onClick={() => openEditCard(c)} aria-label="edit"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6, opacity: 0.7 }}>
+                  <Pencil size={14} />
+                </button>
+                <button onClick={() => setDeleteCardId(c.id)} aria-label="delete"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4, borderRadius: 6, opacity: 0.7 }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!cardFormOpen && (
+          <button className="export-btn primary" onClick={openAddCard} style={{ marginTop: 4 }}>
+            <Plus size={13} />
+            {lang === 'he' ? 'הוסף כרטיס' : 'Add Card'}
+          </button>
+        )}
+
+        {cardFormOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            <input
+              className="set-input"
+              placeholder={lang === 'he' ? 'שם הכרטיס (למשל: ויזה כאל)' : 'Card name (e.g. Visa Cal)'}
+              value={cardName}
+              onChange={e => setCardName(e.target.value)}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="set-input"
+                placeholder={lang === 'he' ? '4 ספרות אחרונות' : 'Last 4 digits'}
+                value={cardLast4}
+                maxLength={4}
+                inputMode="numeric"
+                onChange={e => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                style={{ flex: 1 }}
+              />
+              <input
+                className="set-input"
+                placeholder={lang === 'he' ? 'יום חיוב' : 'Billing day'}
+                value={cardBillingDay}
+                inputMode="numeric"
+                onChange={e => setCardBillingDay(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                style={{ flex: 1 }}
+              />
+            </div>
+            <input
+              className="set-input"
+              placeholder={lang === 'he' ? 'מסגרת אשראי (אופציונלי)' : 'Credit limit (optional)'}
+              value={cardLimit}
+              inputMode="decimal"
+              onChange={e => setCardLimit(e.target.value.replace(/[^\d.]/g, ''))}
+            />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '4px 0' }}>
+              {CATEGORY_COLORS.map(col => (
+                <button
+                  key={col}
+                  onClick={() => setCardColor(col)}
+                  style={{
+                    width: 22, height: 22, borderRadius: '50%', background: col, border: 'none',
+                    outline: cardColor === col ? `2px solid ${col}` : 'none',
+                    outlineOffset: 2, cursor: 'pointer',
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+              <button
+                className={`export-btn${cardName.trim() && cardLast4.length === 4 ? ' primary' : ''}`}
+                onClick={saveCard}
+                style={{ flex: 1 }}
+              >
+                <Check size={13} />
+                {lang === 'he' ? 'שמור' : 'Save'}
+              </button>
+              <button
+                className="export-btn"
+                onClick={() => { setCardFormOpen(false); setEditingCardId(null); }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {deleteCardId && createPortal(
+        <ConfirmModal
+          message={lang === 'he' ? 'למחוק את הכרטיס?' : 'Delete this card?'}
+          onConfirm={() => { dispatch({ type: 'DELETE_CARD', payload: deleteCardId }); setDeleteCardId(null); }}
+          onCancel={() => setDeleteCardId(null)}
+        />,
+        document.body
+      )}
+
       {/* ── Tools ── */}
       <div className="a-sec">
         <div className="a-sec-title">
           <span className="title-text">{t.toolsTitle}</span>
         </div>
-        {/* Full JSON backup */}
-        <button className="export-btn primary" onClick={exportBackup} style={{ background: 'rgba(0,113,227,0.12)', borderColor: 'rgba(0,113,227,0.3)', color: 'var(--purple)' }}>
+
+        <button className="export-btn primary" onClick={exportBackup}
+          style={{ background: 'rgba(0,113,227,0.12)', borderColor: 'rgba(0,113,227,0.3)', color: 'var(--purple)' }}>
           <Download size={13} />
-          {t.backupExport}
-        </button>
-        <input
-          ref={backupInputRef}
-          type="file"
-          accept=".json,application/json"
-          style={{ display: 'none' }}
-          onChange={handleBackupFileChange}
-        />
-        <button className="export-btn" onClick={() => backupInputRef.current?.click()} style={{ marginTop: 6 }}>
-          <Upload size={13} />
-          {t.backupImport}
-        </button>
-        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center', marginBottom: 10 }}>{t.backupImportNote}</p>
-
-        <button
-          className="export-btn"
-          onClick={exportCSV}
-          disabled={monthTxns.length === 0}
-        >
-          <Download size={13} />
-          {t.exportCSV} — {monthLabel(now.getFullYear(), now.getMonth() + 1)}
+          {lang === 'he' ? 'גיבוי מלא' : 'Full Backup'}
         </button>
 
-        {/* Hidden file input for CSV import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        <button
-          className="export-btn"
-          onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
-          style={{ marginTop: 6 }}
-        >
-          <Upload size={13} />
-          {t.importCSV}
+        <input ref={backupInputRef} type="file" accept=".json,application/json"
+          style={{ display: 'none' }} onChange={handleBackupFileChange} />
+        <button className="export-btn" onClick={() => backupInputRef.current?.click()} style={{ marginTop: 8 }}>
+          <RotateCcw size={13} />
+          {lang === 'he' ? 'שחזור מלא' : 'Full Restore'}
         </button>
-        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center' }}>{t.importTransactionsOnly}</p>
+        <p className="settings-helper" style={{ marginTop: 4, textAlign: 'center', marginBottom: 12 }}>{t.backupImportNote}</p>
 
-        {importStatus && (
-          <div
-            className={`import-status${importStatus.type === 'success' ? ' success' : ' error'}`}
-          >
-            {importStatus.msg}
-          </div>
-        )}
-
-        <button
-          className="export-btn"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          style={{ marginTop: 6 }}
-        >
-          <RefreshCw size={13} className={isRefreshing ? 'spin' : ''} />
-          {isRefreshing ? (lang === 'he' ? 'בודק עדכונים…' : 'Checking for updates…') : t.refreshApp}
-        </button>
-        <button
-          className="export-btn"
+        <button className="export-btn"
           onClick={() => window.dispatchEvent(new CustomEvent('finio-show-onboarding'))}
-          style={{ marginTop: 6 }}
-        >
+          style={{ marginTop: 2 }}>
           <BookOpen size={13} />
           {t.showOnboardingAgain}
         </button>
+
         <p className="settings-version">{t.version} v{__APP_VERSION__}</p>
       </div>
 
@@ -755,7 +669,7 @@ const SettingsPage: React.FC = () => {
           title={confirm.title}
           body={confirm.body}
           onConfirm={confirm.onConfirm}
-          onCancel={() => { setConfirm(null); setPendingRows(null); }}
+          onCancel={() => setConfirm(null)}
         />
       )}
 

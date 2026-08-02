@@ -34,6 +34,7 @@ export interface Translations {
   cat_dining: string;
   cat_travel: string;
   cat_other: string;
+  cat_debt: string;
   // Analytics
   analytics: string;
   monthlyBudget: string;
@@ -229,27 +230,25 @@ export interface Translations {
   appUpToDate: string;
   // Onboarding
   showOnboardingAgain: string;
-  // Receipt attachment
-  receiptLabel: string;
-  attachReceipt: string;
-  replaceReceipt: string;
-  removeReceipt: string;
-  viewReceipt: string;
-  takePhoto: string;
-  chooseFromGallery: string;
-  choosePdf: string;
-  receiptTooLarge: string;
-  receiptUnsupported: string;
-  ocrAutoDetected: string;
-  ocrFailed: string;
-  ocrNoData: string;
-  ocrNoKey: string;
   // Full backup
   backupExport: string;
   backupImport: string;
   backupImportNote: string;
   backupImportSuccess: string;
   backupImportError: string;
+  // Travel budget
+  trips: string;
+  addTrip: string;
+  tripName: string;
+  tripCurrency: string;
+  tripBudget: string;
+  departedWith: string;
+  tripSpent: string;
+  tripRemaining: string;
+  endTrip: string;
+  returnedWith: string;
+  tripSummary: string;
+  travelMode: string;
 }
 
 const he: Translations = {
@@ -281,6 +280,7 @@ const he: Translations = {
   cat_dining: 'מסעדות',
   cat_travel: 'טיולים',
   cat_other: 'אחר',
+  cat_debt: 'חוב',
   analytics: 'ניתוח',
   monthlyBudget: 'תקציב חודשי',
   recurringExpenses: 'תשלומים קבועים',
@@ -351,15 +351,15 @@ const he: Translations = {
   // Money mode selector
   moneyModeTitle: 'איך תרצה לנהל את הכסף',
   modeTrackSavings: 'מעקב חיסכון',
-  modeTrackSavingsDesc: 'עוקב אחרי הכנסות, הוצאות וחיסכון.',
+  modeTrackSavingsDesc: 'רשום הכנסות והוצאות וראה כמה כסף נשאר לך באמת.',
   modeTrackBudget: 'מעקב תקציב',
-  modeTrackBudgetDesc: 'עוקב אחרי הוצאות ביחס לתקציב חודשי.',
+  modeTrackBudgetDesc: 'קבע תקציב ושלוט בהוצאות שלך לאורך החודש.',
   // Financial goals section
   financialGoals: 'יעד חודשי',
   savingsGoalLabel: 'יעד חיסכון',
   savingsHelperText: 'חיסכון = הכנסות פחות הוצאות. יש לרשום גם הכנסות לחישוב מדויק.',
   budgetHelperText: 'עוקב אחרי ההוצאות מול התקציב. אין צורך לרשום הכנסות.',
-  mainCurrencyLabel: 'מטבע',
+  mainCurrencyLabel: 'מטבע ניהול',
   // Categories section
   categoriesTitle: 'קטגוריות',
   newCategoryPlaceholder: 'שם קטגוריה חדשה',
@@ -467,25 +467,24 @@ const he: Translations = {
   appUpToDate: 'האפליקציה מעודכנת ✓',
   showOnboardingAgain: 'הצג הדרכה מחדש',
   // Receipt attachment
-  receiptLabel:        'קבלה (לא חובה)',
-  attachReceipt:       'צרף קבלה',
-  replaceReceipt:      'החלף',
-  removeReceipt:       'הסר',
-  viewReceipt:         'הצג קבלה',
-  takePhoto:           'מצלמה',
-  chooseFromGallery:   'גלריה',
-  choosePdf:           'PDF',
-  receiptTooLarge:     'הקובץ גדול מדי (מקסימום 8 מ״ב)',
-  receiptUnsupported:  'סוג קובץ לא נתמך',
-  ocrAutoDetected:     'הנתונים זוהו אוטומטית, מומלץ לבדוק לפני שמירה',
-  ocrFailed:           'זיהוי אוטומטי נכשל — ניתן למלא ידנית',
-  ocrNoData:           'לא זוהו נתונים — ניתן למלא ידנית',
-  ocrNoKey:            'זיהוי אוטומטי לא מוגדר — מלא ידנית',
   backupExport:        'גיבוי מלא (JSON)',
   backupImport:        'שחזור מגיבוי (JSON)',
   backupImportNote:    'משחזר את כל הנתונים — עסקאות, קטגוריות והגדרות',
   backupImportSuccess: 'הנתונים שוחזרו בהצלחה',
   backupImportError:   'קובץ גיבוי לא תקין',
+  // Travel budget
+  trips:         'טיולים',
+  addTrip:       'הוסף טיול',
+  tripName:      'שם הטיול',
+  tripCurrency:  'מטבע',
+  tripBudget:    'סכום שלוקח',
+  departedWith:  'יצאתי עם',
+  tripSpent:     'הוצאתי',
+  tripRemaining: 'נשאר',
+  endTrip:       'סיים טיול',
+  returnedWith:  'חזרתי עם',
+  tripSummary:   'סיכום טיול',
+  travelMode:    'מצב טיול',
 };
 
 const en: Translations = {
@@ -517,6 +516,7 @@ const en: Translations = {
   cat_dining: 'Dining Out',
   cat_travel: 'Travel',
   cat_other: 'Other',
+  cat_debt: 'Debt',
   analytics: 'Analytics',
   monthlyBudget: 'Monthly Budget',
   recurringExpenses: 'Recurring Expenses',
@@ -587,15 +587,15 @@ const en: Translations = {
   // Money mode selector
   moneyModeTitle: 'How do you want to manage your money',
   modeTrackSavings: 'Savings Tracking',
-  modeTrackSavingsDesc: 'Tracks income, expenses and savings.',
+  modeTrackSavingsDesc: 'Log income and expenses to see exactly how much you have left.',
   modeTrackBudget: 'Budget Tracking',
-  modeTrackBudgetDesc: 'Tracks expenses against a monthly budget.',
+  modeTrackBudgetDesc: 'Set a budget and control your spending throughout the month.',
   // Financial goals section
   financialGoals: 'Monthly Goal',
   savingsGoalLabel: 'Savings Goal',
   savingsHelperText: 'Savings = income minus expenses. Record both for an accurate picture.',
   budgetHelperText: 'Tracks spending against a monthly cap. No income recording needed.',
-  mainCurrencyLabel: 'Currency',
+  mainCurrencyLabel: 'Management Currency',
   // Categories section
   categoriesTitle: 'Categories',
   newCategoryPlaceholder: 'New category name',
@@ -703,25 +703,24 @@ const en: Translations = {
   appUpToDate: 'App is up to date ✓',
   showOnboardingAgain: 'Show onboarding again',
   // Receipt attachment
-  receiptLabel:        'Receipt (optional)',
-  attachReceipt:       'Attach receipt',
-  replaceReceipt:      'Replace',
-  removeReceipt:       'Remove',
-  viewReceipt:         'View receipt',
-  takePhoto:           'Camera',
-  chooseFromGallery:   'Gallery',
-  choosePdf:           'PDF',
-  receiptTooLarge:     'File too large (max 8 MB)',
-  receiptUnsupported:  'Unsupported file type',
-  ocrAutoDetected:     'Data detected automatically — please verify before saving.',
-  ocrFailed:           'Auto-detection failed — fill in manually.',
-  ocrNoData:           'No data detected — fill in manually.',
-  ocrNoKey:            'Auto-detection not configured — fill in manually.',
   backupExport:        'Full Backup (JSON)',
   backupImport:        'Restore from Backup (JSON)',
   backupImportNote:    'Restores all data — transactions, categories and settings',
   backupImportSuccess: 'Data restored successfully',
   backupImportError:   'Invalid backup file',
+  // Travel budget
+  trips:         'Trips',
+  addTrip:       'Add trip',
+  tripName:      'Trip name',
+  tripCurrency:  'Currency',
+  tripBudget:    'Taking with me',
+  departedWith:  'Departed with',
+  tripSpent:     'Spent',
+  tripRemaining: 'Remaining',
+  endTrip:       'End trip',
+  returnedWith:  'Returned with',
+  tripSummary:   'Trip summary',
+  travelMode:    'Travel mode',
 };
 
 interface LanguageContextProps {
@@ -806,13 +805,31 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
+  const HEBREW_TO_EN: Record<string, string> = {
+    'תרומה': 'Donation',
+    'אירועים': 'Events',
+    'חינוך': 'Education',
+    'ספורט': 'Sport',
+    'בגדים': 'Clothing',
+    'רפואה': 'Healthcare',
+    'חיות מחמד': 'Pets',
+    'מתנות': 'Gifts',
+    'אוכל': 'Food',
+  };
+
   function catName(catId: string, storedName: string, isRenamed?: boolean): string {
-    // User explicitly renamed this category — always respect their choice
-    if (isRenamed) return storedName;
-    // Custom categories: use stored name as-is
-    if (catId.includes('custom')) return storedName;
-    // Built-in: return live translation for language-switching support
+    // Custom categories: try name-based translation in English mode, else stored name
+    if (catId.includes('custom')) {
+      if (lang !== 'he' && HEBREW_TO_EN[storedName]) return HEBREW_TO_EN[storedName];
+      return storedName;
+    }
+    // Built-in: in non-Hebrew mode always use the live translation so switching
+    // language shows the correct English name even if the user renamed in Hebrew
     const translated = (t as Record<string, unknown>)[catId];
+    if (lang !== 'he' && typeof translated === 'string') return translated;
+    // Hebrew mode: respect user's custom rename
+    if (isRenamed) return storedName;
+    // Hebrew mode, not renamed: use Hebrew translation
     if (typeof translated === 'string') return translated;
     return storedName;
   }

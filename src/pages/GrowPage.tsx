@@ -6,6 +6,7 @@ import {
 import { useExpense } from '../context/ExpenseContext';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
+import LangToggle from '../components/LangToggle';
 import { useMarketData } from '../hooks/useMarketData';
 import { TrackKey } from '../services/marketDataService';
 import { Sun, Moon } from 'lucide-react';
@@ -59,7 +60,7 @@ function timeAgoHe(ts: number | null): string {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function GrowPage() {
+export default function GrowPage({ embedded }: { embedded?: boolean }) {
   const { state, formatCurrencyDirect } = useExpense();
   const { t, lang } = useLang();
   const [theme, toggleTheme] = useTheme();
@@ -115,19 +116,22 @@ export default function GrowPage() {
   const maxValue = Math.max(...results.map(r => r.fv), 1);
 
   return (
-    <div className="page" style={{ paddingBottom: 90 }}>
+    <div className="page" style={{ paddingBottom: embedded ? 16 : 90 }}>
 
       {/* Header */}
-      <div className="aether-header">
-        <div className="header-row">
-          <div className="header-brand">{t.growTitle}</div>
-          <div className="header-actions">
-            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+      {!embedded && (
+        <div className="aether-header">
+          <div className="header-row">
+            <div className="header-brand">{t.growTitle}</div>
+            <div className="header-actions">
+              <button className="header-naked-btn" onClick={toggleTheme} aria-label="Toggle theme">
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <LangToggle variant="inline" />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Actual savings context row ── */}
       <div className="grow-context-row">
@@ -153,7 +157,6 @@ export default function GrowPage() {
         <div className="a-sec-title">
           <span className="title-text">{t.simulatorTitle}</span>
         </div>
-        <p className="grow-explainer">{t.growExplainer}</p>
 
         {/* Monthly contribution input */}
         <div className="grow-field">
@@ -348,6 +351,12 @@ export default function GrowPage() {
               {iHe
                 ? 'הסימולציה מיועדת ללמידה בלבד ואינה ייעוץ השקעות. תשואות עבר אינן ערובה לעתיד. אחוזי התשואה הם ממוצעים היסטוריים. יש להתייעץ עם יועץ פיננסי מורשה.'
                 : 'For educational use only. Not investment advice. Past performance is no guarantee of future results. Return figures are historical averages. Consult a licensed financial advisor.'}
+            </p>
+            <p className="grow-disclaimer-body" style={{ marginTop: 6, color: 'var(--text-dim)' }}>
+              {iHe
+                ? <>מקורות: תשואות S&P 500 / נאסד"ק / מניות עולמי — <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>Damodaran / NYU Stern</a>. שיעורי פיקדון ואג"ח — <a href="https://fiscaldata.treasury.gov" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>US Treasury FiscalData</a>.</>
+                : <>Sources: S&P 500 / Nasdaq / Global equity returns — <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>Damodaran / NYU Stern</a>. Deposit &amp; bond rates — <a href="https://fiscaldata.treasury.gov" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>US Treasury FiscalData</a>.</>
+              }
             </p>
           </div>
         </div>
