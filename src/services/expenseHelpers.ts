@@ -213,17 +213,43 @@ const CAT_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
-export function suggestCategory(text: string, categories: Category[]): string | undefined {
+/**
+ * Every category whose keywords appear in the text, in the user's category order.
+ * Text like "ביטוח רכב" legitimately matches both cat_insurance and cat_transport;
+ * a question should be able to sum the union and say so, rather than silently
+ * picking whichever happens to come first.
+ *
+ * `wholeWord` matters more than it looks. Loose substring matching reads
+ * "כמה פעמים" as the water bill, because 'מים' sits inside 'פעמים' — a silently
+ * wrong answer. Questions must pass wholeWord: true. Expense entry keeps the loose
+ * default, where keywords are being fished out of bank-SMS and merchant strings.
+ */
+export function matchCategories(
+  text: string,
+  categories: Category[],
+  opts: { wholeWord?: boolean } = {},
+): string[] {
   const lower = text.toLowerCase();
 
+  // JS \b is ASCII-only and never fires next to a Hebrew letter, so boundaries are
+  // spelled out. [בלמהוש]{0,2} lets a clitic prefix through ('בדלק' matches 'דלק').
+  const hit = (kw: string) => {
+    const k = kw.toLowerCase();
+    if (!opts.wholeWord) return lower.includes(k);
+    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[\\s,.:;!?"'()\\[\\]-])[בלמהוש]{0,2}${esc}(?=$|[\\s,.:;!?"'()\\[\\]-])`, 'i')
+      .test(lower);
+  };
+
+  const hits: string[] = [];
   for (const cat of categories) {
     if (cat.id === 'cat_other') continue;
-    const builtIn  = CAT_KEYWORDS[cat.id] ?? [];
-    const nameWord = cat.name.toLowerCase();
-    const keywords = [...builtIn, nameWord];
-    for (const kw of keywords) {
-      if (lower.includes(kw.toLowerCase())) return cat.id;
-    }
+    const keywords = [...(CAT_KEYWORDS[cat.id] ?? []), cat.name.toLowerCase()];
+    if (keywords.some(hit)) hits.push(cat.id);
   }
-  return undefined;
+  return hits;
+}
+
+export function suggestCategory(text: string, categories: Category[]): string | undefined {
+  return matchCategories(text, categories)[0];
 }
