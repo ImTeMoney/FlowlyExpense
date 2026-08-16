@@ -27,7 +27,7 @@ import { parseBankFile, ImportedRow } from '../services/bankImport';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
-import { useMicPermission } from '../hooks/useMicPermission';
+import { useVoiceInput } from '../hooks/useVoiceInput';
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import { useSpendingForecast } from '../hooks/useSpendingForecast';
 import { useTilt } from '../hooks/useTilt';
@@ -139,10 +139,6 @@ export default function DashboardPage() {
   const [toast, setToast]                 = useState('');
   const [toastTimer, setToastTimer]       = useState<ReturnType<typeof setTimeout> | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; body: React.ReactNode; onConfirm: () => void } | null>(null);
-  // Paste parser / voice
-  const [pasteText, setPasteText]     = useState('');
-  const [showPaste, setShowPaste]     = useState(false);
-  const [voiceError, setVoiceError]   = useState('');
   // Category bottom sheet
   const [catSheetOpen, setCatSheetOpen] = useState(false);
   // Transaction filters
@@ -381,75 +377,39 @@ export default function DashboardPage() {
   }, [toastTimer]);
 
   // ── Voice input ───────────────────────────────────────────────────────────
-  const SpeechRec = typeof window !== 'undefined'
-    ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
-    : null;
-  const { micPermission, requestMicPermission } = useMicPermission();
+  // Shared with the ask sheet via useVoiceInput. The hook keeps the permission
+  // priming, the he-IL language selection and the 800 ms iOS keyboard-dictation
+  // rescue; this call site only says what to do with a finished utterance.
+  const [voiceMiss, setVoiceMiss] = useState('');
+  // The handler needs `voice` to clear the field, and `voice` needs the handler —
+  // a ref breaks the cycle without tripping the const TDZ.
+  const fillRef = useRef<(raw: string) => void>(() => {});
 
-  async function startListening() {
-    if (!SpeechRec) return;
+  const voice = useVoiceInput({
+    lang,
+    onCommit: (raw) => fillRef.current(raw),
+    // Only auto-fill from iOS dictation once something is actually parseable, so a
+    // half-spoken phrase does not clear the field mid-sentence.
+    shouldAutoCommit: (t) => {
+      const p = parseExpenseText(t);
+      return !!(p.amount || p.desc || suggestCategory(t, categories));
+    },
+  });
 
-    // Prime mic permission once via getUserMedia so subsequent SpeechRecognition
-    // calls reuse the cached grant without showing a browser prompt.
-    if (micPermission !== 'granted') {
-      const result = await requestMicPermission();
-      if (result !== 'granted') return;
+  fillRef.current = (raw: string) => {
+    const parsed   = parseExpenseText(raw);
+    const catMatch = suggestCategory(raw, categories);
+    if (parsed.amount)    setAmount(String(parsed.amount));
+    if (parsed.desc)      setDesc(parsed.desc);
+    if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
+    if (catMatch)         setCatId(catMatch);
+    // Clear the field — the form is filled, leaving the raw transcript is confusing.
+    voice.setText('');
+    if (!parsed.amount && !parsed.desc && !catMatch) {
+      setVoiceMiss(lang === 'he' ? 'לא הצלחתי להבין — נסה שוב' : 'Could not understand — try again');
+      setTimeout(() => setVoiceMiss(''), 3000);
     }
-
-    const rec = new SpeechRec();
-    rec.lang = lang === 'he' ? 'he-IL' : 'en-US';
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    setShowPaste(true);
-    setPasteText('');
-    rec.onresult = (e: SpeechRecognitionEvent) => {
-      const transcript = e.results[0][0].transcript;
-      const parsed = parseExpenseText(transcript);
-      const catMatch = suggestCategory(transcript, categories);
-      if (parsed.amount)    setAmount(String(parsed.amount));
-      if (parsed.desc)      setDesc(parsed.desc);
-      if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
-      if (catMatch) setCatId(catMatch);
-      // Clear the voice field — form is auto-filled; leaving the raw transcript is confusing
-      setPasteText('');
-      setShowPaste(false);
-      if (!parsed.amount && !parsed.desc && !catMatch) {
-        setVoiceError(lang === 'he' ? 'לא הצלחתי להבין — נסה שוב' : 'Could not understand — try again');
-        setTimeout(() => setVoiceError(''), 3000);
-      }
-    };
-    rec.onerror = (e: SpeechRecognitionErrorEvent) => {
-      setShowPaste(false);
-      const msg = e.error === 'not-allowed'
-        ? (lang === 'he' ? 'גישה למיקרופון נדחתה' : 'Microphone access denied')
-        : e.error === 'no-speech'
-          ? (lang === 'he' ? 'לא זוהה קול — נסה שוב' : 'No speech detected — try again')
-          : (lang === 'he' ? 'שגיאת זיהוי קול' : 'Voice recognition error');
-      setVoiceError(msg);
-      setTimeout(() => setVoiceError(''), 3000);
-    };
-    rec.onend = () => setShowPaste(false);
-    rec.start();
-  }
-
-  // Debounced auto-parse for iOS keyboard mic: text arrives via onChange, not rec.onresult.
-  // After 800 ms of inactivity, if something is parseable, fill the form and clear the field.
-  useEffect(() => {
-    if (!pasteText.trim()) return;
-    const id = setTimeout(() => {
-      const parsed = parseExpenseText(pasteText);
-      const catMatch = suggestCategory(pasteText, categories);
-      if (parsed.amount || parsed.desc || catMatch) {
-        if (parsed.amount)    setAmount(String(parsed.amount));
-        if (parsed.desc)      setDesc(parsed.desc);
-        if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
-        if (catMatch)         setCatId(catMatch);
-        setPasteText('');
-        setShowPaste(false);
-      }
-    }, 800);
-    return () => clearTimeout(id);
-  }, [pasteText]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   function openModal() {
     const draft = readDraft();
@@ -476,9 +436,10 @@ export default function DashboardPage() {
     setIsRecurring(false);
     setShowNote(false);
     setShowAdvanced(false);
-    setPasteText('');
-    setShowPaste(false);
-    setVoiceError('');
+    voice.setText('');
+    voice.stop();
+    voice.clearError();
+    setVoiceMiss('');
     setShowModal(true);
   }
 
@@ -519,9 +480,10 @@ export default function DashboardPage() {
     setIsRecurring(!!recurringExpenses.find(r =>
       r.description === cleanDesc && r.isIncome === !!tx.isIncome
     ));
-    setPasteText('');
-    setShowPaste(false);
-    setVoiceError('');
+    voice.setText('');
+    voice.stop();
+    voice.clearError();
+    setVoiceMiss('');
     setSelectedCardId(tx.cardId);
     setShowModal(true);
   }
@@ -1623,58 +1585,41 @@ export default function DashboardPage() {
 
             {/* Voice / dictation input — only for new transactions, not for editing */}
             {!editingTx && <div className="voice-field-row">
-              <div className={`voice-field-wrap${showPaste ? ' listening' : ''}`}>
+              <div className={`voice-field-wrap${voice.listening ? ' listening' : ''}`}>
                 <input
                   type="text"
                   className="voice-field-input"
                   aria-label={lang === 'he' ? 'הזנת הוצאה בטקסט חופשי' : 'Enter expense by text'}
                   placeholder={lang === 'he' ? 'אמור: "שילמתי 50 שקל על קפה"' : 'Say: "I spent 50 on coffee"'}
-                  value={pasteText}
-                  onChange={e => setPasteText(e.target.value)}
+                  value={voice.text}
+                  onChange={e => voice.setText(e.target.value)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const parsed = parseExpenseText(pasteText);
-                      if (parsed.amount)    setAmount(String(parsed.amount));
-                      if (parsed.desc)      setDesc(parsed.desc);
-                      if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
-                      const catMatch = suggestCategory(pasteText, categories);
-                      if (catMatch) setCatId(catMatch);
-                      setPasteText('');
-                    }
+                    if (e.key === 'Enter') { e.preventDefault(); voice.commit(); }
                   }}
                 />
-                {SpeechRec && micPermission !== 'denied' ? (
+                {voice.micUsable ? (
                   <button
                     type="button"
-                    className={`voice-api-btn${showPaste ? ' listening' : ''}`}
-                    onClick={startListening}
-                    disabled={showPaste}
+                    className={`voice-api-btn${voice.listening ? ' listening' : ''}`}
+                    onClick={voice.start}
+                    disabled={voice.listening}
                     aria-label={lang === 'he' ? 'הפעל זיהוי קול' : 'Start voice recognition'}
                   >
-                    {showPaste ? '...' : <Mic size={14} />}
+                    {voice.listening ? '...' : <Mic size={14} />}
                   </button>
                 ) : null}
               </div>
-              {pasteText && (
+              {voice.text && (
                 <button
                   type="button"
                   className="voice-parse-btn"
-                  onClick={() => {
-                    const parsed = parseExpenseText(pasteText);
-                    if (parsed.amount)    setAmount(String(parsed.amount));
-                    if (parsed.desc)      setDesc(parsed.desc);
-                    if (parsed.payMethod) setPayMethod(parsed.payMethod as PaymentMethod);
-                    const catMatch = suggestCategory(pasteText, categories);
-                    if (catMatch) setCatId(catMatch);
-                    setPasteText('');
-                  }}
+                  onClick={voice.commit}
                 >
                   {lang === 'he' ? 'מלא' : 'Fill'}
                 </button>
               )}
             </div>}
-            {!editingTx && voiceError && <p className="voice-error">{voiceError}</p>}
+            {!editingTx && (voice.error || voiceMiss) && <p className="voice-error">{voice.error || voiceMiss}</p>}
 
             {/* Amount */}
             <div className="amount-row">
