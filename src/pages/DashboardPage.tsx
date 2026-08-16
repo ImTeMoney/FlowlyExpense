@@ -1,13 +1,8 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
-import {
-  Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package,
-  Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone,
-  GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, ChevronDown, ChevronRight, Mic,
-  Search, ArrowDownToLine, Upload,
-} from 'lucide-react';
+import { Plus, X, TrendingDown, TrendingUp, Sun, Moon, Package, Banknote, CreditCard, Landmark, FileCheck, ArrowLeftRight, Smartphone, GitFork, Trash2, Repeat, Zap, PiggyBank, CheckCircle, Clipboard, ChevronDown, ChevronRight, Mic, Search, ArrowDownToLine, Upload, Sparkles } from 'lucide-react';
 import { useExpense, Transaction, RecurringExpense, PAYMENT_METHODS, PaymentMethod, PaymentSplit, CreditCard as CreditCardType } from '../context/ExpenseContext';
 
 interface BankPreviewRow {
@@ -28,6 +23,7 @@ import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import { useVoiceInput } from '../hooks/useVoiceInput';
+const AskSheet = lazy(() => import('../components/Agent/AskSheet'));
 import { useInsights, InsightIcon, Urgency } from '../hooks/useInsights';
 import { useSpendingForecast } from '../hooks/useSpendingForecast';
 import { useTilt } from '../hooks/useTilt';
@@ -381,6 +377,7 @@ export default function DashboardPage() {
   // priming, the he-IL language selection and the 800 ms iOS keyboard-dictation
   // rescue; this call site only says what to do with a finished utterance.
   const [voiceMiss, setVoiceMiss] = useState('');
+  const [askOpen, setAskOpen]     = useState(false);
   // The handler needs `voice` to clear the field, and `voice` needs the handler —
   // a ref breaks the cycle without tripping the const TDZ.
   const fillRef = useRef<(raw: string) => void>(() => {});
@@ -1533,6 +1530,28 @@ export default function DashboardPage() {
           <Plus size={26} />
         </button>,
         document.body
+      )}
+
+      {createPortal(
+        <button
+          className="fab-ask"
+          onClick={() => setAskOpen(true)}
+          aria-label={lang === 'he' ? 'שאל על ההוצאות' : 'Ask about your spending'}
+        >
+          <Sparkles size={20} />
+        </button>,
+        document.body
+      )}
+
+      {askOpen && (
+        <Suspense fallback={null}>
+          <AskSheet
+            onClose={() => setAskOpen(false)}
+            // A question that turned out to be an expense: close the sheet and open
+            // the add form pre-filled, so the user still confirms before it is saved.
+            onRecord={(raw) => { setAskOpen(false); openModal(); fillRef.current(raw); }}
+          />
+        </Suspense>
       )}
 
       {/* Delete confirmation */}

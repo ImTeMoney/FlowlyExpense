@@ -112,6 +112,22 @@ function LangSync() {
   return null;
 }
 
+/** Dev-only: ?nltest=1 runs the offline query agent's assertion suite and prints
+ *  the result. Kept behind import.meta.env.DEV so it is stripped from production,
+ *  and usable on a real phone, where the iOS dictation path actually lives. */
+function NlSelfTest() {
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (!new URLSearchParams(window.location.search).has('nltest')) return;
+    import('./services/nlQuery/selftest').then(({ runSelfTest }) => {
+      const r = runSelfTest();
+      console.log(`[nlQuery] ${r.pass}/${r.total} passed`);
+      r.failures.forEach(f => console.warn('[nlQuery] ✗ ' + f));
+    });
+  }, []);
+  return null;
+}
+
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
 
@@ -130,6 +146,7 @@ function App() {
     <ErrorBoundary>
       <LanguageProvider>
         <LangSync />
+        <NlSelfTest />
         <ExpenseProvider>
           <Router>
             <RouteTracker />
