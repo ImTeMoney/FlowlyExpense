@@ -68,8 +68,25 @@ export default function AskSheet({ onClose, onRecord }: {
       return;
     }
     lastQuery.current = q;
-    const result = runQuery(q, state.transactions, toMainAmt, toStr(new Date()));
-    const a = renderAnswer(result, { lang, fmt: formatCurrencyDirect, catLabel });
+    const today = toStr(new Date());
+    const result = runQuery(q, state.transactions, toMainAmt, today);
+
+    // A zero result is a dead end unless we can point somewhere. Re-run the same
+    // question over the last 12 months and, if that finds something, say so.
+    let widened;
+    if (result.count === 0 && result.topItems.length === 0) {
+      const wide = { ...q, range: { ...q.range, from: `${new Date().getFullYear() - 1}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`, to: today } };
+      const wr = runQuery(wide, state.transactions, toMainAmt, today);
+      if (wr.count > 0) {
+        widened = {
+          total: wr.total,
+          count: wr.count,
+          label: he ? '12 החודשים האחרונים' : 'the last 12 months',
+        };
+      }
+    }
+
+    const a = renderAnswer(result, { lang, fmt: formatCurrencyDirect, catLabel }, widened);
     setTurns(t => [...t, { id: `${Date.now()}`, question: text, answer: a }]);
     track('ask_query', { intent: q.intent, hasCategory: q.categoryIds.length > 0, count: result.count });
   }, [state.categories, state.transactions, toMainAmt, formatCurrencyDirect, catLabel, lang]);
