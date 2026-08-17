@@ -77,7 +77,9 @@ const INTENT_RULES: [Intent, RegExp][] = [
   ['top_category',  heWord('על\\s+מה\\s+הכי|מה\\s+הכי|הכי\\s+הרבה|הקטגוריה\\s+ה?(?:הכי|גדולה)|biggest\\s+categor|top\\s+categor')],
   ['count',         heWord('כמה\\s+פעמים|כמה\\s+עסקאות|כמה\\s+קניות|how\\s+many')],
   ['avg',           heWord('ממוצע|בממוצע|ממוצעת|average|avg')],
-  ['balance',       heWord('כמה\\s+נשאר|יתרה|מה\\s+המצב|כמה\\s+חסכתי|balance|how\\s+much.*left')],
+  // 'כמה כסף נשאר' puts a word between the two markers; without the optional
+  // group it falls through to the sum rule's 'כמה כסף'.
+  ['balance',       heWord('כמה\\s+(?:כסף\\s+)?נשאר|נשאר\\s+לי|יתרה|מה\\s+המצב|כמה\\s+חסכתי|balance|how\\s+much.*left')],
   ['income_sum',    heWord('כמה\\s+(?:הכנסתי|נכנס|הרווחתי|קיבלתי)|הכנסות|income|earned')],
   ['sum',           heWord('כמה\\s+(?:הוצאתי|בזבזתי|שילמתי|יצא|עלה)|הוצאות|כמה\\s+כסף|סך\\s+הכל|spent|spend|paid')],
 ];

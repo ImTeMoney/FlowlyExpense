@@ -75,6 +75,13 @@ export function runSelfTest(now: Date = new Date(2026, 7, 16)): SelfTestReport {
   check('date: מאז ה-10 בחודש',    range('מאז ה-10 בחודש'), '2026-08-10→2026-08-16');
   check('date: מאז ה-25 בחודש',    range('מאז ה-25 בחודש'), '2026-07-25→2026-08-16');
   check('date: בשבת',              range('בשבת'), '2026-08-15→2026-08-15');
+  // Explicit dates. The preposition decides: 'מ' is since, 'ב'/bare is that day.
+  check('date: מ11.8.26 (since)',  range('כמה הוצאתי מ11.8.26'), '2026-08-11→2026-08-16');
+  check('date: מ-11.8 (since)',    range('כמה הוצאתי מ-11.8'), '2026-08-11→2026-08-16');
+  check('date: מאז 1.7 (since)',   range('כמה הוצאתי מאז 1.7'), '2026-07-01→2026-08-16');
+  check('date: ב11.8 (single)',    range('כמה הוצאתי ב11.8'), '2026-08-11→2026-08-11');
+  check('date: בין 1.8 ל-15.8',    range('כמה הוצאתי בין 1.8 ל-15.8'), '2026-08-01→2026-08-15');
+  check('date: 12/4/25',           range('כמה הוצאתי ב12/4/25'), '2025-04-12→2025-04-12');
   // Negatives — these must NOT be read as dates.
   check('date!: מאיפה ≠ מאי',      range('מאיפה הכסף נגמר'), null);
   check('date!: השני ≠ יום שני',   range('כמה הוצאתי על החודש השני'), '2026-08-01→2026-08-16');
@@ -136,6 +143,12 @@ export function runSelfTest(now: Date = new Date(2026, 7, 16)): SelfTestReport {
   check('q8 net', h.r.income - h.r.expense, 12000 - 5800);
 
   check('q9 gibberish', parseQuery('אבגדהוז', CATS, null, now), null);
+
+  // The exact shape reported from the phone: "מ11.8.26" must span to today, not
+  // collapse to a single empty day.
+  const i = ask('כמה הוצאתי מ11.8.26')!;
+  check('q10 since-date range', `${i.r.range.from}→${i.r.range.to}`, '2026-08-11→2026-08-16');
+  check('q10 since-date total', i.r.total, 600);   // 200 + 140 + 260
 
   // ── 4. Answer rendering does not throw and echoes the period ────────────────
   const ans = renderAnswer(a.r, {

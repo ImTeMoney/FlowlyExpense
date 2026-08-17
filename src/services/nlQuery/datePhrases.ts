@@ -165,19 +165,42 @@ function match(t: string, now: Date, today: string): DateRange | null {
     }
   }
 
-  // ── Explicit day: 12.4 / 12/4/2025 ──────────────────────────────────────────
-  const ex = t.match(new RegExp(`${B}${P}-?(\\d{1,2})[./](\\d{1,2})(?:[./](\\d{2,4}))?${E}`));
-  if (ex) {
-    const d = parseInt(ex[1], 10), m = parseInt(ex[2], 10);
-    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
-      let year = ex[3] ? parseInt(ex[3], 10) : now.getFullYear();
-      if (year < 100) year += 2000;
-      const iso = `${year}-${pad(m)}-${pad(d)}`;
-      return mk(iso, iso, `${d}.${m}`, `${d}.${m}`);
-    }
+  // ── Explicit dates: 12.4 · 12/4/25 · מ-11.8.26 · בין 1.8 ל-15.8 ─────────────
+  // The preposition carries the meaning and must not be swallowed by the clitic
+  // class: 'מ11.8' is "since the 11th", 'ב11.8' is "on the 11th".
+  const D = '(\\d{1,2})[./](\\d{1,2})(?:[./](\\d{2,4}))?';
+
+  const exRange = t.match(new RegExp(
+    `${B}(?:בין\\s+|from\\s+)?(?:מ\\s*-?\\s*)?${D}\\s*(?:עד|ועד|ל-|–|—|\\s-\\s|to|until)\\s*(?:ה-?)?${D}`, 'i'));
+  if (exRange) {
+    const a = isoFrom(exRange[1], exRange[2], exRange[3], now);
+    const b = isoFrom(exRange[4], exRange[5], exRange[6], now);
+    if (a && b && a <= b) return mk(a, b, `${shortDate(a)} – ${shortDate(b)}`, `${shortDate(a)} – ${shortDate(b)}`);
+  }
+
+  const exSince = t.match(new RegExp(`${B}(?:מאז|החל\\s+מ|since|from|מ)\\s*-?\\s*${D}${E}`, 'i'));
+  if (exSince) {
+    const iso = isoFrom(exSince[1], exSince[2], exSince[3], now);
+    if (iso) return mk(iso, today, `מ-${shortDate(iso)}`, `since ${shortDate(iso)}`, true);
+  }
+
+  const exDay = t.match(new RegExp(`${B}${P}-?${D}${E}`));
+  if (exDay) {
+    const iso = isoFrom(exDay[1], exDay[2], exDay[3], now);
+    if (iso) return mk(iso, iso, shortDate(iso), shortDate(iso));
   }
 
   return null;
+}
+
+/** d/m/(y) parts → 'YYYY-MM-DD', or null when out of range. A 2-digit year is
+ *  2000-relative; a missing year defaults to the current one. */
+function isoFrom(ds: string, ms: string, ys: string | undefined, now: Date): string | null {
+  const d = parseInt(ds, 10), m = parseInt(ms, 10);
+  if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12)) return null;
+  let year = ys ? parseInt(ys, 10) : now.getFullYear();
+  if (year < 100) year += 2000;
+  return `${year}-${pad(m)}-${pad(d)}`;
 }
 
 function nBack(n: number, unit: 'day' | 'week' | 'month' | 'year', now: Date, today: string): DateRange {

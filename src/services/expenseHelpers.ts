@@ -177,7 +177,7 @@ const CAT_KEYWORDS: Record<string, string[]> = {
     'taxi', 'uber', 'waze', 'bus', 'train', 'scooter', 'bike',
   ],
   cat_groceries:     [
-    'סופר', 'מכולת', 'קניות', 'מזון', 'ירקות', 'פירות', 'שוק', 'רמי לוי', 'שופרסל',
+    'אוכל', 'סופר', 'סופרמרקט', 'מכולת', 'קניות', 'מזון', 'ירקות', 'פירות', 'שוק', 'רמי לוי', 'שופרסל',
     'סיטי', 'מגה', 'קרפור', 'יינות ביתן',
     'supermarket', 'grocery', 'groceries', 'market', 'food shop',
     'rami levi', 'shufersal', 'mega',
@@ -202,7 +202,7 @@ const CAT_KEYWORDS: Record<string, string[]> = {
     'insurance', 'policy', 'coverage',
   ],
   cat_dining:        [
-    'מסעדה', 'קפה', 'בית קפה', 'פיצה', 'סושי', 'המבורגר', 'ארוחה', 'אוכל בחוץ',
+    'אוכל', 'מסעדה', 'קפה', 'בית קפה', 'פיצה', 'סושי', 'המבורגר', 'ארוחה', 'אוכל בחוץ',
     'דליברי', 'וולט', 'טבון',
     'restaurant', 'cafe', 'coffee', 'dining', 'pizza', 'sushi', 'burger',
     'lunch', 'dinner', 'breakfast', 'meal', 'wolt', 'uber eats', 'delivery',

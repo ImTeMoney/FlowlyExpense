@@ -21,7 +21,10 @@ export interface Answer {
   tone: 'normal' | 'empty' | 'unparsed';
 }
 
-export function renderAnswer(r: QueryResult, ctx: AnswerCtx): Answer {
+/** Optional wider re-run, used only to make a zero result actionable. */
+export interface WidenedHint { total: number; count: number; label: string }
+
+export function renderAnswer(r: QueryResult, ctx: AnswerCtx, widened?: WidenedHint): Answer {
   const { lang, fmt, catLabel } = ctx;
   const he = lang === 'he';
   // The matched period is always echoed, so an ambiguous phrase like
@@ -49,7 +52,7 @@ export function renderAnswer(r: QueryResult, ctx: AnswerCtx): Answer {
   }
 
   if (r.intent === 'top_category' || r.intent === 'top_merchant') {
-    if (r.topItems.length === 0) return empty(ctx, period, cats);
+    if (r.topItems.length === 0) return empty(ctx, period, cats, widened);
     const [top, runner] = r.topItems;
     const nameOf = (i: typeof top) => (r.intent === 'top_category' ? catLabel(i.key) : i.label);
     return {
@@ -62,7 +65,7 @@ export function renderAnswer(r: QueryResult, ctx: AnswerCtx): Answer {
     };
   }
 
-  if (r.count === 0) return empty(ctx, period, cats);
+  if (r.count === 0) return empty(ctx, period, cats, widened);
 
   if (r.intent === 'count') {
     return {
@@ -93,12 +96,19 @@ export function renderAnswer(r: QueryResult, ctx: AnswerCtx): Answer {
   };
 }
 
-function empty(ctx: AnswerCtx, period: string, cats: string): Answer {
+function empty(ctx: AnswerCtx, period: string, cats: string, widened?: WidenedHint): Answer {
   const he = ctx.lang === 'he';
+  // A dead end is a bad answer. When the same question does have results over a
+  // wider window, say so — it turns "nothing" into a usable next step.
+  const note = widened && widened.count > 0
+    ? (he
+        ? `אבל יש ${ctx.fmt(widened.total)} ב-${widened.label} (${widened.count} עסקאות)`
+        : `but there is ${ctx.fmt(widened.total)} in ${widened.label} (${widened.count} transactions)`)
+    : (he ? 'נסה תקופה אחרת או קטגוריה אחרת' : 'Try another period or category');
   return {
     headline: he ? 'לא מצאתי תנועות' : 'Nothing found',
     detail: [cats, period].filter(Boolean).join(' · '),
-    note: he ? 'נסה תקופה אחרת או קטגוריה אחרת' : 'Try another period or category',
+    note,
     tone: 'empty',
   };
 }
