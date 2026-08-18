@@ -8,7 +8,26 @@ function generateId(): string {
   return '_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// Local time, not toISOString() — the latter is UTC and returns yesterday's date
+// between midnight and 03:00 in Israel. Same shape as expenseHelpers.todayStr().
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** '2026-07-05' → '5.7'. The year is appended only when it is not the current one. */
+function shortDate(iso: string, now: Date = new Date()): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const base = `${d}.${m}`;
+  return y === now.getFullYear() ? base : `${base}.${String(y).slice(2)}`;
+}
+
+/** '5.7 – 20.7'; an active trip has no endDate and reads '5.7 – היום', which is
+ *  exactly the window getTripSpent() measures (endDate ?? todayStr()). */
+function tripRange(b: TravelBudget, he: boolean): string {
+  const to = b.endDate ? shortDate(b.endDate) : (he ? 'היום' : 'today');
+  return `${shortDate(b.startDate)} – ${to}`;
+}
 
 function getTripSpent(budget: TravelBudget, transactions: ReturnType<typeof useExpense>['state']['transactions']): number {
   const end = budget.endDate ?? todayStr();
@@ -52,7 +71,7 @@ export default function TravelBudgetTracker() {
   const { travelBudgets, transactions } = state;
   const he = lang === 'he';
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddForm>({ ...EMPTY_FORM });
 
@@ -138,6 +157,15 @@ export default function TravelBudgetTracker() {
           <span className="debt-title">
             <Plane size={14} style={{ verticalAlign: 'middle', marginInlineEnd: 4 }} />
             {he ? 'טיולים' : 'Trips'}
+            {travelBudgets.length > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginInlineStart: 6 }}>
+                {activeTrips.length > 0
+                  ? (he ? `${activeTrips.length} ${activeTrips.length === 1 ? 'פעיל' : 'פעילים'}`
+                        : `${activeTrips.length} active`)
+                  : (he ? `${endedTrips.length} ${endedTrips.length === 1 ? 'הסתיים' : 'הסתיימו'}`
+                        : `${endedTrips.length} past`)}
+              </span>
+            )}
           </span>
           <ChevronDown
             size={14}
@@ -235,7 +263,7 @@ export default function TravelBudgetTracker() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{b.name}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.currency} · {b.startDate}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.currency} · {tripRange(b, he)}</span>
                 <button
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex', alignItems: 'center' }}
                   onClick={() => isEditing ? setEditingId(null) : openEdit(b)}
@@ -349,7 +377,10 @@ export default function TravelBudgetTracker() {
             const spent = getTripSpent(b, transactions);
             return (
               <div key={b.id} className="trip-ended-row">
-                <span className="trip-ended-name">{b.name}</span>
+                <span className="trip-ended-name">
+                  {b.name}
+                  <span className="trip-ended-dates">{tripRange(b, he)}</span>
+                </span>
                 <div className="trip-ended-summary">
                   <span>{fmtAmt(b.totalBudget, b.currency)}</span>
                   <span style={{ color: 'var(--danger)' }}>{fmtAmt(spent, b.currency)}</span>

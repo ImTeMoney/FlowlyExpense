@@ -2007,7 +2007,10 @@ details[open] .grow-learn-summary::before { content: '‹ '; }
 
 /* ── Travel Budget Tracker ───────────────────────────────────────────────── */
 .trip-ended-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--glass-border); font-size: 12px; color: var(--text-muted); }
-.trip-ended-name { flex: 1; font-weight: 600; color: var(--text); }
+.trip-ended-name { flex: 1; min-width: 0; font-weight: 600; color: var(--text); display: flex; flex-direction: column; gap: 1px; }
+/* Trip dates sit under the name rather than beside the amounts, which are a fixed
+   flex group already competing with the delete button for width. */
+.trip-ended-dates { font-size: 10px; font-weight: 400; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .trip-ended-summary { display: flex; gap: 10px; font-variant-numeric: tabular-nums; }
 .trip-bar-ok   { background: var(--success) !important; }
 .trip-bar-warn { background: var(--gold) !important; }
