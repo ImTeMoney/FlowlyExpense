@@ -16,7 +16,7 @@ export default function DebtTracker() {
   const { lang, formatCurrency } = useLang();
   const { debts } = state;
 
-  const [isCollapsed, setIsCollapsed]   = useState(false);
+  const [isCollapsed, setIsCollapsed]   = useState(true);
   const [showAdd, setShowAdd]           = useState(false);
   const [showSettled, setShowSettled]   = useState(false);
   const [form, setForm]                 = useState({ ...EMPTY_FORM });
