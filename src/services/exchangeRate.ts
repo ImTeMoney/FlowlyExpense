@@ -44,10 +44,27 @@ function isRatesMap(v: unknown): v is RatesMap {
 
 const RATE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+/** Local 'YYYY-MM-DD'. Not toISOString() — that is UTC and rolls over early. */
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * The dataset publishes one dated release per day, and today's is not up for most
+ * of the day — a request for today 404s until it lands. Installment rows are also
+ * written with future dates, which can never resolve. In both cases 'latest' (the
+ * newest published release) is both available and the correct answer.
+ */
+function resolveDate(date: string): string {
+  return date !== 'latest' && date >= todayIso() ? 'latest' : date;
+}
+
 async function fetchRates(base: string, date: string): Promise<RatesMap> {
   if (!VALID_CURRENCY.test(base)) throw new Error(`Invalid currency: ${base}`);
   if (!VALID_DATE.test(date)) throw new Error(`Invalid date: ${date}`);
 
+  date = resolveDate(date);
   const key = storageKey(base, date);
 
   // 1. Fresh cache (respects TTL for 'latest', historical dates never expire)
@@ -84,7 +101,13 @@ async function fetchRates(base: string, date: string): Promise<RatesMap> {
 
     return rates;
   } catch (fetchErr) {
-    // 3. Offline fallback: accept any stale cache — try requested date first, then 'latest'
+    // 3. A dated release can be missing entirely (published late, or a gap in the
+    //    archive). The newest published rate beats showing the user an error.
+    if (date !== 'latest') {
+      try { return await fetchRates(base, 'latest'); } catch { /* fall through */ }
+    }
+
+    // 4. Offline fallback: accept any stale cache — try requested date first, then 'latest'
     const fallbackKeys = date !== 'latest' ? [key, storageKey(base, 'latest')] : [key];
     for (const fk of fallbackKeys) {
       try {
