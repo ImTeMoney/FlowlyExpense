@@ -529,6 +529,43 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, [displayRate, mainCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Self-heal foreign-currency rows that were stored without conversion ────
+  // When the rate lookup failed, handleAdd kept the foreign number as the ILS
+  // amount (DashboardPage catch block), so a €9.01 expense was saved as ₪9.01.
+  // Those rows are identifiable because the ILS amount still equals the foreign
+  // amount — EUR/USD/GBP→ILS is never exactly 1.0, and same-currency entries
+  // never set `currency` at all. Note `exchangeRate` is NOT a usable signal:
+  // bank-imported rows are correctly converted yet never carry one.
+  const healAttempted = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const broken = transactions.filter(tx =>
+      tx.currency && tx.currency !== 'ILS' &&
+      tx.originalAmount !== undefined && tx.originalAmount > 0 &&
+      Math.abs(tx.amount - tx.originalAmount) < 0.005 &&
+      !healAttempted.current.has(tx.id)
+    );
+    if (broken.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const repaired: Transaction[] = [];
+      for (const tx of broken) {
+        // One attempt per row per session: still offline means try again next launch,
+        // rather than re-hitting the network on every unrelated state change.
+        healAttempted.current.add(tx.id);
+        try {
+          const { convertedAmount, rate } =
+            await convertAmount(tx.originalAmount!, tx.currency!, 'ILS', tx.date);
+          if (convertedAmount > 0) repaired.push({ ...tx, amount: convertedAmount, exchangeRate: rate });
+        } catch { /* no rate available — leave the row untouched for next time */ }
+      }
+      if (cancelled || repaired.length === 0) return;
+      const byId = new Map(repaired.map(t => [t.id, t]));
+      setTransactions(prev => prev.map(t => byId.get(t.id) ?? t));
+    })();
+    return () => { cancelled = true; };
+  }, [transactions]);
+
   // Auto-post recurring expenses whenever the recurring list changes.
   // Using `recurringExpenses` as a dependency (instead of []) means newly added
   // recurring items are posted immediately — not only on the next app boot.
