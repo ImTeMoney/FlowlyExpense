@@ -65,7 +65,14 @@ function fmtAmt(n: number, currency: string): string {
 type AddForm = { name: string; currency: string; budget: string; cashBudget: string; startDate: string };
 const EMPTY_FORM: AddForm = { name: '', currency: 'USD', budget: '', cashBudget: '', startDate: todayStr() };
 
-export default function TravelBudgetTracker() {
+interface Props {
+  /** The month the dashboard is showing, 'YYYY-MM'. Trips are listed only for the
+   *  months they actually span, so a finished trip stops following the user around
+   *  forever and instead reappears in its own months' history. */
+  viewMonth: string;
+}
+
+export default function TravelBudgetTracker({ viewMonth }: Props) {
   const { state, dispatch } = useExpense();
   const { lang } = useLang();
   const { travelBudgets, transactions } = state;
@@ -86,8 +93,15 @@ export default function TravelBudgetTracker() {
   // Confirm delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const activeTrips = travelBudgets.filter(b => !b.endDate);
-  const endedTrips  = travelBudgets.filter(b => !!b.endDate);
+  // A trip spans [startDate, endDate ?? today]; the viewed month spans [vm-01, vm-31].
+  // '-31' is a safe lexicographic upper bound: no real date in the month exceeds it
+  // and it still sorts below the next month's '-01'.
+  const overlapsViewedMonth = (b: TravelBudget) =>
+    b.startDate <= `${viewMonth}-31` && (b.endDate ?? todayStr()) >= `${viewMonth}-01`;
+
+  const monthTrips  = travelBudgets.filter(overlapsViewedMonth);
+  const activeTrips = monthTrips.filter(b => !b.endDate);
+  const endedTrips  = monthTrips.filter(b => !!b.endDate);
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -157,7 +171,7 @@ export default function TravelBudgetTracker() {
           <span className="debt-title">
             <Plane size={14} style={{ verticalAlign: 'middle', marginInlineEnd: 4 }} />
             {he ? 'טיולים' : 'Trips'}
-            {travelBudgets.length > 0 && (
+            {monthTrips.length > 0 && (
               <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginInlineStart: 6 }}>
                 {activeTrips.length > 0
                   ? (he ? `${activeTrips.length} ${activeTrips.length === 1 ? 'פעיל' : 'פעילים'}`
@@ -244,8 +258,10 @@ export default function TravelBudgetTracker() {
       )}
 
       {/* Active trips */}
-      {!isCollapsed && activeTrips.length === 0 && !showAdd && (
-        <p className="debt-empty">{he ? 'אין טיולים פעילים' : 'No active trips'}</p>
+      {!isCollapsed && monthTrips.length === 0 && !showAdd && (
+        <p className="debt-empty">
+          {he ? 'אין טיולים בחודש זה' : 'No trips this month'}
+        </p>
       )}
 
       {!isCollapsed && activeTrips.map(b => {
@@ -371,7 +387,9 @@ export default function TravelBudgetTracker() {
       {!isCollapsed && endedTrips.length > 0 && (
         <div style={{ marginTop: 4 }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 0 4px', fontWeight: 600 }}>
-            {he ? 'טיולים שהסתיימו' : 'Past trips'}
+            {activeTrips.length > 0
+              ? (he ? 'טיולים שהסתיימו' : 'Past trips')
+              : (he ? 'בחודש זה' : 'This month')}
           </div>
           {endedTrips.map(b => {
             const spent = getTripSpent(b, transactions);
