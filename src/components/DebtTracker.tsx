@@ -91,7 +91,10 @@ export default function DebtTracker() {
   );
 
   return (
-    <div className="debt-tracker-card glass-card">
+    // With nothing to show, the full card is a blank ~110px bar. Drop the card
+    // chrome and leave a slim header row, so the add path still exists.
+    <div className={`debt-tracker-card glass-card${
+      active.length === 0 && settled.length === 0 && !showAdd ? ' debt-tracker-card--empty' : ''}`}>
       <div className="debt-header">
         <div className="debt-collapse-trigger" onClick={() => setIsCollapsed(v => !v)}>
           <span className="debt-title">{he ? 'חובות' : 'Debts'}</span>

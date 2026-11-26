@@ -1210,6 +1210,33 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Top insight — useInsights already builds up to three fully-worded cards and
+          nothing rendered them. Showing the single highest-priority one keeps the
+          value without re-crowding the screen; 'all_clear' has nothing to say. */}
+      {(() => {
+        const top = insights.find(i => i.type !== 'all_clear');
+        if (!top) return null;
+        const Icon  = INSIGHT_ICON[top.icon];
+        const color = INSIGHT_COLOR[top.icon];
+        return (
+          <div className={`insight-card ${top.type}`}>
+            <div className="insight-card-icon" style={{ background: `${color}1a`, color }}>
+              <Icon size={17} color={color} />
+            </div>
+            <div className="insight-card-body">
+              <div className="insight-line1">{top.line1}</div>
+              {top.line2 && <div className="insight-line2">{top.line2}</div>}
+              {top.line3 && <div className="insight-line3">{top.line3}</div>}
+              {top.ctaLabel && top.ctaRoute && (
+                <button className="insight-cta" onClick={() => navigate(top.ctaRoute!)}>
+                  {top.ctaLabel}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Debt tracker — visible only when debt mode is enabled */}
       {debtModeEnabled && <DebtTracker />}
 

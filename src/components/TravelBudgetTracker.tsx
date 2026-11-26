@@ -164,7 +164,8 @@ export default function TravelBudgetTracker({ viewMonth }: Props) {
   }
 
   return (
-    <div className="debt-tracker-card glass-card">
+    <div className={`debt-tracker-card glass-card${
+      monthTrips.length === 0 && !showAdd ? ' debt-tracker-card--empty' : ''}`}>
       {/* Header */}
       <div className="debt-header">
         <div className="debt-collapse-trigger" onClick={() => setIsCollapsed(v => !v)}>
@@ -258,11 +259,6 @@ export default function TravelBudgetTracker({ viewMonth }: Props) {
       )}
 
       {/* Active trips */}
-      {!isCollapsed && monthTrips.length === 0 && !showAdd && (
-        <p className="debt-empty">
-          {he ? 'אין טיולים בחודש זה' : 'No trips this month'}
-        </p>
-      )}
 
       {!isCollapsed && activeTrips.map(b => {
         const spent           = getTripSpent(b, transactions);
