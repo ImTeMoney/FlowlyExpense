@@ -1214,7 +1214,7 @@ export default function DashboardPage() {
       {debtModeEnabled && <DebtTracker />}
 
       {/* Travel budget tracker — visible only when travel mode is enabled */}
-      {travelModeEnabled && <TravelBudgetTracker />}
+      {travelModeEnabled && <TravelBudgetTracker viewMonth={viewMonth} />}
 
       {/* Filter bar */}
       <div className="txn-filters">
