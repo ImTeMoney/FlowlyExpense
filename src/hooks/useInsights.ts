@@ -108,7 +108,12 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       urgency  = 'neutral';
     } else if (savings < 0) {
       headline = iHe ? 'ההוצאות עולות על ההכנסות' : 'Spending more than you\'re earning';
-      subline  = iHe ? `הכנסה ${formatCurrencyDirect(Math.round(income))} · הוצאות ${formatCurrencyDirect(Math.round(spent))}` : `Income ${formatCurrencyDirect(Math.round(income))} · Spent ${formatCurrencyDirect(Math.round(spent))}`;
+      // The hero already shows `spent` as its headline number, so repeating it here
+      // wastes the only other line. Lead with the deficit — the figure that is
+      // otherwise nowhere on the screen.
+      subline  = iHe
+        ? `גירעון ${formatCurrencyDirect(Math.round(Math.abs(savings)))} · הכנסה ${formatCurrencyDirect(Math.round(income))}`
+        : `${formatCurrencyDirect(Math.round(Math.abs(savings)))} over · income ${formatCurrencyDirect(Math.round(income))}`;
       urgency  = 'warning';
     } else if (savings > 0) {
       headline = iHe ? 'אתה בדרך טובה החודש' : 'You\'re on a good track this month';
@@ -116,7 +121,9 @@ export function useInsights(): { statusCard: StatusCard; insights: InsightCard[]
       urgency  = 'good';
     } else {
       headline = iHe ? 'הכנסות והוצאות בשיווי משקל' : 'Income and expenses are balanced';
-      subline  = iHe ? `הכנסה ${formatCurrencyDirect(Math.round(income))} · הוצאות ${formatCurrencyDirect(Math.round(spent))}` : `Income ${formatCurrencyDirect(Math.round(income))} · Spent ${formatCurrencyDirect(Math.round(spent))}`;
+      subline  = iHe
+        ? `מאוזן · הכנסה ${formatCurrencyDirect(Math.round(income))}`
+        : `Balanced · income ${formatCurrencyDirect(Math.round(income))}`;
       urgency  = 'neutral';
     }
 

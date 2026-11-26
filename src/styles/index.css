@@ -6586,3 +6586,46 @@ body::before, body::after {
 }
 
 .ask-input-row { margin-top: 4px; }
+
+/* ── Collapsed/empty tracker cards ─────────────────────────────────────────── */
+/* With no debts, or no trips in the viewed month, the full card rendered as a
+   blank bar roughly 110px tall. Strip the card chrome and leave the header row,
+   which still carries the title and the add button. */
+.debt-tracker-card--empty {
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 2px 4px;
+  margin-bottom: 4px;
+}
+.debt-tracker-card--empty .debt-header { margin-bottom: 0; }
+.debt-tracker-card--empty .debt-title  { color: var(--text-muted); font-weight: 600; }
+
+/* ── Light mode: drop blur that is painted behind an opaque surface ────────── */
+/* --bg-card is #FFFFFF in light mode, so backdrop-filter on these in-flow cards is
+   mathematically invisible yet still composited every frame. The list below was
+   derived by checking each backdrop-filter rule's own background for any alpha < 1,
+   so translucent surfaces are deliberately absent: .forecast-card and .fab use
+   rgba() gradients and .dash-hero, the dock, the header, sheets and overlays all
+   sit on --nav-bg / --header-bg / --modal-bg, where the glass genuinely reads.
+   .txn-item is the one that matters most — its cost scales with the length of the
+   transaction list, i.e. exactly while scrolling. Dark mode is untouched: --bg-card
+   is translucent there and every one of these is real glass. */
+:root[data-theme="light"] .a-sec,
+:root[data-theme="light"] .an-cat-card,
+:root[data-theme="light"] .an-summary-card,
+:root[data-theme="light"] .debt-tracker-card,
+:root[data-theme="light"] .icon-btn,
+:root[data-theme="light"] .insight-card,
+:root[data-theme="light"] .ob-app-preview,
+:root[data-theme="light"] .ob-currency-card,
+:root[data-theme="light"] .ob-goal-explain,
+:root[data-theme="light"] .ob-mode-card,
+:root[data-theme="light"] .smart-status-card,
+:root[data-theme="light"] .stat-chip,
+:root[data-theme="light"] .txn-item {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
