@@ -156,7 +156,10 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .app-main {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  /* Must clear the floating FAB, not just the dock: the FAB sits 90px up and is
+     54px tall, so its top edge is at 144px. At 100px the last row's amount was
+     scrolling under it with no way to reach it. */
+  padding-bottom: calc(156px + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 501px) {
